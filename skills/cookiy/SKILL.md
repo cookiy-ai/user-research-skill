@@ -31,33 +31,24 @@ Try calling `cookiy_introduce`. If it succeeds, skip to Part 2.
 
 ### Install the MCP server
 
-macOS with Homebrew (recommended — no Node.js required):
-```bash
-brew install cookiy-ai/tap/cookiy && cookiy
-```
+Identify which AI client you are running in (Codex, Claude Code, Cursor,
+OpenClaw, etc.) and install ONLY for that client. Do not install for all
+clients at once.
 
-Any platform with Node.js:
-```bash
-npx cookiy-mcp
-```
+Pick the matching command:
 
-Target a specific client:
-```bash
-npx cookiy-mcp --client codex -y
-npx cookiy-mcp --client claude-code -y
-npx cookiy-mcp --client cursor -y
-npx cookiy-mcp --client openclaw -y
-```
+| You are running in | Install command |
+|---|---|
+| Codex | `brew install cookiy-ai/tap/cookiy && cookiy --client codex -y` |
+| Claude Code | `brew install cookiy-ai/tap/cookiy && cookiy --client claude-code -y` |
+| Cursor | `brew install cookiy-ai/tap/cookiy && cookiy --client cursor -y` |
+| OpenClaw | `npx cookiy-mcp --client openclaw -y` |
+| Other / unknown | `npx cookiy-mcp -y` (auto-detects) |
 
-Switch environments:
-```bash
-cookiy dev -y      # Development
-cookiy preview -y  # Preview / staging
-cookiy -y          # Production (default)
-```
+If `brew` is not available, replace `brew install cookiy-ai/tap/cookiy && cookiy`
+with `npx cookiy-mcp` in the commands above.
 
-The installer auto-detects installed AI clients and configures them.
-It will prompt for OAuth authentication during setup.
+The installer will prompt for OAuth authentication. This is expected.
 
 ### Verify the connection
 
