@@ -17,7 +17,7 @@ claude plugin add cookiy-ai/cookiy-skill
 Or install the MCP server standalone:
 
 ```bash
-npx cookiy-mcp dev --client claude-code -y
+npx cookiy-mcp --client claude-code -y
 ```
 
 ### Codex
@@ -29,7 +29,7 @@ npx skills add cookiy-ai/cookiy-skill
 Or install the MCP server directly:
 
 ```bash
-npx cookiy-mcp dev --client codex -y
+npx cookiy-mcp --client codex -y
 ```
 
 ### OpenClaw
@@ -41,7 +41,7 @@ clawhub install cookiy
 Or install the MCP server directly:
 
 ```bash
-npx cookiy-mcp dev --client openclaw
+npx cookiy-mcp --client openclaw
 ```
 
 ### Cursor
@@ -49,13 +49,13 @@ npx cookiy-mcp dev --client openclaw
 Install from the [Cursor Marketplace](https://cursor.com/marketplace), or manually:
 
 ```bash
-npx cookiy-mcp dev --client cursor -y
+npx cookiy-mcp --client cursor -y
 ```
 
 ### Any platform with Node.js
 
 ```bash
-npx cookiy-mcp dev
+npx cookiy-mcp
 ```
 
 The installer auto-detects installed AI clients and configures them.
@@ -115,7 +115,7 @@ This single repository serves multiple distribution platforms:
 
 ## MCP Server
 
-The skill orchestrates [Cookiy's MCP server](https://dev-api.cookiy.ai/mcp), which exposes 20 atomic tools for user research operations. The MCP server handles OAuth 2.1 authentication, billing, and all backend operations.
+The skill orchestrates [Cookiy's MCP server](https://s-api.cookiy.ai/mcp), which exposes 20 atomic tools for user research operations. The MCP server handles OAuth 2.1 authentication, billing, and all backend operations.
 
 For MCP server installation without skills, see the [cookiy-mcp npm package](https://www.npmjs.com/package/cookiy-mcp).
 

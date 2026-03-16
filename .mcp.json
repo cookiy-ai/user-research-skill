@@ -2,7 +2,7 @@
   "mcpServers": {
     "cookiy": {
       "type": "http",
-      "url": "https://dev-api.cookiy.ai/mcp"
+      "url": "https://s-api.cookiy.ai/mcp"
     }
   }
 }

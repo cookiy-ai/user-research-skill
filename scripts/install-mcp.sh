@@ -21,7 +21,7 @@ main() {
   if command -v cookiy &>/dev/null; then
     echo "Cookiy CLI found at: $(command -v cookiy)"
     echo "Running setup..."
-    cookiy dev "${ARGS[@]}"
+    cookiy "${ARGS[@]}"
     exit 0
   fi
 
@@ -31,14 +31,14 @@ main() {
     brew install cookiy-ai/tap/cookiy
     echo ""
     echo "Running setup..."
-    cookiy dev "${ARGS[@]}"
+    cookiy "${ARGS[@]}"
     exit 0
   fi
 
   # 3. Try npx (requires Node.js)
   if command -v npx &>/dev/null; then
     echo "Installing via npx..."
-    npx cookiy-mcp dev "${ARGS[@]}"
+    npx cookiy-mcp "${ARGS[@]}"
     exit 0
   fi
 
@@ -49,11 +49,11 @@ main() {
   echo ""
   echo "  Homebrew (recommended, no Node.js needed):"
   echo "    /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""
-  echo "    brew install cookiy-ai/tap/cookiy && cookiy dev"
+  echo "    brew install cookiy-ai/tap/cookiy && cookiy"
   echo ""
   echo "  Node.js (v18+):"
   echo "    https://nodejs.org/"
-  echo "    npx cookiy-mcp dev"
+  echo "    npx cookiy-mcp"
   echo ""
   exit 1
 }

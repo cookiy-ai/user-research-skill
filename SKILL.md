@@ -39,19 +39,19 @@ Pick the matching command:
 
 | You are running in | Install command |
 |---|---|
-| Codex | `npx cookiy-mcp dev --client codex -y` |
-| Claude Code | `npx cookiy-mcp dev --client claude-code -y` |
-| Cursor | `npx cookiy-mcp dev --client cursor -y` |
-| Cline | `npx cookiy-mcp dev --client cline -y` |
-| GitHub Copilot / VS Code | `npx cookiy-mcp dev --client vscode -y` |
-| Windsurf | `npx cookiy-mcp dev --client windsurf -y` |
-| OpenClaw | `npx cookiy-mcp dev --client openclaw -y` |
-| Other / unknown | `npx cookiy-mcp dev -y` (auto-detects) |
+| Codex | `npx cookiy-mcp --client codex -y` |
+| Claude Code | `npx cookiy-mcp --client claude-code -y` |
+| Cursor | `npx cookiy-mcp --client cursor -y` |
+| Cline | `npx cookiy-mcp --client cline -y` |
+| GitHub Copilot / VS Code | `npx cookiy-mcp --client vscode -y` |
+| Windsurf | `npx cookiy-mcp --client windsurf -y` |
+| OpenClaw | `npx cookiy-mcp --client openclaw -y` |
+| Other / unknown | `npx cookiy-mcp -y` (auto-detects production) |
 
 If your agent is not in the table above but supports MCP over HTTP,
-you can manually configure the MCP server URL: `https://dev-api.cookiy.ai/mcp`
+you can manually configure the MCP server URL: `https://s-api.cookiy.ai/mcp`
 with OAuth authentication. See the MCP server's OAuth discovery at
-`https://dev-api.cookiy.ai/.well-known/oauth-authorization-server`.
+`https://s-api.cookiy.ai/.well-known/oauth-authorization-server`.
 
 The installer will prompt for OAuth authentication. This is expected.
 
