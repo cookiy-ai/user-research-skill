@@ -100,7 +100,7 @@ The **cookiy** skill handles both setup and workflow orchestration in a single p
 | **AI Interview** | `cookiy_simulated_interview_generate` → `cookiy_simulated_interview_status` → `cookiy_interview_list` → `cookiy_interview_playback_get` |
 | **Guide Editing** | `cookiy_guide_get` → `cookiy_guide_impact` → `cookiy_guide_patch` |
 | **Recruitment** | `cookiy_recruit_create` (preview) → `cookiy_recruit_create` (confirm) → `cookiy_recruit_status` |
-| **Report & Insights** | `cookiy_report_status` → `cookiy_report_generate` → `cookiy_report_share_link_get` |
+| **Report & Insights** | `cookiy_report_status` → `cookiy_report_generate` (when allowed) → `cookiy_report_share_link_get` (payment may be required here) |
 
 ## Platform Distribution
 

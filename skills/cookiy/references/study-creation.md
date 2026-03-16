@@ -92,6 +92,13 @@ fields to the user for confirmation:
 - 20+ for quantitative studies
 - Directly impacts cost and timeline.
 
+**interview_duration**
+- MCP interviews are capped at 15 minutes.
+- Typical range is 5-10 minutes for quick feedback and 10-15 minutes
+  for deeper studies.
+- Longer interviews usually increase completion risk and recruitment
+  difficulty.
+
 If the user wants to change any of these, transition to the
 Guide Editing workflow (guide-editing.md).
 

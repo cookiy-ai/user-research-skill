@@ -69,15 +69,13 @@ cookiy_report_generate
 ```
 
 CRITICAL RULES:
-- This call consumes ONE report credit IMMEDIATELY.
-- It is NOT idempotent. Each call costs another credit.
 - Call it ONLY when `request_state` is `never_requested`.
 - Call it at MOST once after `event_failed` (and only after waiting).
 - NEVER call it when `request_state` is `queued` or `processing`.
 - The response says "queued" — this does NOT mean the report is ready.
   Report generation runs in the background and may take several minutes.
-
-On 402: display `payment_summary` and `checkout_url`.
+- This step enqueues generation only. Payment is handled later when
+  retrieving the share link if access has not been paid yet.
 
 ### 4. Poll for completion
 
@@ -107,10 +105,18 @@ Returns:
 Present both to the user. If the report is a PREVIEW, note that the
 final version will replace it automatically.
 
+If this call returns 402:
+- Display `payment_summary`
+- Offer `checkout_url`
+- Follow any `retry_input_hint` / `retry_tool_name` guidance in the
+  response after payment
+
 ## Rules
 
 - `cookiy_report_generate` is a SINGLE-TRIGGER action, not an
   idempotent refresh button. Treat it like "press once and wait."
+- Payment, if required, happens at `cookiy_report_share_link_get`, not
+  at `cookiy_report_generate`.
 - PREVIEW means "viewable now" — it is NOT "still generating."
   A preview report contains early results and can be shared.
 - The server's `next_recommended_tools` and `status_message` fields
@@ -123,7 +129,8 @@ final version will replace it automatically.
 cookiy_balance_get
 ```
 Returns current balance including trial credits. Report generation
-can be covered by trial balance.
+does not charge here. Trial balance or experience bonus may still apply
+when retrieving report access via `cookiy_report_share_link_get`.
 
 **Browse studies:**
 ```
@@ -141,13 +148,14 @@ Preserve exact `studyId` values for subsequent tool calls.
 cookiy_study_get
   study_id: <study_id>
 ```
-Returns study summary and metadata.
+Returns study summary and metadata, including
+`completed_interview_count` for quick readiness checks.
 
 ## Error handling
 
 | Situation | Action |
 |---|---|
-| 402 on report_generate | Display payment_summary, offer checkout_url |
+| 402 on report_share_link_get | Display payment_summary, offer checkout_url |
 | 503 on report_generate | Temporary unavailability. Wait and retry once. |
 | Report stays NOT_READY after generation | May need more interviews. Check interview count. |
 | event_failed persists | Wait several minutes, then retry report_generate once |

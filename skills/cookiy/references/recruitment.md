@@ -41,6 +41,10 @@ This does NOT launch recruitment. It returns a preview containing:
 - `targeting_preview.unsupported_languages` — languages that cannot
   be served (if any)
 - `targeting_preview.payment_quote` — cost estimate
+- `study_summary.sample_size` — participant target from the guide
+- `study_summary.interview_duration_minutes` — per-interview duration
+- `study_summary.screen_share` / `study_summary.in_home_visit` — setup
+  requirements that make recruitment harder
 - `source_language` — the study's source language
 - `confirmation_token` — required for step 4
 
@@ -61,8 +65,11 @@ Show the user:
 1. **Target group** — who will be recruited
 2. **Target languages** — which languages are supported
 3. **Screener criteria** — qualification/disqualification rules
-4. **Cost** — amount due from the payment quote
-5. **Unsupported languages** — if any languages cannot be served
+4. **Sample size and interview duration** — confirm the operational plan
+5. **Screen share / in-home visit requirements** — these increase
+   recruitment difficulty and should be intentional
+6. **Cost** — amount due from the payment quote
+7. **Unsupported languages** — if any languages cannot be served
 
 The user must explicitly confirm before proceeding.
 
@@ -94,8 +101,9 @@ Go back to step 3 and ask the user to confirm again.
 Display `payment_summary` and offer `checkout_url`.
 
 **400 Invalid confirmation token:**
-The token has expired (24h) or does not match the current user/study.
-Go back to step 2 to generate a new preview.
+The server returns error code `INVALID_CONFIRMATION_TOKEN`. The token
+has expired (24h) or does not match the current user/study. Go back to
+step 2 to generate a new preview.
 
 ### 5. Monitor recruitment progress
 
@@ -107,6 +115,11 @@ cookiy_recruit_status
 
 Poll every 30-60 seconds. Recruitment is a slow process — real
 participants need time to respond.
+
+Use the returned progress counters directly:
+- `target_participants` — intended recruitment target
+- `current_participants` — completed recruited participants so far
+- `click_count` — upstream click volume when available
 
 ## Rules
 

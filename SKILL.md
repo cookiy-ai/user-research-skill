@@ -115,8 +115,8 @@ See tool-contract.md for the complete specification.
 - NEVER truncate, reformat, or summarize `study_id`, `job_id`, `interview_id`, `base_revision`, or `confirmation_token`.
 
 **Payment:**
-- On HTTP 402: display `error.details.payment_summary`, then offer `checkout_url`.
-- Trial balance covers: study creation, simulated interviews, report generation.
+- On HTTP 402: prefer `structuredContent.data.payment_summary` and `checkout_url`; if those fields are absent, fall back to `error.details`.
+- Trial balance may apply to study creation, simulated interviews, and report access via `cookiy_report_share_link_get`.
 - Trial balance does NOT cover: recruitment (always charged separately).
 
 **URLs:**

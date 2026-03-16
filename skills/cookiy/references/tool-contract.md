@@ -48,11 +48,16 @@ Examples:
 ### `presentation_hint`
 
 Formatting guidance for the response. Respect it when present:
+- `presentation_hint` may be a structured object or a plain string
+  instruction. If it is a string, follow it verbatim.
 - `preferred_format: "markdown_table"` — render as a table
 - `preferred_format: "markdown_link"` — render as a clickable link
 - `columns` — defines table column order and labels
 - `primary_markdown_field` — the field to display as the main link
+- `primary_id_field` — the identifier column to preserve exactly
 - `copyable_fields` — fields the user may want to copy
+- `pagination_fields` — pagination keys to keep visible in list output
+- `expires_at_field` — expiry metadata for time-limited links
 
 ### `important_field_review`
 
@@ -62,6 +67,7 @@ confirmation before proceeding to recruitment or interviews:
 - `mode_of_interview` — video, audio, or audio_optional_video
 - `screen_share` / `in_home_visit` — questions requiring special setup
 - `sample_size` — number of participants
+- `interview_duration` — interview length in minutes (max 15 in MCP)
 
 Each field includes an `edit_path` that can be used directly as a
 dot-notation key in `cookiy_guide_patch`.
@@ -81,12 +87,18 @@ dot-notation key in `cookiy_guide_patch`.
 
 When any tool returns status_code 402:
 
-1. Read `error.details.payment_summary` — a human-readable cost explanation
-   already composed by the server. Display it to the user.
-2. Read `error.details.checkout_url` — the payment link. Offer it.
-3. Read `error.details.payment_breakdown` — structured cost data
-   (unit price, required units, covered units, deficit).
-4. NEVER recalculate or restate prices from raw quote fields.
+1. Prefer `structuredContent.data.payment_summary` — a human-readable
+   cost explanation already composed by the server. If it is absent,
+   fall back to `error.details.payment_summary`.
+2. Prefer `structuredContent.data.checkout_url` as the payment link.
+   `checkout_url_short` may also be present for copy-friendly display.
+3. Read `structuredContent.data.payment_breakdown` when present for
+   structured cost details (unit price, required units, covered units,
+   deficit).
+4. If `retry_same_tool`, `retry_tool_name`, or `retry_input_hint` are
+   present in `structuredContent.data`, follow them for the post-payment
+   retry path.
+5. NEVER recalculate or restate prices from raw quote fields.
 
 ### Trial balance rules
 
@@ -95,10 +107,14 @@ When any tool returns status_code 402:
 - Trial balance covers:
   - Discussion guide generation (`cookiy_study_create`)
   - AI-to-AI interview generation (`cookiy_simulated_interview_generate`)
-  - Report generation (`cookiy_report_generate`)
+  - Report access when retrieving the share link
+    (`cookiy_report_share_link_get`)
 - Trial balance does NOT cover:
   - Recruitment of real participants (`cookiy_recruit_create`)
   - Recruitment is always a separate paid charge.
+- `cookiy_balance_get` may also show `experience_bonus`. Eligible MCP
+  actions use that bonus before purchased credits, so paid product
+  counters may stay unchanged even when an action succeeded.
 - If a covered operation fails before task dispatch, the credit is
   refunded automatically.
 - Use `cookiy_balance_get` to check current trial balance.

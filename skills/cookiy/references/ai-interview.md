@@ -118,10 +118,14 @@ Rules:
 - Simulated interviews return `playback_type: "transcript"`.
   There is no audio or video for simulations — read the transcript
   directly from the tool response.
-- Real interviews return `playback_type: "recording"` with both
-  a transcript and a `playback_page_url` for synced video review.
-- The transcript is included directly in the response. The playback
-  page link is an optional supplement for video playback.
+- Real interviews return `playback_type: "recording"` with a
+  `playback_page_url` for synced review, and transcript text may or may
+  not already be available in the same response.
+- Always check `transcript_available`. If it is `false`, use the
+  playback page now and retry this tool later for transcript text.
+- When transcript text is available, it is included directly in the
+  tool response. The playback page link is an optional supplement for
+  interview review.
 - `playback_page_url` expires in 24 hours. Call the tool again to
   get a fresh link if needed.
 
