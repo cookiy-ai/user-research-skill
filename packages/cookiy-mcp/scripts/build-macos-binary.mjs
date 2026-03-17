@@ -100,11 +100,17 @@ async function main() {
   const archivePath = join(distDir, archiveName);
   const stageDir = join(releaseDir, `${binaryName}-darwin-${archLabel}`);
   const stageBinaryPath = join(stageDir, binaryName);
+  const stageSkillAssetsDir = join(stageDir, 'skill-assets');
   const checksumPath = `${archivePath}.sha256`;
   const postjectPath = join(packageDir, 'node_modules', '.bin', 'postject');
+  const skillAssetsDir = join(packageDir, 'skill-assets');
 
   if (!existsSync(postjectPath)) {
-    throw new Error('Missing local postject binary. Run npm install in packages/tools/cookiy-mcp-setup first.');
+    throw new Error('Missing local postject binary. Run npm install in packages/cookiy-mcp first.');
+  }
+
+  if (!existsSync(skillAssetsDir)) {
+    throw new Error(`Missing packaged skill assets: ${skillAssetsDir}`);
   }
 
   rmSync(releaseDir, { recursive: true, force: true });
@@ -141,8 +147,9 @@ async function main() {
   mkdirSync(stageDir, { recursive: true });
   cpSync(binaryPath, stageBinaryPath);
   chmodSync(stageBinaryPath, 0o755);
+  cpSync(skillAssetsDir, stageSkillAssetsDir, { recursive: true });
 
-  run('tar', ['-czf', archivePath, '-C', stageDir, binaryName]);
+  run('tar', ['-czf', archivePath, '-C', stageDir, binaryName, 'skill-assets']);
 
   const checksum = run('shasum', ['-a', '256', archivePath]).stdout.trim();
   writeFileSync(checksumPath, `${checksum}\n`);
