@@ -136,3 +136,37 @@ Chosen approach: Option A.
   - `npm test` in `packages/cookiy-mcp`
   - `node ./bin/cli.mjs --client manus --dry-run -y` in `packages/cookiy-mcp`
   - `npm pack --dry-run` in `packages/cookiy-mcp`
+
+# External Platform Doc Drift Fix (2026-03-17)
+
+## Goal
+
+- Align `/Users/yupeng/Documents/Obsidian Vault/对外开发者api/对外暴露平台/总结.md` with the current public installer and repo docs.
+
+## Drift To Fix
+
+- Add `Manus` to the externally documented supported client list and MCP install commands.
+- Correct the Claude Code client flag from `claude-code` to `claudeCode`.
+- Refresh the doc date so the external summary reflects the current 2026-03-17 installer surface.
+
+## Plan
+
+- [x] Update the external Obsidian platform summary note.
+- [x] Verify the revised commands and supported-client list against `README.md`, `SKILL.md`, and `packages/cookiy-mcp/bin/cli.mjs`.
+- [x] Record the review outcome here.
+
+## Review
+
+- Updated `/Users/yupeng/Documents/Obsidian Vault/对外开发者api/对外暴露平台/总结.md` to match the current 2026-03-17 installer surface.
+- Fixed the documented Claude Code MCP command from `--client claude-code` to `--client claudeCode`.
+- Added `Manus` in:
+  - the supported client table
+  - the platform entry overview
+  - the MCP install command list
+- Repaired the malformed `OpenClaw` support-row table structure while editing the same section.
+- Removed the hardcoded Official MCP Registry version from the discovery table and replaced it with a stable “latest API 为准” note to reduce future doc drift.
+- Targeted verification passed via direct content comparison against:
+  - `README.md`
+  - `SKILL.md`
+  - `packages/cookiy-mcp/bin/cli.mjs`
+  - grep check confirming the external note now contains `claudeCode` and `manus`, with no remaining `claude-code`.
