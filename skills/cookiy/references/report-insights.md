@@ -2,8 +2,8 @@
 
 ## Trigger
 
-User wants to generate a research report, check report status, get a
-shareable report link, or review study-level information.
+User wants to check report status, get a shareable report link, or
+review study-level reporting information.
 
 ## Prerequisites
 
@@ -30,68 +30,27 @@ Follow the decision tree below.
 
 ```
 report_status = READY
-  → Go to step 5 (get share link)
+  → Go to step 3 (get share link)
 
 report_status = PREVIEW
-  → Go to step 5 (get share link)
+  → Go to step 3 (get share link)
   → Tell the user: "A preview report is available now. The final
     version will replace it automatically once all interviews
     are analyzed."
 
 report_status = NOT_READY
-  │
-  ├─ request_state = never_requested
-  │    → Go to step 3 (generate report)
-  │
-  ├─ request_state = queued
-  │    → Do NOT call report_generate
-  │    → Go to step 4 (poll)
-  │
-  ├─ request_state = processing
-  │    → Do NOT call report_generate
-  │    → Go to step 4 (poll)
-  │
-  ├─ request_state = event_failed
-  │    → Wait several minutes
-  │    → May retry report_generate ONCE
-  │    → Go to step 4 (poll)
-  │
-  └─ request_state = completed (but NOT_READY)
-       → Not enough interview data for a report
-       → Inform user: more interviews may be needed
+  → Do NOT try to manually trigger report generation from MCP
+  → Continue polling `cookiy_report_status`
+  → Use `request_state` only as lifecycle context:
+     - `never_requested` / `queued` / `processing`:
+       report generation has not produced a viewable report yet
+     - `event_failed`:
+       background processing may have hit a transient issue; wait and poll again
+     - `completed` with `NOT_READY`:
+       there may still be insufficient interview coverage for a report
 ```
 
-### 3. Generate report (single trigger)
-
-```
-cookiy_report_generate
-  study_id: <study_id>
-```
-
-CRITICAL RULES:
-- Call it ONLY when `request_state` is `never_requested`.
-- Call it at MOST once after `event_failed` (and only after waiting).
-- NEVER call it when `request_state` is `queued` or `processing`.
-- The response says "queued" — this does NOT mean the report is ready.
-  Report generation runs in the background and may take several minutes.
-- This step enqueues generation only. Payment is handled later when
-  retrieving the share link if access has not been paid yet.
-
-### 4. Poll for completion
-
-```
-cookiy_report_status
-  study_id: <study_id>
-```
-
-Poll every 10-30 seconds. Reports may take several minutes depending
-on the number of interviews.
-
-During polling:
-- NEVER call `cookiy_report_generate` again.
-- Continue polling until `report_status` changes to `PREVIEW` or `READY`.
-
-### 5. Get share link
+### 3. Get share link
 
 ```
 cookiy_report_share_link_get
@@ -113,24 +72,26 @@ If this call returns 402:
 
 ## Rules
 
-- `cookiy_report_generate` is a SINGLE-TRIGGER action, not an
-  idempotent refresh button. Treat it like "press once and wait."
-- Payment, if required, happens at `cookiy_report_share_link_get`, not
-  at `cookiy_report_generate`.
+- Reports are generated automatically after interviews complete.
+- MCP does NOT expose a supported manual report-generation step.
+- If `report_status` is `NOT_READY`, keep polling `cookiy_report_status`
+  until it changes to `PREVIEW` or `READY`.
+- Payment, if required, happens at `cookiy_report_share_link_get`.
 - PREVIEW means "viewable now" — it is NOT "still generating."
   A preview report contains early results and can be shared.
 - The server's `next_recommended_tools` and `status_message` fields
-  encode the exact decision tree above. Always follow them.
+  are authoritative. Always follow them.
 
 ## Auxiliary tools
 
-**Check balance before generating:**
+**Check balance before retrieving access:**
 ```
 cookiy_balance_get
 ```
-Returns current balance including trial credits. Report generation
-does not charge here. Trial balance or experience bonus may still apply
-when retrieving report access via `cookiy_report_share_link_get`.
+Returns current balance including trial credits. Report generation does
+not charge here from MCP because manual generation is not exposed.
+Trial balance or experience bonus may still apply when retrieving report
+access via `cookiy_report_share_link_get`.
 
 **Browse studies:**
 ```
@@ -156,6 +117,5 @@ Returns study summary and metadata, including
 | Situation | Action |
 |---|---|
 | 402 on report_share_link_get | Display payment_summary, offer checkout_url |
-| 503 on report_generate | Temporary unavailability. Wait and retry once. |
-| Report stays NOT_READY after generation | May need more interviews. Check interview count. |
-| event_failed persists | Wait several minutes, then retry report_generate once |
+| Report stays NOT_READY | Continue polling and check interview count via `cookiy_study_get` |
+| `request_state=event_failed` persists for several minutes | Explain that background processing may be stalled and try `cookiy_report_status` again later |

@@ -1,0 +1,57 @@
+{
+  "name": "cookiy-mcp",
+  "version": "1.7.7",
+  "description": "One-command setup for Cookiy MCP server in your AI coding clients",
+  "homepage": "https://cookiy.ai",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cookiy-ai/cookiy-skill.git"
+  },
+  "bugs": {
+    "url": "https://github.com/cookiy-ai/cookiy-skill/issues"
+  },
+  "type": "module",
+  "bin": {
+    "cookiy-mcp": "bin/cli.mjs"
+  },
+  "files": [
+    "bin/",
+    "lib/",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs test/clients/*.test.mjs",
+    "build:bundle": "node ./scripts/build-bundle.mjs",
+    "build:macos": "node ./scripts/build-macos-binary.mjs",
+    "build:brew-formula": "node ./scripts/generate-homebrew-formula.mjs"
+  },
+  "keywords": [
+    "cookiy",
+    "mcp",
+    "model-context-protocol",
+    "ai",
+    "agent",
+    "skill",
+    "user-research",
+    "interview",
+    "voice",
+    "claude",
+    "cursor",
+    "vscode",
+    "codex",
+    "manus",
+    "windsurf",
+    "cline",
+    "openclaw",
+    "setup"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "esbuild": "^0.27.2",
+    "postject": "^1.0.0-alpha.6"
+  }
+}

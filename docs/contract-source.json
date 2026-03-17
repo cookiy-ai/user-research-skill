@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "distribution_repo": "cookiy-ai/cookiy-skill",
+  "runtime_contract_source": {
+    "repo": "cookiy-code",
+    "path": "docs/public-mcp-contract.json",
+    "source_commit": "713657f86ff50b96e40b412ee216db5b1e715c66",
+    "synced_at": "2026-03-17",
+    "manual_sync": true
+  },
+  "notes": [
+    "Runtime MCP behavior remains defined in cookiy-code.",
+    "This repository owns the public distribution surface: npm package, skill docs, plugin metadata, and installer-facing references."
+  ]
+}

@@ -35,14 +35,14 @@ An array of tool names the server recommends calling next. ALWAYS prefer
 this over guessing the next step. Examples:
 - After `cookiy_study_list` success: `["cookiy_study_get"]`
 - After `cookiy_recruit_create` preview: `["cookiy_recruit_create"]`
-- After `cookiy_report_generate`: `["cookiy_report_status"]`
+- After `cookiy_report_status` when `report_status` is `PREVIEW` or `READY`: `["cookiy_report_share_link_get"]`
 
 ### `status_message`
 
 A server-composed directive describing the current state and what to do
 next. Treat it as an executable instruction, not informational prose.
 Examples:
-- "Do NOT call cookiy_report_generate again — poll this endpoint periodically"
+- "Poll cookiy_report_status periodically until report_status=PREVIEW or READY"
 - "Review the target group, language, and pricing with the user"
 
 ### `presentation_hint`

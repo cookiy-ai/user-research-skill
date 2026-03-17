@@ -2,6 +2,59 @@
 
 Turn Claude Code, Codex, Cursor, OpenClaw, and other MCP clients into AI user-research operators that can create studies, run interviews, recruit participants, and deliver report links from plain-English prompts.
 
+This repository now has two layers:
+
+- a protected production surface for the current public `cookiy` skill and MCP install flow
+- an additive open library of prompts, references, templates, and examples for user research
+
+The install and indexing surface stays stable while the library grows around it.
+
+## What You Get In This Repo Today
+
+This repo already includes concrete user-research materials, not just install docs.
+
+| Material type | What is included now | What it is for |
+|---|---|---|
+| Installable runtime skill | `cookiy` skill + MCP install surface | Connect an agent to Cookiy and run the live study/interview/recruit/report workflow |
+| Public installer package | `packages/cookiy-mcp/` | Source for the `cookiy-mcp` npm package and Homebrew build artifacts |
+| Study-brief prompts | `prompts/study-briefs/discovery-study.md` | Turn a vague founder or product question into a stronger study brief |
+| Interview-guide prompts | `prompts/interview-guides/problem-exploration.md` | Draft better exploratory interview sections, probes, and evidence goals |
+| Synthesis prompts | `prompts/synthesis/evidence-first-synthesis.md` | Convert raw notes, transcripts, survey comments, or support inputs into findings |
+| Stakeholder readout prompts | `prompts/stakeholder-readouts/executive-summary.md` | Turn findings into concise founder/PM/stakeholder summaries |
+| Research method references | `references/methods/research-method-selector.md`, `references/methods/thematic-analysis.md` | Choose the right method and synthesize qualitative evidence better |
+| Reusable templates | `references/templates/research-plan-template.md`, `references/templates/insight-card-template.md` | Standardize research planning and finding documentation |
+| Book-ingestion guidance | `references/books/README.md` | Turn books into agent-usable notes without uploading copyrighted content |
+| Worked examples | `examples/study-briefs/saas-onboarding-friction.md`, `examples/readouts/mobile-checkout-friction.md` | Show what good study briefs and research readouts look like |
+| Repo governance docs | `docs/PLATFORM_COMPATIBILITY.md`, `docs/CONTENT_POLICY.md`, `docs/THIRD_PARTY_ATTRIBUTIONS.md`, `docs/ROADMAP.md` | Keep public platform compatibility stable and define how the library should grow |
+
+## Materials By Use Case
+
+If you are here for a specific kind of material, start here:
+
+- To plan a study:
+  - `prompts/study-briefs/discovery-study.md`
+  - `references/templates/research-plan-template.md`
+  - `examples/study-briefs/saas-onboarding-friction.md`
+- To maintain the public installer package:
+  - `packages/cookiy-mcp/package.json`
+  - `packages/cookiy-mcp/README.md`
+  - `packages/cookiy-mcp/scripts/generate-homebrew-formula.mjs`
+  - `docs/contract-source.json`
+- To write or improve interview guides:
+  - `prompts/interview-guides/problem-exploration.md`
+  - `references/methods/research-method-selector.md`
+- To analyze research data:
+  - `prompts/synthesis/evidence-first-synthesis.md`
+  - `references/methods/thematic-analysis.md`
+  - `references/templates/insight-card-template.md`
+- To write readouts for founders or PMs:
+  - `prompts/stakeholder-readouts/executive-summary.md`
+  - `examples/readouts/mobile-checkout-friction.md`
+- To build a learning library safely:
+  - `references/books/README.md`
+  - `docs/CONTENT_POLICY.md`
+  - `docs/THIRD_PARTY_ATTRIBUTIONS.md`
+
 ## 30-Second Demo
 
 ```bash
@@ -98,51 +151,137 @@ Validation note: rows below reflect direct `cookiy-mcp` CLI dry-runs against the
 | Windsurf | `npx cookiy-mcp --client windsurf -y` | CLI dry-run verified via forced client selection | 2026-03-17 |
 | Cline | `npx cookiy-mcp --client cline -y` | CLI dry-run verified via forced client selection | 2026-03-17 |
 
-## What's in this repo
+## Public Surface
 
-```
+These install and discovery surfaces remain the protected runtime contract for this repository:
+
+- GitHub skill repo: [cookiy-ai/cookiy-skill](https://github.com/cookiy-ai/cookiy-skill)
+- Skills CLI: `npx skills add cookiy-ai/cookiy-skill`
+- Claude plugin: `claude plugin add cookiy-ai/cookiy-skill`
+- ClawHub: `clawhub install cookiy`
+- npm MCP installer: [cookiy-mcp](https://www.npmjs.com/package/cookiy-mcp)
+- Official MCP Registry: `ai.cookiy/cookiy`
+- MCP endpoint: `https://s-api.cookiy.ai/mcp`
+
+Protected files and compatibility rules are documented in [docs/PLATFORM_COMPATIBILITY.md](docs/PLATFORM_COMPATIBILITY.md).
+
+## What Is In This Repo
+
+```text
 cookiy-skill/
-├── .claude-plugin/plugin.json     # Claude Code plugin manifest
-├── .cursor-plugin/plugin.json     # Cursor plugin manifest
-├── .mcp.json                      # MCP server auto-registration
-├── assets/
-│   └── logo.svg                   # Cookiy logo
-├── rules/
-│   └── cookiy-basics.mdc          # Cursor rules for MCP interaction
-├── skills/
-│   └── cookiy/                    # Single unified skill
-│       ├── SKILL.md               # Setup + intent router + universal rules
-│       └── references/
-│           ├── tool-contract.md   # Cross-workflow behavior contract
-│           ├── study-creation.md  # Create studies from research goals
-│           ├── ai-interview.md    # Simulate interviews with AI personas
-│           ├── guide-editing.md   # Edit discussion guides
-│           ├── recruitment.md     # Recruit real participants
-│           └── report-insights.md # Generate and share reports
+├── .claude-plugin/plugin.json
+├── .cursor-plugin/plugin.json
+├── .github/workflows/validate.yml
+├── .mcp.json
+├── docs/
+│   ├── CONTENT_POLICY.md
+│   ├── contract-source.json
+│   ├── PLATFORM_COMPATIBILITY.md
+│   ├── ROADMAP.md
+│   └── THIRD_PARTY_ATTRIBUTIONS.md
+├── examples/
+│   ├── README.md
+│   ├── readouts/mobile-checkout-friction.md
+│   └── study-briefs/saas-onboarding-friction.md
+├── prompts/
+│   ├── README.md
+│   ├── interview-guides/problem-exploration.md
+│   ├── stakeholder-readouts/executive-summary.md
+│   ├── study-briefs/discovery-study.md
+│   └── synthesis/evidence-first-synthesis.md
+├── packages/
+│   └── cookiy-mcp/
+│       ├── package.json
+│       ├── README.md
+│       ├── bin/
+│       ├── lib/
+│       ├── scripts/
+│       └── test/
+├── references/
+│   ├── README.md
+│   ├── books/README.md
+│   ├── methods/research-method-selector.md
+│   ├── methods/thematic-analysis.md
+│   └── templates/
+│       ├── insight-card-template.md
+│       └── research-plan-template.md
+├── rules/cookiy-basics.mdc
 ├── scripts/
-│   └── install-mcp.sh            # Universal install script
-├── README.md
-└── LICENSE
+│   ├── check-readme-commands.sh
+│   └── install-mcp.sh
+├── skills/
+│   └── cookiy/
+│       ├── SKILL.md
+│       └── references/
+│           ├── ai-interview.md
+│           ├── guide-editing.md
+│           ├── recruitment.md
+│           ├── report-insights.md
+│           ├── study-creation.md
+│           └── tool-contract.md
+├── SKILL.md
+└── README.md
 ```
 
-## Skill Overview
+## Current Installable Capability
 
-The **cookiy** skill handles both setup and workflow orchestration in a single package:
+The repository still exposes one production installable skill: `cookiy`.
 
-- **Setup** — Detects environment, installs the MCP server, handles OAuth, verifies connection
-- **Workflows** — Routes user intents to the correct tool chain with enforced sequencing
+That skill handles both setup and workflow orchestration:
 
-| Capability | Tools Used |
-|---|---|
-| **Study Creation** | `cookiy_media_upload` → `cookiy_study_create` → `cookiy_guide_status` → `cookiy_guide_get` |
-| **AI Interview** | `cookiy_simulated_interview_generate` → `cookiy_simulated_interview_status` → `cookiy_interview_list` → `cookiy_interview_playback_get` |
-| **Guide Editing** | `cookiy_guide_get` → `cookiy_guide_impact` → `cookiy_guide_patch` |
-| **Recruitment** | `cookiy_recruit_create` (preview) → `cookiy_recruit_create` (confirm) → `cookiy_recruit_status` |
-| **Report & Insights** | `cookiy_report_status` → `cookiy_report_generate` (when allowed) → `cookiy_report_share_link_get` (payment may be required here) |
+- Setup: install the MCP server for the current client and verify OAuth.
+- Study creation: `cookiy_media_upload` -> `cookiy_study_create` -> `cookiy_guide_status` -> `cookiy_guide_get`
+- AI interview: `cookiy_simulated_interview_generate` -> `cookiy_simulated_interview_status` -> `cookiy_interview_list` -> `cookiy_interview_playback_get`
+- Guide editing: `cookiy_guide_get` -> `cookiy_guide_impact` -> `cookiy_guide_patch`
+- Recruitment: `cookiy_recruit_create` preview -> `cookiy_recruit_create` confirm -> `cookiy_recruit_status`
+- Report and insights: `cookiy_report_status` -> `cookiy_report_share_link_get`
+
+Manual report generation is no longer part of the public MCP skill contract. The public docs in this repo are aligned to the current runtime behavior.
+
+The source for the public installer package also now lives in this repository under `packages/cookiy-mcp/`.
+
+## Open Library Content
+
+The new additive library is organized for actual agentic use, not decorative content:
+
+- `prompts/`
+  - reusable prompt blocks for study briefs, interview-guide drafting, synthesis, and stakeholder readouts
+- `references/`
+  - method cards, reusable templates, and book-note guidance for turning research material into agent-usable assets
+- `examples/`
+  - worked examples of a study brief and a synthesis/readout artifact
+- `docs/`
+  - compatibility rules, copyright boundaries, attribution notes, and the roadmap for future expansion
+- `packages/cookiy-mcp/`
+  - the public `cookiy-mcp` npm package source, build scripts, and tests
+
+### Current files in the open library
+
+- Prompts
+  - `prompts/study-briefs/discovery-study.md`
+  - `prompts/interview-guides/problem-exploration.md`
+  - `prompts/synthesis/evidence-first-synthesis.md`
+  - `prompts/stakeholder-readouts/executive-summary.md`
+- References
+  - `references/methods/research-method-selector.md`
+  - `references/methods/thematic-analysis.md`
+  - `references/templates/research-plan-template.md`
+  - `references/templates/insight-card-template.md`
+  - `references/books/README.md`
+- Examples
+  - `examples/study-briefs/saas-onboarding-friction.md`
+  - `examples/readouts/mobile-checkout-friction.md`
+- Public package
+  - `packages/cookiy-mcp/package.json`
+  - `packages/cookiy-mcp/README.md`
+  - `packages/cookiy-mcp/bin/cli.mjs`
+  - `packages/cookiy-mcp/lib/*`
+  - `packages/cookiy-mcp/scripts/*`
+  - `packages/cookiy-mcp/test/*`
 
 ## Platform Distribution
 
-This single repository serves multiple distribution platforms:
+This single repository still serves the same public distribution surfaces:
 
 | Platform | What it reads | How users install |
 |---|---|---|
@@ -151,9 +290,22 @@ This single repository serves multiple distribution platforms:
 | ClawHub (OpenClaw) | `skills/` | `clawhub install cookiy` |
 | Cursor Marketplace | `.cursor-plugin/`, `rules/`, `.mcp.json` | Cursor marketplace UI |
 
+## Future Direction
+
+The roadmap is to keep the installable runtime surface stable while incubating more user-research content and future skills safely.
+
+Planned next areas are tracked in [docs/ROADMAP.md](docs/ROADMAP.md), including:
+
+- research planning
+- evidence-first synthesis
+- stakeholder readouts
+- market and community landscape research
+
+Those future additions will only be promoted into installable skill surfaces after a compatibility review.
+
 ## MCP Server
 
-The skill orchestrates [Cookiy's MCP server](https://s-api.cookiy.ai/mcp), which exposes 20 atomic tools for user research operations. The MCP server handles OAuth 2.1 authentication, billing, and all backend operations.
+The skill orchestrates [Cookiy's MCP server](https://s-api.cookiy.ai/mcp), which exposes the live user-research tool surface. The MCP server handles OAuth 2.1 authentication, billing, and all backend operations.
 
 For MCP server installation without skills, see the [cookiy-mcp npm package](https://www.npmjs.com/package/cookiy-mcp).
 
