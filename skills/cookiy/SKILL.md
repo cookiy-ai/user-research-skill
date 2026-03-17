@@ -40,7 +40,7 @@ Pick the matching command:
 | You are running in | Install command |
 |---|---|
 | Codex | `npx cookiy-mcp --client codex -y` |
-| Claude Code | `npx cookiy-mcp --client claude-code -y` |
+| Claude Code | `npx cookiy-mcp --client claudeCode -y` |
 | Cursor | `npx cookiy-mcp --client cursor -y` |
 | Cline | `npx cookiy-mcp --client cline -y` |
 | GitHub Copilot / VS Code | `npx cookiy-mcp --client vscode -y` |

@@ -1,8 +1,32 @@
 # Cookiy Skill
 
-Official skill package for [Cookiy](https://cookiy.ai) — AI-powered user research through natural language.
+Turn Claude Code, Codex, Cursor, OpenClaw, and other MCP clients into AI user-research operators that can create studies, run interviews, recruit participants, and deliver report links from plain-English prompts.
 
-Cookiy gives your AI agent user-research capabilities: create studies, design interview guides, conduct AI-moderated interviews with real or simulated participants, and generate insight reports.
+## 30-Second Demo
+
+```bash
+# Install Cookiy for your AI client
+npx cookiy-mcp --client codex -y
+
+# Then ask your agent:
+"Create a 6-participant checkout-abandonment study in English."
+"Run 3 simulated interviews with price-sensitive mobile shoppers."
+"Share the report link as soon as a preview is ready."
+```
+
+What happens:
+
+- Cookiy creates the study and discussion guide inside your agent workflow.
+- It runs or monitors interviews and recruitment through the MCP tool chain.
+- It returns transcripts, status updates, and share links without leaving chat.
+
+## 3 Real Examples
+
+| Use case | Ask your agent | What Cookiy does |
+|---|---|---|
+| Ecommerce checkout drop-off | "Create a 6-participant study to understand why mobile shoppers abandon checkout after shipping costs appear." | Creates the study, generates the guide, and highlights sample size, interview mode, and duration for review. |
+| SaaS onboarding friction | "Run 5 simulated interviews with first-time admins setting up SSO for the first time." | Queues AI interviews, polls status, and returns transcripts for early signal before spending on real participants. |
+| Concept validation with real users | "Recruit bilingual parents in the US for 8 short interviews about a children's learning app, then share the report link when ready." | Previews targeting and pricing, launches recruitment after confirmation, tracks progress, and returns the report share link when available. |
 
 ## Quick Install
 
@@ -17,7 +41,7 @@ claude plugin add cookiy-ai/cookiy-skill
 Or install the MCP server standalone:
 
 ```bash
-npx cookiy-mcp --client claude-code -y
+npx cookiy-mcp --client claudeCode -y
 ```
 
 ### Codex
@@ -41,7 +65,7 @@ clawhub install cookiy
 Or install the MCP server directly:
 
 ```bash
-npx cookiy-mcp --client openclaw
+npx cookiy-mcp --client openclaw -y
 ```
 
 ### Cursor
@@ -55,10 +79,24 @@ npx cookiy-mcp --client cursor -y
 ### Any platform with Node.js
 
 ```bash
-npx cookiy-mcp
+npx cookiy-mcp -y
 ```
 
 The installer auto-detects installed AI clients and configures them.
+
+## Verification Matrix
+
+Validation note: rows below reflect direct `cookiy-mcp` CLI dry-runs against the live installer contract.
+
+| Client | Direct install command | Local validation status | Last verified |
+|---|---|---|---|
+| Claude Code | `npx cookiy-mcp --client claudeCode -y` | CLI dry-run verified, client detected locally | 2026-03-17 |
+| Codex | `npx cookiy-mcp --client codex -y` | CLI dry-run verified, client detected locally | 2026-03-17 |
+| Cursor | `npx cookiy-mcp --client cursor -y` | CLI dry-run verified, client detected locally | 2026-03-17 |
+| GitHub Copilot / VS Code | `npx cookiy-mcp --client vscode -y` | CLI dry-run verified, client detected locally | 2026-03-17 |
+| OpenClaw | `npx cookiy-mcp --client openclaw -y` | CLI dry-run verified, client detected locally | 2026-03-17 |
+| Windsurf | `npx cookiy-mcp --client windsurf -y` | CLI dry-run verified via forced client selection | 2026-03-17 |
+| Cline | `npx cookiy-mcp --client cline -y` | CLI dry-run verified via forced client selection | 2026-03-17 |
 
 ## What's in this repo
 
