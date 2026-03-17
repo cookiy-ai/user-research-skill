@@ -5,6 +5,12 @@ import { DEFAULT_SERVER_URL, SERVER_NAME, VERSION, ENV_ALIASES, resolveEnvironme
 import { validateServer } from '../lib/validate.mjs';
 import { detectClients } from '../lib/detect.mjs';
 import { c, selectFromList } from '../lib/util.mjs';
+import {
+  getLocalSkillLabel,
+  installLocalSkill,
+  removeLocalSkill,
+  supportsLocalSkillInstall,
+} from '../lib/skills/local-skill.mjs';
 import * as claudeCodeClient from '../lib/clients/claude-code.mjs';
 import * as cursorClient from '../lib/clients/cursor.mjs';
 import * as vscodeClient from '../lib/clients/vscode.mjs';
@@ -56,9 +62,9 @@ export async function main(argv = process.argv.slice(2)) {
 
   if (opts.help) {
     console.log(`
-  ${c.bold('Cookiy MCP Setup')} v${VERSION}
+  ${c.bold('Cookiy Setup')} v${VERSION}
 
-  One-command setup for Cookiy MCP server in your AI coding clients.
+  One-command bootstrap for Cookiy local skills and MCP connections in your AI coding clients.
 
   ${c.bold('Usage:')}
     npx cookiy-mcp [server-url] [options]
@@ -69,7 +75,7 @@ export async function main(argv = process.argv.slice(2)) {
                             (default: prod → ${DEFAULT_SERVER_URL})
 
   ${c.bold('Options:')}
-    --client <name>         Only configure a specific client
+    --client <name>         Only bootstrap a specific client
                             (claudeCode, cursor, vscode, codex, windsurf, cline, openclaw, manus)
     --name <server-name>    Override MCP server name (default: ${SERVER_NAME})
     --scope <scope>         Claude Code scope: user|project (default: user)
@@ -80,9 +86,9 @@ export async function main(argv = process.argv.slice(2)) {
     -v, --version           Show version
 
   ${c.bold('Examples:')}
-    npx cookiy-mcp                                 # production (default)
+    npx cookiy-mcp                                 # bootstrap Cookiy (production default)
     npx cookiy-mcp https://s-api.cookiy.ai         # explicit production URL also works
-    npx cookiy-mcp --client cursor                 # only configure Cursor
+    npx cookiy-mcp --client cursor                 # bootstrap only Cursor
     npx cookiy-mcp --client manus                  # headless OAuth bundle for Manus-like sandboxes
     npx cookiy-mcp --remove                        # remove from all clients
     npx cookiy-mcp --dry-run                       # preview changes
@@ -126,7 +132,7 @@ export async function main(argv = process.argv.slice(2)) {
   // --- Header ---
 
   console.log();
-  console.log(`  ${c.bold('Cookiy MCP Setup')} v${VERSION}`);
+  console.log(`  ${c.bold('Cookiy Setup')} v${VERSION}`);
   console.log();
 
   // --- Validate server (skip for remove and dry-run) ---
@@ -246,28 +252,49 @@ export async function main(argv = process.argv.slice(2)) {
 
     if (isDryRun) {
       if (isRemove) {
-        console.log(`  ${label} ... ${c.yellow('would remove')} ${serverName}`);
+        const dryParts = [`remove MCP config ${serverName}`];
+        if (supportsLocalSkillInstall(key)) {
+          dryParts.push(`remove ${getLocalSkillLabel(key)}`);
+        }
+        console.log(`  ${label} ... ${c.yellow('would')} ${dryParts.join(' + ')}`);
       } else {
-        console.log(`  ${label} ... ${c.yellow('would configure')} ${serverUrl}`);
+        const dryParts = [];
+        if (supportsLocalSkillInstall(key)) {
+          dryParts.push(`install ${getLocalSkillLabel(key)}`);
+        }
+        dryParts.push(`configure MCP ${serverUrl}`);
+        console.log(`  ${label} ... ${c.yellow('would')} ${dryParts.join(' + ')}`);
       }
       continue;
     }
 
     try {
       if (isRemove) {
+        const detailParts = [];
         await mod.remove(serverName, {
           scope: opts.scope,
           cliPath: client.cliPath,
           configPath: client.configPath,
         });
-        console.log(`  ${label} ... ${c.green('removed')}`);
+        detailParts.push(`mcp: ${serverName}`);
+        if (supportsLocalSkillInstall(key)) {
+          const removedSkillPath = await removeLocalSkill(key, serverName);
+          detailParts.push(`skill: ${removedSkillPath}`);
+        }
+        console.log(`  ${label} ... ${c.green('removed')} ${c.dim(`(${detailParts.join('; ')})`)}`);
       } else {
+        const detailParts = [];
+        if (supportsLocalSkillInstall(key)) {
+          const skillPath = await installLocalSkill(key, serverName);
+          detailParts.push(`skill: ${skillPath}`);
+        }
         const result = await mod.install(serverUrl, serverName, {
           scope: opts.scope,
           cliPath: client.cliPath,
           configPath: client.configPath,
         });
-        console.log(`  ${label} ... ${c.green('done')} ${c.dim(`(${result})`)}`);
+        detailParts.push(`mcp: ${result}`);
+        console.log(`  ${label} ... ${c.green('done')} ${c.dim(`(${detailParts.join('; ')})`)}`);
       }
     } catch (err) {
       console.log(`  ${label} ... ${c.red('failed')} ${c.dim(err.message)}`);
@@ -299,20 +326,24 @@ export async function main(argv = process.argv.slice(2)) {
       } else {
         console.log(c.green('  All set! Next steps to activate:'));
         console.log();
+        const hasLocalSkillClients = detectedEntries.some(([key]) => supportsLocalSkillInstall(key));
+        if (hasLocalSkillClients) {
+          console.log(`    ${c.bold('Local Cookiy skills')} → installed where supported before MCP configuration`);
+        }
         if (hasClaudeCode) {
-          console.log(`    ${c.bold('Claude Code')}  → type ${c.cyan('/mcp')} then select ${c.cyan(serverName)} to authenticate`);
+          console.log(`    ${c.bold('Claude Code')}  → local skill is installed; type ${c.cyan('/mcp')} then select ${c.cyan(serverName)} to authenticate`);
         }
         if (hasCursorOrVscode) {
           console.log(`    ${c.bold('Cursor/VS Code')} → open the editor, it will prompt you to log in automatically`);
         }
         if (hasCodex && codexViaCli) {
-          console.log(`    ${c.bold('Codex (CLI)')} → it will prompt you to log in via OAuth when used`);
+          console.log(`    ${c.bold('Codex (CLI)')} → local skill is installed; it will prompt you to log in via OAuth when used`);
         }
         if (hasCodex && !codexViaCli) {
-          console.log(`    ${c.bold('Codex (App)')} → open the app, it will prompt you to log in automatically`);
+          console.log(`    ${c.bold('Codex (App)')} → local skill is installed; open the app and it will prompt you to log in automatically`);
         }
         if (hasOpenClaw) {
-          console.log(`    ${c.bold('OpenClaw')}     → use the generated workspace bundle and mcp-call.sh directly`);
+          console.log(`    ${c.bold('OpenClaw')}     → local skill is installed; use the generated workspace bundle and mcp-call.sh directly`);
         }
         if (hasManus) {
           console.log(`    ${c.bold('Manus')}        → use the generated bundle; managed ~/.mcp/servers.json is intentionally untouched`);

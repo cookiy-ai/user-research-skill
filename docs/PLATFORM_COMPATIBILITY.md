@@ -34,10 +34,13 @@ These behaviors are considered part of the current public contract:
 - Root `SKILL.md` and `skills/cookiy/SKILL.md` remain synchronized.
 - MCP endpoint remains `https://s-api.cookiy.ai/mcp`.
 - npm package source lives in `packages/cookiy-mcp/`.
+- The public bootstrap CLI may evolve, but the public install entrypoints remain:
+  - `npx cookiy-mcp`
+  - `cookiy -y` via Homebrew
 - Existing install commands remain valid:
   - `npx skills add cookiy-ai/cookiy-skill`
   - `claude plugin add cookiy-ai/cookiy-skill`
-  - `clawhub install cookiy`
+  - `clawhub install cookiy` (skill only; not an MCP install)
   - `npx cookiy-mcp`
   - `npx cookiy-mcp --client <client>`
 
@@ -53,6 +56,9 @@ The current public install and discovery surface is used by:
 - Smithery
 - npm users of `cookiy-mcp`
 - Official MCP Registry and downstream sync targets
+
+ClawHub belongs to the skill-distribution surface. MCP distribution still happens through
+`cookiy-mcp`, Homebrew, and Official MCP Registry rather than through `clawhub install`.
 
 ## Safe Additions
 

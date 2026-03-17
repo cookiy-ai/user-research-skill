@@ -15,6 +15,7 @@ test('package metadata stays aligned with CLI config', async () => {
   assert.equal(packageJson.version, VERSION);
   assert.equal(packageJson.name, 'cookiy-mcp');
   assert.equal(packageJson.bin['cookiy-mcp'], 'bin/cli.mjs');
+  assert.ok(packageJson.files.includes('skill-assets/'));
   assert.equal(packageJson.scripts['build:bundle'], 'node ./scripts/build-bundle.mjs');
   assert.equal(packageJson.scripts['build:macos'], 'node ./scripts/build-macos-binary.mjs');
   assert.equal(packageJson.scripts['build:brew-formula'], 'node ./scripts/generate-homebrew-formula.mjs');

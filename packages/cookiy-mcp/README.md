@@ -1,8 +1,13 @@
-# Cookiy MCP — AI User Research Skills for Your Agent
+# Cookiy MCP — Cookiy Bootstrap CLI
 
-One-command setup for [Cookiy](https://cookiy.ai) MCP server in your AI coding clients.
+One-command bootstrap for [Cookiy](https://cookiy.ai) in your AI coding clients.
 
-Cookiy gives your AI agent user-research skills — design interview guides, conduct AI-moderated interviews with real or simulated participants, and generate analysis reports — all through the Model Context Protocol.
+Cookiy gives your AI agent user-research skills — design interview guides, conduct AI-moderated interviews with real or simulated participants, and generate analysis reports.
+
+This CLI now bootstraps two layers:
+
+1. a local Cookiy skill copy where the client supports local skill folders
+2. an MCP connection to Cookiy's live tools
 
 ## Quick Start
 
@@ -10,7 +15,8 @@ Cookiy gives your AI agent user-research skills — design interview guides, con
 npx cookiy-mcp
 ```
 
-That's it. The CLI auto-detects your installed AI clients and configures them.
+That's it. The CLI auto-detects your installed AI clients, installs a
+local Cookiy skill where supported, and then configures MCP.
 
 ## macOS Standalone Binary
 
@@ -38,7 +44,8 @@ The build outputs:
 Recommended Homebrew behavior:
 
 - Install the `cookiy` binary
-- Run `cookiy -y` from the formula `post_install` step if you want install-time auto-configuration
+- Run `cookiy -y` from the formula `post_install` step if you want install-time bootstrap
+- Let the CLI install a local Cookiy skill first where supported, then configure MCP
 - Leave OAuth completion to first use in clients such as Codex / Claude Code rather than blocking `brew install`
 - Keep the default user-facing command on production:
   - `cookiy`
@@ -51,23 +58,23 @@ npm run build:brew-formula
 
 This writes `dist/cookiy.rb`, ready to copy into a Homebrew tap repository.
 
-## Supported Clients
+## Bootstrap Behavior By Client
 
-| Client | Detection | Setup Method |
-|--------|-----------|-------------|
-| Claude Code | `claude` CLI | Automatic via CLI |
-| Cursor | `~/.cursor/` | JSON config |
-| VS Code (Copilot) | `code` CLI | JSON config |
-| Codex | `codex` CLI | Automatic via CLI |
-| Windsurf | `~/.windsurf/` | JSON config |
-| Cline | `~/.cline/` | JSON config |
-| OpenClaw | `~/.openclaw/` | Resumable headless OAuth + script bundle |
-| Manus | `~/.mcp/` or `--client manus` | Resumable headless OAuth + script bundle |
+| Client | Local skill install | MCP install | Notes |
+|--------|---------------------|-------------|-------|
+| Claude Code | `~/.claude/skills/cookiy` | Automatic via CLI | Skill-first |
+| Codex | `~/.agents/skills/cookiy` | Automatic via CLI or TOML fallback | Skill-first |
+| OpenClaw | `~/.openclaw/skills/cookiy` | Resumable headless OAuth + script bundle | Skill-first |
+| Cursor | Not installed by this CLI | JSON config | MCP-only fallback |
+| VS Code (Copilot) | Not installed by this CLI | JSON config | MCP-only fallback |
+| Windsurf | Not installed by this CLI | JSON config | MCP-only fallback |
+| Cline | Not installed by this CLI | JSON config | MCP-only fallback |
+| Manus | Not installed by this CLI | Resumable headless OAuth + script bundle | MCP-only fallback |
 
 ## Usage
 
 ```bash
-# Default (production)
+# Default (production bootstrap)
 npx cookiy-mcp
 
 # Only configure one client
@@ -88,6 +95,15 @@ npx cookiy-mcp --remove
 # Skip confirmation
 npx cookiy-mcp -y
 ```
+
+## What You Get After Bootstrap
+
+On supported clients, the CLI installs a local Cookiy skill copy first.
+That gives the agent workflow guidance and references before MCP tools
+are used.
+
+After that, MCP is configured so the client can call Cookiy's live
+tools.
 
 ## What You Get — 6 Tool Groups
 
@@ -188,8 +204,9 @@ After a successful exchange, the installer writes:
 
 1. Validates the Cookiy MCP server via OAuth discovery endpoint
 2. Detects which AI clients are installed on your machine
-3. Writes the appropriate configuration for each client
-4. Each client handles OAuth login on first use, or completes resumable headless OAuth during setup for OpenClaw / Manus
+3. Installs a packaged local Cookiy skill for Codex, Claude Code, and OpenClaw
+4. Writes the appropriate MCP configuration for each client
+5. Each client handles OAuth login on first use, or completes resumable headless OAuth during setup for OpenClaw / Manus
 
 ## Links
 

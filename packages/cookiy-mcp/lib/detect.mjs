@@ -29,6 +29,7 @@ export function detectClients() {
     detected: !!claudePath,
     cliPath: claudePath,
     method: 'cli',
+    supportsLocalSkillInstall: true,
     detail: claudePath ? `cli: ${claudePath}` : 'not detected',
   };
 
@@ -41,6 +42,7 @@ export function detectClients() {
     detected: cursorDetected,
     configPath: cursorConfigPath,
     method: 'json',
+    supportsLocalSkillInstall: false,
     jsonFormat: 'mcpServers',
     detail: cursorDetected ? cursorConfigPath : 'not detected',
   };
@@ -61,6 +63,7 @@ export function detectClients() {
     detected: !!codePath,
     configPath: vscodeConfigPath,
     method: 'json',
+    supportsLocalSkillInstall: false,
     jsonFormat: 'servers',
     detail: codePath ? vscodeConfigPath : 'not detected',
   };
@@ -80,6 +83,7 @@ export function detectClients() {
     cliPath: codexPath || null,
     configPath: codexConfigPath,
     method: codexMethod,
+    supportsLocalSkillInstall: true,
     detail: codexPath
       ? `cli: ${codexPath}`
       : codexAppDetected
@@ -100,6 +104,7 @@ export function detectClients() {
     detected: windsurfDetected,
     configPath: windsurfConfigPath,
     method: 'json',
+    supportsLocalSkillInstall: false,
     jsonFormat: 'mcpServers',
     detail: windsurfDetected ? windsurfConfigPath : 'not detected',
   };
@@ -113,6 +118,7 @@ export function detectClients() {
     detected: clineDetected,
     configPath: join(clineDir, 'mcp_settings.json'),
     method: 'json',
+    supportsLocalSkillInstall: false,
     jsonFormat: 'mcpServers',
     detail: clineDetected ? join(clineDir, 'mcp_settings.json') : 'not detected',
   };
@@ -127,6 +133,7 @@ export function detectClients() {
     detected: openclawDetected,
     configPath: openclawWorkspace,
     method: 'oauth',
+    supportsLocalSkillInstall: true,
     detail: openclawDetected ? openclawWorkspace : 'not detected',
   };
 
@@ -141,6 +148,7 @@ export function detectClients() {
     cliPath: manusCliPath || null,
     configPath: manusDir,
     method: 'oauth',
+    supportsLocalSkillInstall: false,
     detail: manusCliPath
       ? `cli: ${manusCliPath}`
       : manusDetected

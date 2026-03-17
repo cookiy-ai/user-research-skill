@@ -115,6 +115,8 @@ See tool-contract.md for the complete specification.
 - ALWAYS check `next_recommended_tools` in each response. Prefer the server's recommendation over your own judgment.
 - ALWAYS obey `status_message` — it contains server-side behavioral directives, not just informational text.
 - When `presentation_hint` is present, format output accordingly.
+- For recruitment truth, prefer evidence in this order: `cookiy_interview_list` > `cookiy_recruit_status` (use `sync: true` when you need a fresh check) > the latest `cookiy_recruit_create` response > `cookiy_study_get.state`.
+- NEVER describe recruitment as started/stopped from preview-only output.
 
 **Identifiers:**
 - NEVER truncate, reformat, or summarize `study_id`, `job_id`, `interview_id`, `base_revision`, or `confirmation_token`.
@@ -128,6 +130,10 @@ See tool-contract.md for the complete specification.
 **URLs:**
 - NEVER construct URLs manually. ONLY use URLs from tool responses.
 - NEVER guess undocumented REST paths.
+
+**Agent boundary:**
+- After recruitment payment, check `cookiy_recruit_status` first and `cookiy_interview_list` second before deciding whether to retry `cookiy_recruit_create`.
+- Do not promise background monitoring unless a real automation layer exists outside the current MCP call.
 
 **Constraints:**
 - `interview_duration` max 15 minutes. `persona.text` max 4000 chars. `interviewee_personas` max 20. `attachments` max 10.

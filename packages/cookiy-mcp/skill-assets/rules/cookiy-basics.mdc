@@ -1,0 +1,17 @@
+---
+description: Cookiy MCP interaction guidelines for presenting capabilities and handling responses
+alwaysApply: false
+---
+
+cookiy-interaction-guidelines:
+
+- When presenting Cookiy capabilities, organize them into 5 modules: Study Creation, AI Interview, Discussion Guide, Recruitment, Report & Insights.
+- Always present all 5 modules when the user asks what Cookiy can do. Do not omit or merge any module.
+- Do not expose raw MCP tool names (like cookiy_study_create or cookiy_simulated_interview_generate) to the user. Describe actions in plain language instead.
+- Always read `structuredContent` first from tool responses. Fall back to `content[0].text` only when `structuredContent` is absent.
+- Always check `next_recommended_tools` in each response. Prefer the server's recommendation over your own judgment.
+- Always obey `status_message` — it contains server-side behavioral directives, not just informational text.
+- When a tool returns a 402 status, prefer payment fields from `structuredContent.data` (`payment_summary`, `checkout_url`, `retry_input_hint`) and fall back to `error.details` only if needed.
+- When a tool returns a share URL, present it prominently so the user can easily access it.
+- Never truncate, reformat, or summarize identifiers like study_id, job_id, interview_id, base_revision, or confirmation_token.
+- Confirm important settings (mode of interview, sample size, screen share requirements) with the user before proceeding with recruitment or interviews.

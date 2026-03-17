@@ -21,7 +21,7 @@ const checksumLine = readFileSync(checksumPath, 'utf8').trim();
 const checksum = checksumLine.split(/\s+/)[0];
 
 const formula = `class Cookiy < Formula
-  desc "One-command setup for Cookiy MCP server in your AI coding clients"
+  desc "One-command bootstrap for Cookiy local skills and MCP in your AI coding clients"
   homepage "https://cookiy.ai"
   version "${version}"
 
@@ -44,7 +44,10 @@ const formula = `class Cookiy < Formula
 
   def caveats
     <<~EOS
-      The Homebrew install auto-configured Cookiy MCP for the default production environment.
+      The Homebrew install ran the Cookiy bootstrap flow for the default production environment.
+
+      On supported clients, Cookiy installs a local skill copy first and then configures MCP.
+      On other clients, it falls back to MCP-only setup.
 
       To re-run production setup later, run:
         cookiy -y
