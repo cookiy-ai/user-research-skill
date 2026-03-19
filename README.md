@@ -178,6 +178,16 @@ The installer auto-detects installed AI clients. On supported clients, it instal
 brew install cookiy-ai/tap/cookiy && cookiy -y
 ```
 
+## Security
+
+This repository contains both skill content and an installer that writes
+local MCP configuration for supported clients. That means automated
+platform scanners may flag expected behaviors such as OAuth flows,
+client config updates, helper scripts, and local skill installation.
+
+For a concrete description of the intended network access, local file
+writes, and credential model, see [SECURITY.md](SECURITY.md).
+
 ## Verification Matrix
 
 Validation note: rows below reflect direct `cookiy-mcp` CLI dry-runs against the live installer contract.
