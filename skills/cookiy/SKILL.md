@@ -4,7 +4,7 @@ description: >
   AI-powered user research through natural language. Installs the Cookiy
   MCP server and orchestrates tool workflows for study creation,
   AI interviews, discussion guide editing, participant recruitment,
-  and report generation.
+  report generation, and optional quantitative questionnaires.
 ---
 
 # Cookiy
@@ -133,13 +133,14 @@ If authentication fails:
 
 ### Orient the user only when asked
 
-Present Cookiy's five capability modules:
+Present Cookiy's six capability modules (qualitative and quantitative are **parallel** — same agent, complementary methods; quantitative is not a prerequisite or downstream step for qualitative studies):
 
 1. **Study Creation** — Describe a research goal and get an AI-generated discussion guide.
 2. **AI Interview** — Simulate interviews with AI personas for quick insights.
 3. **Discussion Guide** — Review and edit the interview script before going live.
 4. **Recruitment** — Recruit real participants for AI-moderated interviews.
 5. **Report & Insights** — Generate analysis reports and shareable links.
+6. **Quantitative survey** — When enabled on the server, author questionnaires, list surveys, open respondent links and structure, and pull response data for analysis.
 
 Present these in plain language. Do not expose raw tool names to the user.
 
@@ -160,10 +161,11 @@ Follow the tool contract and workflow state machines in the reference files.
 | View or edit the discussion guide | Guide Editing | guide-editing.md |
 | Recruit real participants | Recruitment | recruitment.md |
 | Generate, check, or share a report | Report & Insights | report-insights.md |
+| Author or analyze quantitative questionnaires (when server integration is configured) | Quantitative survey | — (see `cookiy_help` topic `quantitative`) |
 | Check account balance | Direct: `cookiy_balance_get` | — |
 | List existing studies | Direct: `cookiy_study_list` | — |
 | Learn what Cookiy can do | Direct: `cookiy_introduce` | — |
-| Get workflow help on a topic | Direct: `cookiy_help` (`overview`, `study`, `ai_interview`, `guide`, `recruitment`, `report`, `billing`; common aliases accepted) | — |
+| Get workflow help on a topic | Direct: `cookiy_help` (`overview`, `study`, `ai_interview`, `guide`, `recruitment`, `report`, `billing`, `quantitative`; common aliases accepted) | — |
 
 When the user's intent spans multiple workflows (e.g., "create a study
 and run interviews"), execute them sequentially in the order listed above.

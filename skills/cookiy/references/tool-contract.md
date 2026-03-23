@@ -197,6 +197,23 @@ For async operations, poll at reasonable intervals:
 - `cookiy_report_status`: every 10-30 seconds (reports take longer)
 - `cookiy_recruit_status`: every 30-60 seconds (recruitment is slow)
 
+## Quantitative survey tools (optional)
+
+When the API operator has configured quantitative survey integration,
+these tools are available **in parallel** with qualitative workflows
+(study, guide, interview, recruit, report). They do not replace
+discussion guides or qualitative reports.
+
+| Tool | Role |
+|---|---|
+| `cookiy_quant_survey_list` | Discover survey IDs and titles |
+| `cookiy_quant_survey_create` | Create a structured questionnaire |
+| `cookiy_quant_survey_detail` | Public respondent URLs and optional structure; `include_structure=false` for link-only; `structure_presentation` = `markdown`, `json`, or `both` |
+| `cookiy_quant_survey_results` | Raw JSON/CSV response payloads (`results_preview`, optional `results_json` when format is JSON) |
+
+If the server returns 503 with a setup hint, quantitative tools are not
+configured for that deployment.
+
 ## Agent boundary rules
 
 - Do not describe recruitment as started, paused, or failed from

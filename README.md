@@ -315,6 +315,11 @@ public MCP surface:
   - `cookiy_study_list`
 - Billing and balance:
   - `cookiy_balance_get`
+- Quantitative survey (optional; requires server-side integration):
+  - `cookiy_quant_survey_create`
+  - `cookiy_quant_survey_detail`
+  - `cookiy_quant_survey_list`
+  - `cookiy_quant_survey_results`
 
 Manual report generation is no longer part of the public MCP skill contract. The public docs in this repo are aligned to the current runtime behavior.
 
@@ -326,6 +331,7 @@ Manual report generation is no longer part of the public MCP skill contract. The
 - `recruitment`
 - `report`
 - `billing`
+- `quantitative`
 
 Common aliases like `study creation`, `discussion guide`, and `report and insights`
 are also accepted by the current runtime.
