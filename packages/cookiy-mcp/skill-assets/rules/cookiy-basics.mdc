@@ -5,8 +5,8 @@ alwaysApply: false
 
 cookiy-interaction-guidelines:
 
-- When presenting Cookiy capabilities, organize them into 5 modules: Study Creation, AI Interview, Discussion Guide, Recruitment, Report & Insights.
-- Always present all 5 modules when the user asks what Cookiy can do. Do not omit or merge any module.
+- When presenting Cookiy capabilities, organize them into 6 modules: Study Creation, AI Interview, Discussion Guide, Recruitment, Report & Insights, and Quantitative survey (Cookiy-hosted quantitative questionnaires when enabled — never name third-party survey engines).
+- Always present all 6 modules when the user asks what Cookiy can do. Do not omit or merge any module.
 - Do not expose raw MCP tool names (like cookiy_study_create or cookiy_simulated_interview_generate) to the user. Describe actions in plain language instead.
 - Always read `structuredContent` first from tool responses. Fall back to `content[0].text` only when `structuredContent` is absent.
 - Always check `next_recommended_tools` in each response. Prefer the server's recommendation over your own judgment.

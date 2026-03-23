@@ -140,7 +140,7 @@ Present Cookiy's six capability modules (qualitative and quantitative are **para
 3. **Discussion Guide** — Review and edit the interview script before going live.
 4. **Recruitment** — Recruit real participants for AI-moderated interviews.
 5. **Report & Insights** — Generate analysis reports and shareable links.
-6. **Quantitative survey** — When enabled on the server, author questionnaires, list surveys, open respondent links and structure, and pull response data for analysis.
+6. **Quantitative survey** — When Cookiy has this capability enabled for your workspace, create structured questionnaires, list them, share respondent links and question layout (via Cookiy tools), and pull response data for analysis. Parallel to qualitative studies; Cookiy does not expose third-party admin consoles or non-Cookiy product names.
 
 Present these in plain language. Do not expose raw tool names to the user.
 
