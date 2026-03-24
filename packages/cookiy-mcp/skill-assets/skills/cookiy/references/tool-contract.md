@@ -94,6 +94,39 @@ dot-notation key in `cookiy_guide_patch`.
 | `idempotency_key` | Client-generated | Reuse on retry. Generate a new one for each new operation. |
 | `confirmation_token` | `cookiy_recruit_create` (preview) | Opaque, single-use. Bound to user + study + guide revision. |
 
+## Unified activity summary (`cookiy_activity_get`)
+
+Use **`cookiy_activity_get`** as the default entry point when the user asks
+for study progress in natural language — for example recruitment status,
+report readiness, or “what should happen next” — without manually comparing
+every atomic status tool first.
+
+- Pass **`study_id`** (required for study-scoped questions). **`job_id`** is
+  for simulated-interview–specific drill-down when needed.
+- The response includes **`narration_brief`** (facts and angles for you to
+  paraphrase in the user’s chat language) and orchestration hints such as
+  **`agent.next_recommended_tools`**. Compose a concise user-facing answer;
+  do not dump raw JSON or snake_case stage names unless the user asked for
+  technical detail.
+- Set **`include_debug=true`** only when you need the full payload in
+  `contentText` for debugging.
+- This tool does **not** replace atomic tools for deep debugging; drill into
+  `cookiy_guide_status`, `cookiy_recruit_status`, `cookiy_report_status`, etc.
+  only when subsystem detail is required.
+
+## Cash credit checkout (`cookiy_billing_cash_checkout`)
+
+Use **`cookiy_billing_cash_checkout`** when the user wants to add **cash
+credit** before paid workflows. It creates a Stripe Checkout session for an
+arbitrary amount in **USD cents** (integer, at or above the Stripe minimum,
+typically 100 cents = $1.00). There are no preset tiers; the server may cap
+very large amounts via configuration.
+
+- After the user completes payment in Stripe, confirm updated balance with
+  **`cookiy_balance_get`** (or continue with the paid workflow).
+- This tool starts checkout only; it does not credit balance until payment
+  succeeds.
+
 ## Payment handling (HTTP 402)
 
 When any tool returns status_code 402:
@@ -113,7 +146,9 @@ When any tool returns status_code 402:
    `cookiy_recruit_status` -> `cookiy_interview_list` ->
    retry `cookiy_recruit_create` only if those checks still show that
    launch/configuration has not taken effect.
-6. NEVER recalculate or restate prices from raw quote fields.
+6. To add cash credit before retrying a paid action, use
+   `cookiy_billing_cash_checkout`, then confirm with `cookiy_balance_get`.
+7. NEVER recalculate or restate prices from raw quote fields.
 
 ### Experience bonus rules
 

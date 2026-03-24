@@ -162,6 +162,8 @@ Follow the tool contract and workflow state machines in the reference files.
 | Recruit real participants | Recruitment | recruitment.md |
 | Generate, check, or share a report | Report & Insights | report-insights.md |
 | Author or analyze quantitative questionnaires (when server integration is configured) | Quantitative survey | — (see `cookiy_help` topic `quantitative`) |
+| Natural-language study progress (“how is recruitment?”, “is the report ready?”) | Prefer: `cookiy_activity_get` | tool-contract.md |
+| Add cash credit (USD cents) before paid actions | Direct: `cookiy_billing_cash_checkout` | tool-contract.md |
 | Check account balance | Direct: `cookiy_balance_get` | — |
 | List existing studies | Direct: `cookiy_study_list` | — |
 | Learn what Cookiy can do | Direct: `cookiy_introduce` | — |
@@ -179,6 +181,7 @@ See tool-contract.md for the complete specification.
 - ALWAYS check `next_recommended_tools` in each response. Prefer the server's recommendation over your own judgment.
 - ALWAYS obey `status_message` — it contains server-side behavioral directives, not just informational text.
 - When `presentation_hint` is present, format output accordingly.
+- For user-facing progress questions, prefer **`cookiy_activity_get`** first; use atomic tools only for drill-down.
 - For recruitment truth, prefer evidence in this order: `cookiy_interview_list` > `cookiy_recruit_status` > the latest `cookiy_recruit_create` response > `cookiy_study_get.state`. The current public contract does not expose a separate `sync` flag on `cookiy_recruit_status`; the server already performs the billing-aware reconciliation it needs before returning status.
 - NEVER describe recruitment as started/stopped from preview-only output.
 
@@ -187,6 +190,7 @@ See tool-contract.md for the complete specification.
 
 **Payment:**
 - On HTTP 402: prefer `structuredContent.data.payment_summary` and `checkout_url`; if those fields are absent, fall back to `error.details`.
+- To add cash credit outside a specific 402 flow, use `cookiy_billing_cash_checkout`, then confirm with `cookiy_balance_get`.
 - `cookiy_balance_get` may show `experience_bonus`; eligible MCP actions may consume that bonus before purchased credit.
 - Experience bonus may apply to study creation, simulated interviews, and report access via `cookiy_report_share_link_get`.
 - Experience bonus does NOT cover: recruitment (recruitment requires paid credit or cash credit).

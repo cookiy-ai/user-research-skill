@@ -291,6 +291,7 @@ public MCP surface:
 - Discovery and workflow guidance:
   - `cookiy_introduce`
   - `cookiy_help`
+  - `cookiy_activity_get` (unified study progress / status)
 - Study creation:
   - `cookiy_media_upload`
   - `cookiy_study_create`
@@ -315,6 +316,7 @@ public MCP surface:
   - `cookiy_study_list`
 - Billing and balance:
   - `cookiy_balance_get`
+  - `cookiy_billing_cash_checkout` (add cash credit via Stripe Checkout)
 - Quantitative survey (optional; requires server-side integration):
   - `cookiy_quant_survey_create`
   - `cookiy_quant_survey_detail`

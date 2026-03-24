@@ -3,9 +3,9 @@
   "distribution_repo": "cookiy-ai/cookiy-skill",
   "runtime_contract_source": {
     "repo": "cookiy-code",
-    "path": "docs/public-mcp-contract.json",
-    "source_commit": "713657f86ff50b96e40b412ee216db5b1e715c66",
-    "synced_at": "2026-03-17",
+    "path": "packages/back-end/vovey-server/src/mcp/v1-public-api.tool.ts",
+    "source_commit": "d4b1675860d44e097e95d8c9d01e6de625e6fc27",
+    "synced_at": "2026-03-24",
     "manual_sync": true
   },
   "notes": [

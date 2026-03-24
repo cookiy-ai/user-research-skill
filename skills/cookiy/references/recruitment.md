@@ -37,6 +37,8 @@ cookiy_recruit_create
   channel_name: <optional supplier/channel hint>
   auto_launch: <optional auto-launch preference>
   force_reconfigure: <optional explicit reconfigure intent>
+  recruit_mode: <optional; when the server supports it, e.g. quantitative survey recruitment>
+  survey_public_url: <optional; public respondent URL for quant survey flows when required>
 ```
 
 This does NOT launch recruitment. It returns a preview containing:

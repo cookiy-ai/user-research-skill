@@ -105,7 +105,7 @@ are used.
 After that, MCP is configured so the client can call Cookiy's live
 tools.
 
-## What You Get — 6 Tool Groups
+## What You Get — tool groups
 
 Once connected, your AI agent gains these skill modules:
 
@@ -113,6 +113,7 @@ Once connected, your AI agent gains these skill modules:
 Use these tools when the client needs orientation before entering a workflow.
 - `cookiy_introduce` — Explain what Cookiy can do in plain language
 - `cookiy_help` — Return atomic MCP tool guidance and recommended chains
+- `cookiy_activity_get` — Unified study progress and next-step summary (prefer for “how is recruitment?” / report readiness in natural language)
 
 ### Study Creation
 Describe your research goal in plain language, and Cookiy creates a complete study with an AI-generated discussion guide.
@@ -136,7 +137,7 @@ Auto-generated interview scripts you can edit. Preview the impact of changes bef
 - `cookiy_guide_status` — Check guide generation status
 
 ### Recruitment
-Recruit real respondents through third-party panel providers to participate in AI-moderated interviews.
+Recruit real respondents through third-party panel providers to participate in AI-moderated interviews (including optional quantitative-survey modes when the server exposes them).
 - `cookiy_recruit_create` — Launch or reconfigure recruitment
 - `cookiy_recruit_status` — Monitor recruitment progress
 
@@ -147,6 +148,14 @@ Auto-generate analysis reports from completed interviews. Manage studies and tra
 - `cookiy_study_get` — Get study summary
 - `cookiy_study_list` — List all studies
 - `cookiy_balance_get` — Check account balance
+- `cookiy_billing_cash_checkout` — Add cash credit (USD cents) via Stripe Checkout before other paid actions
+
+### Quantitative survey (optional)
+When the deployment has quantitative survey integration configured:
+- `cookiy_quant_survey_list` — List surveys
+- `cookiy_quant_survey_create` — Create a questionnaire
+- `cookiy_quant_survey_detail` — Public respondent URLs and optional structure
+- `cookiy_quant_survey_results` — Fetch response payloads
 
 ## Example Workflow
 
