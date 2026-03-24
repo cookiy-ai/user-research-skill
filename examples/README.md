@@ -8,6 +8,12 @@ These are original, synthetic examples showing how the prompt and reference laye
   - A raw product concern turned into a stronger study brief.
 - `readouts/mobile-checkout-friction.md`
   - A concise evidence-first synthesis and stakeholder readout.
+- `interview-guides/jtbd-b2b-saas.md`
+  - A compact JTBD-style guide example in synthetic form.
+- `synthesis/coded-transcript-excerpt.md`
+  - A short illustration of codes moving toward themes.
+- `recruitment/cold-outreach-email.md`
+  - Synthetic outreach templates for recruitment.
 
 ## Usage
 

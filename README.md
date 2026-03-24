@@ -22,6 +22,7 @@ This repo already includes concrete user-research materials, not just install do
 | Material type | What is included now | What it is for |
 |---|---|---|
 | Installable runtime skill | `cookiy` skill + MCP install surface | Connect an agent to Cookiy and run the live study/interview/recruit/report workflow |
+| Additive PM / UXR skill (no MCP) | `skills/pm-research/` + expanded `prompts/`, `references/`, `examples/`, optional `scripts/` | Run common PM and researcher workflows using local prompts and templates without calling Cookiy APIs |
 | Public installer package | `packages/cookiy-mcp/` | Source for the `cookiy-mcp` bootstrap CLI and Homebrew build artifacts |
 | Study-brief prompts | `prompts/study-briefs/discovery-study.md` | Turn a vague founder or product question into a stronger study brief |
 | Interview-guide prompts | `prompts/interview-guides/problem-exploration.md` | Draft better exploratory interview sections, probes, and evidence goals |
@@ -60,6 +61,9 @@ If you are here for a specific kind of material, start here:
   - `references/books/README.md`
   - `docs/CONTENT_POLICY.md`
   - `docs/THIRD_PARTY_ATTRIBUTIONS.md`
+- PM / UX research craft without live Cookiy tools:
+  - `skills/pm-research/SKILL.md`
+  - `skills/pm-research/references/method-index.md`
 
 ## 30-Second Demo
 
@@ -239,14 +243,18 @@ cookiy-skill/
 │   └── THIRD_PARTY_ATTRIBUTIONS.md
 ├── examples/
 │   ├── README.md
+│   ├── interview-guides/jtbd-b2b-saas.md
 │   ├── readouts/mobile-checkout-friction.md
-│   └── study-briefs/saas-onboarding-friction.md
+│   ├── recruitment/cold-outreach-email.md
+│   ├── study-briefs/saas-onboarding-friction.md
+│   └── synthesis/coded-transcript-excerpt.md
 ├── prompts/
 │   ├── README.md
-│   ├── interview-guides/problem-exploration.md
-│   ├── stakeholder-readouts/executive-summary.md
-│   ├── study-briefs/discovery-study.md
-│   └── synthesis/evidence-first-synthesis.md
+│   ├── interview-guides/
+│   ├── recruitment/
+│   ├── stakeholder-readouts/
+│   ├── study-briefs/
+│   └── synthesis/
 ├── packages/
 │   └── cookiy-mcp/
 │       ├── package.json
@@ -258,34 +266,38 @@ cookiy-skill/
 ├── references/
 │   ├── README.md
 │   ├── books/README.md
-│   ├── methods/research-method-selector.md
-│   ├── methods/thematic-analysis.md
+│   ├── methods/
 │   └── templates/
-│       ├── insight-card-template.md
-│       └── research-plan-template.md
 ├── rules/cookiy-basics.mdc
 ├── scripts/
 │   ├── check-readme-commands.sh
-│   └── install-mcp.sh
+│   ├── install-mcp.sh
+│   ├── survey_sampler.py
+│   └── transcript_to_codes.py
 ├── skills/
-│   └── cookiy/
+│   ├── cookiy/
+│   │   ├── SKILL.md
+│   │   └── references/
+│   │       ├── ai-interview.md
+│   │       ├── guide-editing.md
+│   │       ├── recruitment.md
+│   │       ├── report-insights.md
+│   │       ├── study-creation.md
+│   │       └── tool-contract.md
+│   └── pm-research/
 │       ├── SKILL.md
-│       └── references/
-│           ├── ai-interview.md
-│           ├── guide-editing.md
-│           ├── recruitment.md
-│           ├── report-insights.md
-│           ├── study-creation.md
-│           └── tool-contract.md
+│       └── references/method-index.md
 ├── SKILL.md
 └── README.md
 ```
 
 ## Current Installable Capability
 
-The repository still exposes one production installable skill: `cookiy`.
+The repository exposes one production MCP-backed installable skill: `cookiy`.
 
-That skill handles both setup and workflow orchestration across the full
+It also includes an additive, MCP-free skill for local research craft: `pm-research` under `skills/pm-research/`. That skill routes agents through prompts, references, and examples in this repo and does not authenticate to Cookiy.
+
+The `cookiy` skill handles both setup and workflow orchestration across the full
 public MCP surface:
 
 - Discovery and workflow guidance:
@@ -363,18 +375,40 @@ The new additive library is organized for actual agentic use, not decorative con
 
 - Prompts
   - `prompts/study-briefs/discovery-study.md`
+  - `prompts/study-briefs/survey-design.md`
   - `prompts/interview-guides/problem-exploration.md`
+  - `prompts/interview-guides/jtbd-switch-interview.md`
+  - `prompts/interview-guides/probing-techniques.md`
+  - `prompts/interview-guides/usability-test-script.md`
   - `prompts/synthesis/evidence-first-synthesis.md`
+  - `prompts/synthesis/qualitative-coding.md`
+  - `prompts/synthesis/affinity-mapping.md`
+  - `prompts/synthesis/opportunity-solution-tree.md`
   - `prompts/stakeholder-readouts/executive-summary.md`
+  - `prompts/stakeholder-readouts/data-story-narrative.md`
+  - `prompts/recruitment/outreach-script.md`
+  - `prompts/recruitment/screening-call.md`
 - References
   - `references/methods/research-method-selector.md`
   - `references/methods/thematic-analysis.md`
+  - `references/methods/jtbd-framework.md`
+  - `references/methods/survey-statistics-basics.md`
+  - `references/methods/continuous-discovery-loop.md`
   - `references/templates/research-plan-template.md`
   - `references/templates/insight-card-template.md`
+  - `references/templates/discussion-guide-template.md`
+  - `references/templates/recruit-screener-template.md`
+  - `references/templates/findings-deck-template.md`
   - `references/books/README.md`
 - Examples
   - `examples/study-briefs/saas-onboarding-friction.md`
   - `examples/readouts/mobile-checkout-friction.md`
+  - `examples/interview-guides/jtbd-b2b-saas.md`
+  - `examples/synthesis/coded-transcript-excerpt.md`
+  - `examples/recruitment/cold-outreach-email.md`
+- Optional scripts
+  - `scripts/transcript_to_codes.py`
+  - `scripts/survey_sampler.py`
 - Public package
   - `packages/cookiy-mcp/package.json`
   - `packages/cookiy-mcp/README.md`

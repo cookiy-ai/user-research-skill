@@ -19,3 +19,7 @@ This repo includes original content plus ideas and structure influenced by publi
 ## Current State
 
 At this stage, the new files added to this repository are written as original Cookiy-specific material. The external repositories above informed the shape of the library and the methodological direction.
+
+## Methodology Sources (Paraphrased)
+
+Several additive prompts and method cards summarize widely published product-discovery and UX-research practices (for example, jobs-to-be-done interviewing, continuous discovery operating loops, affinity clustering, and common survey metrics). These materials are expressed in original words for agent use and do not reproduce third-party text, worksheets, or figures. When a file is primarily a generic industry pattern, the file itself notes that limitation.

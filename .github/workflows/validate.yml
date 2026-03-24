@@ -41,6 +41,10 @@ jobs:
           bash -n scripts/install-mcp.sh
           bash -n scripts/check-readme-commands.sh
 
+      - name: Check Python script syntax
+        run: |
+          python3 -m py_compile scripts/transcript_to_codes.py scripts/survey_sampler.py
+
       - name: Validate protected public surface
         run: |
           set -euo pipefail
