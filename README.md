@@ -15,24 +15,32 @@ The public installer package now acts as a bootstrap CLI:
 2. then it configures MCP
 3. on unsupported clients, it falls back to MCP-only setup
 
+## How installation relates to the two skills
+
+- **`cookiy` (MCP-backed)**: `npx cookiy-mcp`, Homebrew `cookiy`, and marketplace/plugin installs primarily configure **Cookiy MCP** and sync a local copy of **`skills/cookiy`**. Use this path for **live** studies, AI interviews, recruitment, and report links on Cookiy.
+- **`pm-research` (local open library)**: **`skills/pm-research`**, **`prompts/`**, **`references/`**, **`examples/`**, and optional **`scripts/`** are **plain Markdown and Python** in this repo. They **do not** call Cookiy APIs or require MCP. Use them by **cloning or opening this repository** in your agent workspace and following **`skills/pm-research/SKILL.md`**. Some installers only copy **`skills/cookiy`**; if **`pm-research`** is missing in your client, clone the repo or copy that folder into your workspace.
+
 ## What You Get In This Repo Today
 
-This repo already includes concrete user-research materials, not just install docs.
+This repo already includes concrete user-research materials, not just install docs. The **canonical file list** for the open library is in **`### Current files in the open library`** below; the table here is a high-level map.
 
 | Material type | What is included now | What it is for |
 |---|---|---|
 | Installable runtime skill | `cookiy` skill + MCP install surface | Connect an agent to Cookiy and run the live study/interview/recruit/report workflow |
-| Additive PM / UXR skill (no MCP) | `skills/pm-research/` + expanded `prompts/`, `references/`, `examples/`, optional `scripts/` | Run common PM and researcher workflows using local prompts and templates without calling Cookiy APIs |
+| Additive PM / UXR skill (no MCP) | `skills/pm-research/` + `prompts/`, `references/`, `examples/`, optional `scripts/` | End-to-end PM/UXR craft (plan, guide, synthesize, recruit, read out) using local files only |
 | Public installer package | `packages/cookiy-mcp/` | Source for the `cookiy-mcp` bootstrap CLI and Homebrew build artifacts |
-| Study-brief prompts | `prompts/study-briefs/discovery-study.md` | Turn a vague founder or product question into a stronger study brief |
-| Interview-guide prompts | `prompts/interview-guides/problem-exploration.md` | Draft better exploratory interview sections, probes, and evidence goals |
-| Synthesis prompts | `prompts/synthesis/evidence-first-synthesis.md` | Convert raw notes, transcripts, survey comments, or support inputs into findings |
-| Stakeholder readout prompts | `prompts/stakeholder-readouts/executive-summary.md` | Turn findings into concise founder/PM/stakeholder summaries |
-| Research method references | `references/methods/research-method-selector.md`, `references/methods/thematic-analysis.md` | Choose the right method and synthesize qualitative evidence better |
-| Reusable templates | `references/templates/research-plan-template.md`, `references/templates/insight-card-template.md` | Standardize research planning and finding documentation |
+| Study-brief and survey prompts | `prompts/study-briefs/discovery-study.md`, `prompts/study-briefs/survey-design.md` | Stronger study briefs and survey instruments with bias checks |
+| Interview-guide prompts | `problem-exploration`, `jtbd-switch-interview`, `probing-techniques`, `usability-test-script` under `prompts/interview-guides/` | Exploratory, JTBD/switch, probe menus, and moderated usability sessions |
+| Synthesis prompts | `evidence-first-synthesis`, `qualitative-coding`, `affinity-mapping`, `opportunity-solution-tree` under `prompts/synthesis/` | Evidence-first synthesis, coding, affinity clustering, opportunity-solution trees |
+| Stakeholder readout prompts | `executive-summary`, `data-story-narrative` under `prompts/stakeholder-readouts/` | Exec summaries and data-story narratives for mixed evidence |
+| Recruitment prompts | `outreach-script`, `screening-call` under `prompts/recruitment/` | Outreach copy and screening calls |
+| Research method references | `references/methods/` (selector, thematic analysis, JTBD card, survey statistics basics, continuous discovery loop) | Short method cards and heuristics |
+| Reusable templates | `references/templates/` (research plan, insight card, discussion guide, recruit screener, findings deck) | Reusable planning, fieldwork, and readout structures |
 | Book-ingestion guidance | `references/books/README.md` | Turn books into agent-usable notes without uploading copyrighted content |
-| Worked examples | `examples/study-briefs/saas-onboarding-friction.md`, `examples/readouts/mobile-checkout-friction.md` | Show what good study briefs and research readouts look like |
-| Repo governance docs | `docs/PLATFORM_COMPATIBILITY.md`, `docs/CONTENT_POLICY.md`, `docs/THIRD_PARTY_ATTRIBUTIONS.md`, `docs/ROADMAP.md` | Keep public platform compatibility stable and define how the library should grow |
+| Worked examples | `examples/` (study briefs, readouts, interview guides, synthesis, recruitment) | Synthetic examples of “good enough” artifacts |
+| Optional local scripts | `scripts/transcript_to_codes.py`, `scripts/survey_sampler.py` | CSV helper for coding rows; rough two-proportion sample-size estimate |
+| Repo governance docs | `docs/PLATFORM_COMPATIBILITY.md`, `docs/CONTENT_POLICY.md`, `docs/THIRD_PARTY_ATTRIBUTIONS.md`, `docs/ROADMAP.md` | Compatibility, copyright boundaries, attribution, roadmap |
+| Security and license | `SECURITY.md`, `LICENSE` | Installer behavior and license |
 
 ## Materials By Use Case
 
@@ -42,26 +50,52 @@ If you are here for a specific kind of material, start here:
   - `prompts/study-briefs/discovery-study.md`
   - `references/templates/research-plan-template.md`
   - `examples/study-briefs/saas-onboarding-friction.md`
+- To design a survey or quantitative UX:
+  - `prompts/study-briefs/survey-design.md`
+  - `references/methods/survey-statistics-basics.md`
+  - `scripts/survey_sampler.py` (planning aid only)
+- To explore JTBD / switching:
+  - `prompts/interview-guides/jtbd-switch-interview.md`
+  - `references/methods/jtbd-framework.md`
+  - `examples/interview-guides/jtbd-b2b-saas.md`
+- To run moderated usability tests:
+  - `prompts/interview-guides/usability-test-script.md`
+  - `references/templates/discussion-guide-template.md`
+- To sharpen probes and moderation:
+  - `prompts/interview-guides/probing-techniques.md`
+  - `prompts/interview-guides/problem-exploration.md`
+  - `references/methods/research-method-selector.md`
+- To synthesize qualitative data:
+  - `prompts/synthesis/evidence-first-synthesis.md`
+  - `prompts/synthesis/qualitative-coding.md`
+  - `prompts/synthesis/affinity-mapping.md`
+  - `references/methods/thematic-analysis.md`
+  - `references/templates/insight-card-template.md`
+  - `examples/synthesis/coded-transcript-excerpt.md`
+  - `scripts/transcript_to_codes.py`
+- To map opportunities and bets (continuous discovery style):
+  - `prompts/synthesis/opportunity-solution-tree.md`
+  - `references/methods/continuous-discovery-loop.md`
+- To write readouts for founders or PMs:
+  - `prompts/stakeholder-readouts/executive-summary.md`
+  - `prompts/stakeholder-readouts/data-story-narrative.md`
+  - `references/templates/findings-deck-template.md`
+  - `examples/readouts/mobile-checkout-friction.md`
+- To recruit participants:
+  - `prompts/recruitment/outreach-script.md`
+  - `prompts/recruitment/screening-call.md`
+  - `references/templates/recruit-screener-template.md`
+  - `examples/recruitment/cold-outreach-email.md`
 - To maintain the public installer package:
   - `packages/cookiy-mcp/package.json`
   - `packages/cookiy-mcp/README.md`
   - `packages/cookiy-mcp/scripts/generate-homebrew-formula.mjs`
   - `docs/contract-source.json`
-- To write or improve interview guides:
-  - `prompts/interview-guides/problem-exploration.md`
-  - `references/methods/research-method-selector.md`
-- To analyze research data:
-  - `prompts/synthesis/evidence-first-synthesis.md`
-  - `references/methods/thematic-analysis.md`
-  - `references/templates/insight-card-template.md`
-- To write readouts for founders or PMs:
-  - `prompts/stakeholder-readouts/executive-summary.md`
-  - `examples/readouts/mobile-checkout-friction.md`
 - To build a learning library safely:
   - `references/books/README.md`
   - `docs/CONTENT_POLICY.md`
   - `docs/THIRD_PARTY_ATTRIBUTIONS.md`
-- PM / UX research craft without live Cookiy tools:
+- PM / UX research craft without live Cookiy tools (full index):
   - `skills/pm-research/SKILL.md`
   - `skills/pm-research/references/method-index.md`
 
@@ -233,8 +267,13 @@ Protected files and compatibility rules are documented in [docs/PLATFORM_COMPATI
 cookiy-skill/
 ├── .claude-plugin/plugin.json
 ├── .cursor-plugin/plugin.json
+├── .gitignore
 ├── .github/workflows/validate.yml
 ├── .mcp.json
+├── LICENSE
+├── SECURITY.md
+├── SKILL.md
+├── assets/logo.svg
 ├── docs/
 │   ├── CONTENT_POLICY.md
 │   ├── contract-source.json
@@ -274,6 +313,9 @@ cookiy-skill/
 │   ├── install-mcp.sh
 │   ├── survey_sampler.py
 │   └── transcript_to_codes.py
+├── tasks/
+│   ├── lessons.md
+│   └── todo.md
 ├── skills/
 │   ├── cookiy/
 │   │   ├── SKILL.md
@@ -287,9 +329,15 @@ cookiy-skill/
 │   └── pm-research/
 │       ├── SKILL.md
 │       └── references/method-index.md
-├── SKILL.md
 └── README.md
 ```
+
+### Other repository contents
+
+- **`SKILL.md` (repo root)**: Must stay aligned with **`skills/cookiy/SKILL.md`** per [docs/PLATFORM_COMPATIBILITY.md](docs/PLATFORM_COMPATIBILITY.md); it describes the **Cookiy MCP** skill, not `pm-research`.
+- **`rules/cookiy-basics.mdc`**: Cursor rules used by the marketplace plugin packaging.
+- **`tasks/`**: Maintainer scratch notes (`todo.md`, `lessons.md`); not part of the public skill contract.
+- **`assets/logo.svg`**: Brand asset for plugin listings.
 
 ## Current Installable Capability
 
@@ -358,14 +406,14 @@ The source for the public bootstrap installer package also now lives in this rep
 
 ## Open Library Content
 
-The new additive library is organized for actual agentic use, not decorative content:
+The additive library is organized for actual agentic use, not decorative content:
 
 - `prompts/`
-  - reusable prompt blocks for study briefs, interview-guide drafting, synthesis, and stakeholder readouts
+  - reusable prompt blocks for study briefs, survey design, interview guides (including JTBD and usability), synthesis (coding, affinity, OST), stakeholder readouts, and recruitment
 - `references/`
   - method cards, reusable templates, and book-note guidance for turning research material into agent-usable assets
 - `examples/`
-  - worked examples of a study brief and a synthesis/readout artifact
+  - worked examples across study briefs, readouts, JTBD-style guides, coded excerpts, and recruitment copy (see `examples/README.md`)
 - `docs/`
   - compatibility rules, copyright boundaries, attribution notes, and the roadmap for future expansion
 - `packages/cookiy-mcp/`
