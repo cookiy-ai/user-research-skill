@@ -8,8 +8,8 @@ User wants to recruit real participants for AI-moderated interviews.
 
 - Study exists (`study_id` is known)
 - Discussion guide is ready (`cookiy_guide_status` returns ready)
-- User understands that recruitment costs real money and is NOT
-  covered by experience bonus
+- User understands that recruitment costs real money and may consume
+  available cash credit or recruit-specific paid credit
 
 ## Workflow
 
@@ -170,8 +170,10 @@ When real participants exist, the runtime may explicitly recommend:
 - Truth-source priority for recruitment is:
   `cookiy_interview_list` > `cookiy_recruit_status` >
   latest `cookiy_recruit_create` response > `cookiy_study_get.state`.
-- Recruitment does NOT use experience bonus. It requires paid credit or
-  cash credit. Make this clear to the user before starting.
+- Recruitment can use cash credit from the same wallet pool, including
+  OAuth signup cash credit if it is still available, and may also use
+  recruit-specific paid credit. Make this clear to the user before
+  starting.
 - `confirmation_token` is:
   - Opaque — do not parse or modify it
   - Bound to the current user, study, and guide revision

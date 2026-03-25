@@ -191,9 +191,9 @@ See tool-contract.md for the complete specification.
 **Payment:**
 - On HTTP 402: prefer `structuredContent.data.payment_summary` and `checkout_url`; if those fields are absent, fall back to `error.details`.
 - To add cash credit outside a specific 402 flow, use `cookiy_billing_cash_checkout`, then confirm with `cookiy_balance_get`.
-- `cookiy_balance_get` may show `experience_bonus`; eligible MCP actions may consume that bonus before purchased credit.
-- Experience bonus may apply to study creation, simulated interviews, and report access via `cookiy_report_share_link_get`.
-- Experience bonus does NOT cover: recruitment (recruitment requires paid credit or cash credit).
+- `cookiy_balance_get` returns cash credit and per-product paid counters; OAuth signup bonus is folded into cash credit, not exposed as a separate `experience_bonus` field.
+- Cash credit may apply to study creation, simulated interviews, report access, and recruitment when balance remains.
+- When both exist, product-specific paid credits are consumed before cash credit.
 
 **URLs:**
 - NEVER construct URLs manually. ONLY use URLs from tool responses.

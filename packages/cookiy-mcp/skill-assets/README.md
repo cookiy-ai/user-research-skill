@@ -320,9 +320,10 @@ Manual report generation is no longer part of the public MCP skill contract. The
 Common aliases like `study creation`, `discussion guide`, and `report and insights`
 are also accepted by the current runtime.
 
-For eligible paid actions, the runtime may apply `experience_bonus`
-before purchased credit. Recruitment is separate and requires paid
-credit or cash credit.
+For eligible paid actions, the runtime uses one cash-credit wallet plus
+per-product paid credits. OAuth signup bonus is folded into cash credit,
+and that same wallet can also be used for recruitment when balance is
+available.
 
 The source for the public bootstrap installer package also now lives in this repository under `packages/cookiy-mcp/`.
 
