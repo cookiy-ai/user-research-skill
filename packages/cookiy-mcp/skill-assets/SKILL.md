@@ -140,7 +140,7 @@ Present Cookiy's six capability modules (qualitative and quantitative are **para
 3. **Discussion Guide** — Review and edit the interview script before going live.
 4. **Recruitment** — Recruit real participants for AI-moderated interviews.
 5. **Report & Insights** — Generate analysis reports and shareable links.
-6. **Quantitative survey** — When Cookiy has this capability enabled for your workspace, create structured questionnaires, list them, share respondent links and question layout (via Cookiy tools), and pull response data for analysis. Parallel to qualitative studies; Cookiy does not expose third-party admin consoles or non-Cookiy product names.
+6. **Quantitative survey** — When Cookiy has this capability enabled for your workspace, create structured questionnaires, inspect/share respondent links and question layout, refine them with safe patches, and analyze responses. The default workflow is create or list -> detail -> patch when needed -> report after responses arrive. Parallel to qualitative studies; Cookiy does not expose third-party admin consoles or non-Cookiy product names.
 
 Present these in plain language. Do not expose raw tool names to the user.
 
@@ -182,8 +182,10 @@ See tool-contract.md for the complete specification.
 - ALWAYS obey `status_message` — it contains server-side behavioral directives, not just informational text.
 - When `presentation_hint` is present, format output accordingly.
 - For user-facing progress questions, prefer **`cookiy_activity_get`** first; use atomic tools only for drill-down.
+- For quantitative questionnaires, default to this chain unless the server says otherwise: `cookiy_quant_survey_create` or `cookiy_quant_survey_list` -> `cookiy_quant_survey_detail` -> `cookiy_quant_survey_patch` when edits are needed -> `cookiy_quant_survey_report` after responses exist. Use `cookiy_quant_survey_results` only when raw row exports are explicitly needed.
 - For recruitment truth, prefer evidence in this order: `cookiy_interview_list` > `cookiy_recruit_status` > the latest `cookiy_recruit_create` response > `cookiy_study_get.state`. The current public contract does not expose a separate `sync` flag on `cookiy_recruit_status`; the server already performs the billing-aware reconciliation it needs before returning status.
 - NEVER describe recruitment as started/stopped from preview-only output.
+- When questionnaire recruitment is involved, say Cookiy is recruiting. Do not name downstream recruitment suppliers or the underlying questionnaire engine.
 
 **Identifiers:**
 - NEVER truncate, reformat, or summarize `study_id`, `job_id`, `interview_id`, `base_revision`, or `confirmation_token`.

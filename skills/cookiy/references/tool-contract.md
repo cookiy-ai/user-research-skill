@@ -258,7 +258,18 @@ discussion guides or qualitative reports.
 | `cookiy_quant_survey_list` | Discover survey IDs and titles |
 | `cookiy_quant_survey_create` | Create a structured questionnaire |
 | `cookiy_quant_survey_detail` | Public respondent URLs and optional structure; `include_structure=false` for link-only; `structure_presentation` = `markdown`, `json`, or `both` |
+| `cookiy_quant_survey_patch` | Non-destructive questionnaire edits: wording, requiredness, relevance, and quota-shell fields only |
+| `cookiy_quant_survey_report` | Default summary/report entrypoint after responses arrive; optional raw JSON/CSV preview |
 | `cookiy_quant_survey_results` | Raw JSON/CSV response payloads (`results_preview`, optional `results_json` when format is JSON) |
+| `cookiy_quant_survey_stats` | Legacy lightweight stats view kept for compatibility |
+
+Recommended workflow:
+
+1. Create a new questionnaire with `cookiy_quant_survey_create`, or discover an existing one with `cookiy_quant_survey_list`.
+2. Call `cookiy_quant_survey_detail` to get `survey_public_url`, activation state, and exact group/question ids.
+3. If the questionnaire needs edits, call `cookiy_quant_survey_patch`.
+4. After responses arrive, call `cookiy_quant_survey_report` for the default analysis path.
+5. Only call `cookiy_quant_survey_results` when raw row-level payloads are explicitly needed.
 
 If the server returns 503 with a setup hint, quantitative tools are not
 configured for that deployment.
@@ -269,3 +280,6 @@ configured for that deployment.
   preview-only output.
 - Do not promise background monitoring unless a real automation layer
   actually exists outside the MCP call you are making right now.
+- When questionnaire recruitment is involved, say Cookiy is recruiting.
+  Do not name downstream recruitment suppliers or the underlying
+  questionnaire engine.

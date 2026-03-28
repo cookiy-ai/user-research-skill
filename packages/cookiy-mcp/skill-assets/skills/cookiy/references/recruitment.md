@@ -34,7 +34,7 @@ cookiy_recruit_create
   target_participants: <optional override>
   execution_duration: <optional duration override in minutes>
   max_price_per_interview: <optional budget cap>
-  channel_name: <optional supplier/channel hint>
+  channel_name: <optional recruitment channel hint>
   auto_launch: <optional auto-launch preference>
   force_reconfigure: <optional explicit reconfigure intent>
   recruit_mode: <optional; when the server supports it, e.g. quantitative survey recruitment>
@@ -155,7 +155,7 @@ Use the returned progress counters directly:
   this does NOT include every talking, paused, or otherwise in-flight interview
 - `click_count` — upstream click volume when available
 - `payment_state` — billing-aware recruitment payment status when available
-- `configured_scope` — whether supplier-side configuration has actually been created
+- `configured_scope` — whether downstream recruitment execution has actually been created
 - `current_participants_semantics` — explicitly indicates that
   `current_participants` counts completed respondents only
 
