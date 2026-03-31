@@ -7,7 +7,7 @@ User wants to recruit real participants for AI-moderated interviews.
 ## Prerequisites
 
 - Study exists (`study_id` is known)
-- Discussion guide is ready (`cookiy_guide_status` returns ready)
+- Discussion guide is ready (`cookiy study guide status` returns ready)
 - User understands that recruitment costs real money and may consume
   available cash credit or recruit-specific paid credit
 
@@ -16,7 +16,7 @@ User wants to recruit real participants for AI-moderated interviews.
 ### 1. Confirm guide readiness
 
 ```
-cookiy_guide_status
+cookiy study guide status
   study_id: <study_id>
 ```
 
@@ -25,10 +25,10 @@ discussion guide.
 
 ### 2. Request recruitment preview (first call)
 
-Call `cookiy_recruit_create` WITHOUT a `confirmation_token`:
+Call `cookiy recruit start` WITHOUT a `confirmation_token`:
 
 ```
-cookiy_recruit_create
+cookiy recruit start
   study_id: <study_id>
   plain_text: <optional additional targeting description>
   target_participants: <optional override>
@@ -92,10 +92,10 @@ If the user wants to adjust targeting, either:
 
 ### 4. Confirm and launch recruitment (second call)
 
-Call `cookiy_recruit_create` WITH the `confirmation_token`:
+Call `cookiy recruit start` WITH the `confirmation_token`:
 
 ```
-cookiy_recruit_create
+cookiy recruit start
   study_id: <study_id>
   confirmation_token: <from step 2>
 ```
@@ -103,8 +103,8 @@ cookiy_recruit_create
 Possible outcomes:
 
 **Success:** Recruitment is launched. The response includes
-verification guidance such as `cookiy_recruit_status` and possibly
-`cookiy_interview_list`. Treat this as launch requested / updated, not
+verification guidance such as `cookiy recruit status` and possibly
+`cookiy interview list`. Treat this as launch requested / updated, not
 as proof that interviews have already started.
 
 **Guide changed (confirmation_reason: "guide_changed"):**
@@ -114,16 +114,16 @@ Go back to step 3 and ask the user to confirm again.
 
 **402 Payment required:**
 Display `payment_summary` and offer `checkout_url`.
-After payment, do NOT mechanically retry `cookiy_recruit_create` first.
+After payment, do NOT mechanically retry `cookiy recruit start` first.
 Instead:
-1. Call `cookiy_recruit_status`
-2. Call `cookiy_interview_list` if you need to verify actual interview activity
-3. Retry `cookiy_recruit_create` only if those checks still show that
+1. Call `cookiy recruit status`
+2. Call `cookiy interview list` if you need to verify actual interview activity
+3. Retry `cookiy recruit start` only if those checks still show that
    launch/configuration has not taken effect
 
 **409 target increase requires reconfigure:**
 If recruitment is already launched and the user wants to increase
-`target_participants`, call `cookiy_recruit_create` again with the
+`target_participants`, call `cookiy recruit start` again with the
 larger target and `force_reconfigure: true`.
 
 **409 target shrink not allowed:**
@@ -138,7 +138,7 @@ step 2 to generate a new preview.
 ### 5. Monitor recruitment progress
 
 ```
-cookiy_recruit_status
+cookiy recruit status
   study_id: <study_id>
 ```
 
@@ -160,16 +160,16 @@ Use the returned progress counters directly:
   `current_participants` counts completed respondents only
 
 When real participants exist, the runtime may explicitly recommend:
-- `cookiy_interview_list`
-- then `cookiy_interview_playback_get` for completed interviews
+- `cookiy interview list`
+- then `cookiy interview playback` for completed interviews
 
 ## Rules
 
 - Recruitment is ALWAYS a two-step process: preview then confirm.
   NEVER try to bypass the preview step.
 - Truth-source priority for recruitment is:
-  `cookiy_interview_list` > `cookiy_recruit_status` >
-  latest `cookiy_recruit_create` response > `cookiy_study_get.state`.
+  `cookiy interview list` > `cookiy recruit status` >
+  latest `cookiy recruit start` response > `cookiy study get.state`.
 - Recruitment can use cash credit from the same wallet pool, including
   OAuth signup cash credit if it is still available, and may also use
   recruit-specific paid credit. Make this clear to the user before
@@ -183,7 +183,7 @@ When real participants exist, the runtime may explicitly recommend:
   invalidates the token and returns a new preview.
 - The `recruit_url` field is intentionally stripped from all
   responses. There is no supported path to manually manage
-  recruitment outside of Cookiy MCP tools.
+  recruitment outside of Cookiy tools.
 - Once recruitment is launched:
   - `target_participants` cannot be reduced through this tool
   - increasing the target requires `force_reconfigure: true`

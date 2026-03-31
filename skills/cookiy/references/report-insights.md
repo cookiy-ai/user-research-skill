@@ -15,7 +15,7 @@ review study-level reporting information.
 ### 1. Check report status
 
 ```
-cookiy_report_status
+cookiy report status
   study_id: <study_id>
 ```
 
@@ -47,8 +47,8 @@ report_status = PREVIEW
     from the opened report.
 
 report_status = NOT_READY
-  → Do NOT try to manually trigger report generation from MCP
-  → Continue polling `cookiy_report_status`
+  → Do NOT try to manually trigger report generation from the API
+  → Continue polling `cookiy report status`
   → Use `request_state` only as lifecycle context:
      - `never_requested` / `queued` / `processing`:
        report generation has not produced a viewable report yet
@@ -61,7 +61,7 @@ report_status = NOT_READY
 ### 3. Get share link
 
 ```
-cookiy_report_share_link_get
+cookiy report share-link
   study_id: <study_id>
 ```
 
@@ -82,10 +82,10 @@ If this call returns 402:
 ## Rules
 
 - Reports are generated automatically after interviews complete.
-- MCP does NOT expose a supported manual report-generation step.
-- If `report_status` is `NOT_READY`, keep polling `cookiy_report_status`
+- Cookiy does not expose a supported manual report-generation step.
+- If `report_status` is `NOT_READY`, keep polling `cookiy report status`
   until it changes to `PREVIEW` or `READY`.
-- Payment, if required, happens at `cookiy_report_share_link_get`.
+- Payment, if required, happens at `cookiy report share-link`.
 - PREVIEW means "viewable now" — it is NOT "still generating."
   A preview report contains early results and can be shared, but may omit or lag
   the latest interviews until the pipeline catches up or **READY** is produced.
@@ -98,16 +98,16 @@ If this call returns 402:
 
 **Check balance before retrieving access:**
 ```
-cookiy_balance_get
+cookiy billing balance
 ```
 Returns current balance including experience bonus, cash credit, and
 per-product paid counters. Report generation does not charge here from
-MCP because manual generation is not exposed. Experience bonus may still
-apply when retrieving report access via `cookiy_report_share_link_get`.
+Cookiy because manual generation is not exposed. Experience bonus may still
+apply when retrieving report access via `cookiy report share-link`.
 
 **Browse studies:**
 ```
-cookiy_study_list
+cookiy study list
   query: <optional search term>
   status: <optional filter>
   limit: <1-100>
@@ -118,7 +118,7 @@ Preserve exact `studyId` values for subsequent tool calls.
 
 **Get study details:**
 ```
-cookiy_study_get
+cookiy study get
   study_id: <study_id>
 ```
 Returns study summary and metadata, including
@@ -129,5 +129,5 @@ Returns study summary and metadata, including
 | Situation | Action |
 |---|---|
 | 402 on report_share_link_get | Display payment_summary, offer checkout_url |
-| Report stays NOT_READY | Continue polling and check interview count via `cookiy_study_get` |
-| `request_state=event_failed` persists for several minutes | Explain that background processing may be stalled and try `cookiy_report_status` again later |
+| Report stays NOT_READY | Continue polling and check interview count via `cookiy study get` |
+| `request_state=event_failed` persists for several minutes | Explain that background processing may be stalled and try `cookiy report status` again later |

@@ -1,6 +1,6 @@
-# Cookiy MCP Tool Usage Contract
+# Cookiy Tool Usage Contract
 
-This document defines the universal behavior rules for all Cookiy MCP
+This document defines the universal behavior rules for all Cookiy
 tool calls. Every workflow references this contract.
 
 ## Response envelope
@@ -31,19 +31,20 @@ stable server-level signals, not just hints.
 
 ### `next_recommended_tools`
 
-An array of tool names the server recommends calling next. ALWAYS prefer
-this over guessing the next step. Examples:
-- After `cookiy_study_list` success: `["cookiy_study_get"]`
-- After `cookiy_recruit_create` preview: `["cookiy_recruit_create"]`
-- After `cookiy_report_status` when `report_status` is `PREVIEW` or `READY`: `["cookiy_report_share_link_get"]`
+An array of **server operation identifiers** the service recommends next.
+ALWAYS prefer this list over guessing. Identifiers are defined by the
+hosted API; translate each to the matching **Cookiy CLI** invocation via
+[`cli/commands.md`](../cli/commands.md) (or use the generic escape form
+documented there). Do not invent alternate command paths when this field
+is present.
 
 For recruitment truth, prefer evidence in this order:
-1. `cookiy_interview_list`
-2. `cookiy_recruit_status`
-3. The latest `cookiy_recruit_create` response
-4. `cookiy_study_get.state`
+1. `cookiy interview list`
+2. `cookiy recruit status`
+3. The latest `cookiy recruit start` response
+4. `cookiy study get.state`
 
-`cookiy_recruit_status` is the billing-aware recruitment authority in
+`cookiy recruit status` is the billing-aware recruitment authority in
 the current public contract. There is no separate `sync` flag; the
 server already reconciles pending recruit checkout state before
 reporting status.
@@ -53,7 +54,7 @@ reporting status.
 A server-composed directive describing the current state and what to do
 next. Treat it as an executable instruction, not informational prose.
 Examples:
-- "Poll cookiy_report_status periodically until report_status=PREVIEW or READY"
+- "Poll cookiy report status periodically until report_status=PREVIEW or READY"
 - "Review the target group, language, and pricing with the user"
 
 ### `presentation_hint`
@@ -72,31 +73,31 @@ Formatting guidance for the response. Respect it when present:
 
 ### `important_field_review`
 
-Returned by `cookiy_guide_get`. Contains critical settings that affect
+Returned by `cookiy study guide get`. Contains critical settings that affect
 recruitment difficulty and cost. ALWAYS present these to the user for
 confirmation before proceeding to recruitment or interviews:
 - `mode_of_interview` — video, audio, or audio_optional_video
 - `screen_share` / `in_home_visit` — questions requiring special setup
 - `sample_size` — number of participants
-- `interview_duration` — interview length in minutes (max 15 in MCP)
+- `interview_duration` — interview length in minutes (max 15 in Cookiy)
 
 Each field includes an `edit_path` that can be used directly as a
-dot-notation key in `cookiy_guide_patch`.
+dot-notation key in `cookiy study guide patch`.
 
 ## Identifier handling
 
 | Identifier | Source | Rules |
 |---|---|---|
-| `study_id` | `cookiy_study_create`, `cookiy_study_list` | Never truncate. Use exactly as returned. |
-| `job_id` | `cookiy_simulated_interview_generate` | Pass to `cookiy_simulated_interview_status` exactly. |
-| `interview_id` | `cookiy_interview_list` | Pass to `cookiy_interview_playback_get` exactly. |
-| `base_revision` | `cookiy_guide_get` | Must come from the most recent guide_get call. |
+| `study_id` | `cookiy study create`, `cookiy study list` | Never truncate. Use exactly as returned. |
+| `job_id` | `cookiy interview simulate start` | Pass to `cookiy interview simulate status` exactly. |
+| `interview_id` | `cookiy interview list` | Pass to `cookiy interview playback` exactly. |
+| `base_revision` | `cookiy study guide get` | Must come from the most recent guide_get call. |
 | `idempotency_key` | Client-generated | Reuse on retry. Generate a new one for each new operation. |
-| `confirmation_token` | `cookiy_recruit_create` (preview) | Opaque, single-use. Bound to user + study + guide revision. |
+| `confirmation_token` | `cookiy recruit start` (preview) | Opaque, single-use. Bound to user + study + guide revision. |
 
-## Unified activity summary (`cookiy_activity_get`)
+## Unified activity summary (`cookiy study progress`)
 
-Use **`cookiy_activity_get`** as the default entry point when the user asks
+Use **`cookiy study progress`** as the default entry point when the user asks
 for study progress in natural language — for example recruitment status,
 report readiness, or “what should happen next” — without manually comparing
 every atomic status tool first.
@@ -111,19 +112,19 @@ every atomic status tool first.
 - Set **`include_debug=true`** only when you need the full payload in
   `contentText` for debugging.
 - This tool does **not** replace atomic tools for deep debugging; drill into
-  `cookiy_guide_status`, `cookiy_recruit_status`, `cookiy_report_status`, etc.
+  `cookiy study guide status`, `cookiy recruit status`, `cookiy report status`, etc.
   only when subsystem detail is required.
 
-## Cash credit checkout (`cookiy_billing_cash_checkout`)
+## Cash credit checkout (`cookiy billing checkout`)
 
-Use **`cookiy_billing_cash_checkout`** when the user wants to add **cash
+Use **`cookiy billing checkout`** when the user wants to add **cash
 credit** before paid workflows. It creates a Stripe Checkout session for an
 arbitrary amount in **USD cents** (integer, at or above the Stripe minimum,
 typically 100 cents = $1.00). There are no preset tiers; the server may cap
 very large amounts via configuration.
 
 - After the user completes payment in Stripe, confirm updated balance with
-  **`cookiy_balance_get`** (or continue with the paid workflow).
+  **`cookiy billing balance`** (or continue with the paid workflow).
 - This tool starts checkout only; it does not credit balance until payment
   succeeds.
 
@@ -143,38 +144,38 @@ When any tool returns status_code 402:
    present in `structuredContent.data`, follow them for the post-payment
    retry path.
 5. For recruitment specifically, after payment prefer this sequence:
-   `cookiy_recruit_status` -> `cookiy_interview_list` ->
-   retry `cookiy_recruit_create` only if those checks still show that
+   `cookiy recruit status` -> `cookiy interview list` ->
+   retry `cookiy recruit start` only if those checks still show that
    launch/configuration has not taken effect.
 6. To add cash credit before retrying a paid action, use
-   `cookiy_billing_cash_checkout`, then confirm with `cookiy_balance_get`.
+   `cookiy billing checkout`, then confirm with `cookiy billing balance`.
 7. NEVER recalculate or restate prices from raw quote fields.
 
 ### Cash credit rules
 
 - New OAuth users may receive signup cash credit in the same wallet shown
-  by `cookiy_balance_get`.
+  by `cookiy billing balance`.
 - Cash credit is deducted at real product prices.
 - Cash credit covers eligible actions such as:
-  - Discussion guide generation (`cookiy_study_create`)
-  - AI-to-AI interview generation (`cookiy_simulated_interview_generate`)
+  - Discussion guide generation (`cookiy study create`)
+  - AI-to-AI interview generation (`cookiy interview simulate start`)
   - Report access when retrieving the share link
-    (`cookiy_report_share_link_get`)
-- Recruitment of real participants (`cookiy_recruit_create`) may also use
+    (`cookiy report share-link`)
+- Recruitment of real participants (`cookiy recruit start`) may also use
   available cash credit from the same wallet.
-- `cookiy_balance_get` does not expose a separate `experience_bonus`
+- `cookiy billing balance` does not expose a separate `experience_bonus`
   field anymore. Historical usage rows may still fold legacy bonus usage
   into cash-credit display values.
-- Eligible MCP actions use product-specific paid credits before cash
+- Eligible Cookiy actions use product-specific paid credits before cash
   credit, so paid counters decrease first when both are available.
 - If a covered operation fails before task dispatch, the credit is
   refunded automatically.
-- Use `cookiy_balance_get` to check current cash credit and per-product
+- Use `cookiy billing balance` to check current cash credit and per-product
   paid counters.
 
 ### Balance display rules
 
-When presenting `cookiy_balance_get` output:
+When presenting `cookiy billing balance` output:
 - Prefer `consumer_balance_overview`.
 - Prefer `recent_purchases[].display_line` and
   `recent_usage[].display_line` for user-facing billing statements.
@@ -210,7 +211,7 @@ When presenting `cookiy_balance_get` output:
 
 ## Dot-notation patch support
 
-`cookiy_guide_patch` and `cookiy_guide_impact` accept flat dot-notation
+`cookiy study guide patch` and `cookiy study guide impact` accept flat dot-notation
 keys in the `patch` parameter. The server expands them automatically:
 
 ```json
@@ -228,13 +229,13 @@ Use dot-notation for simpler patches. Nested objects also work.
 ## Polling guidelines
 
 For async operations, poll at reasonable intervals:
-- `cookiy_guide_status`: every 3-5 seconds after study creation
-- `cookiy_simulated_interview_status`: every 5-10 seconds
-- `cookiy_report_status`: every 10-30 seconds (reports take longer)
-- `cookiy_recruit_status`: every 30-60 seconds (recruitment is slow)
+- `cookiy study guide status`: every 3-5 seconds after study creation
+- `cookiy interview simulate status`: every 5-10 seconds
+- `cookiy report status`: every 10-30 seconds (reports take longer)
+- `cookiy recruit status`: every 30-60 seconds (recruitment is slow)
 
 
-## Report PREVIEW vs READY (MCP behavior)
+## Report PREVIEW vs READY (Cookiy behavior)
 
 - **PREVIEW** — Viewable early snapshot; may not include every interview
   completed afterward until the pipeline updates. Users judge freshness from
@@ -243,7 +244,7 @@ For async operations, poll at reasonable intervals:
   completed-interview / analysis completion target** is met and generation
   finishes. Do not tell users that PREVIEW "becomes final as soon as any new
   interview exists" without reference to that bar.
-- Share links must come **only** from `cookiy_report_share_link_get` (`share_url`),
+- Share links must come **only** from `cookiy report share-link` (`share_url`),
   never self-constructed URLs.
 
 ## Quantitative survey tools (optional)
@@ -255,21 +256,21 @@ discussion guides or qualitative reports.
 
 | Tool | Role |
 |---|---|
-| `cookiy_quant_survey_list` | Discover survey IDs and titles |
-| `cookiy_quant_survey_create` | Create a structured questionnaire |
-| `cookiy_quant_survey_detail` | Public respondent URLs and optional structure; `include_structure=false` for link-only; `structure_presentation` = `markdown`, `json`, or `both` |
-| `cookiy_quant_survey_patch` | Non-destructive questionnaire edits: wording, requiredness, relevance, and quota-shell fields only |
-| `cookiy_quant_survey_report` | Default summary/report entrypoint after responses arrive; optional raw JSON/CSV preview |
-| `cookiy_quant_survey_results` | Raw JSON/CSV response payloads (`results_preview`, optional `results_json` when format is JSON) |
-| `cookiy_quant_survey_stats` | Legacy lightweight stats view kept for compatibility |
+| `cookiy quant list` | Discover survey IDs and titles |
+| `cookiy quant create` | Create a structured questionnaire |
+| `cookiy quant detail` | Public respondent URLs and optional structure; `include_structure=false` for link-only; `structure_presentation` = `markdown`, `json`, or `both` |
+| `cookiy quant patch` | Non-destructive questionnaire edits: wording, requiredness, relevance, and quota-shell fields only |
+| `cookiy quant report` | Default summary/report entrypoint after responses arrive; optional raw JSON/CSV preview |
+| `cookiy quant results` | Raw JSON/CSV response payloads (`results_preview`, optional `results_json` when format is JSON) |
+| `cookiy quant stats` | Legacy lightweight stats view kept for compatibility |
 
 Recommended workflow:
 
-1. Create a new questionnaire with `cookiy_quant_survey_create`, or discover an existing one with `cookiy_quant_survey_list`.
-2. Call `cookiy_quant_survey_detail` to get `survey_public_url`, activation state, and exact group/question ids.
-3. If the questionnaire needs edits, call `cookiy_quant_survey_patch`.
-4. After responses arrive, call `cookiy_quant_survey_report` for the default analysis path.
-5. Only call `cookiy_quant_survey_results` when raw row-level payloads are explicitly needed.
+1. Create a new questionnaire with `cookiy quant create`, or discover an existing one with `cookiy quant list`.
+2. Call `cookiy quant detail` to get `survey_public_url`, activation state, and exact group/question ids.
+3. If the questionnaire needs edits, call `cookiy quant patch`.
+4. After responses arrive, call `cookiy quant report` for the default analysis path.
+5. Only call `cookiy quant results` when raw row-level payloads are explicitly needed.
 
 If the server returns 503 with a setup hint, quantitative tools are not
 configured for that deployment.
@@ -279,7 +280,7 @@ configured for that deployment.
 - Do not describe recruitment as started, paused, or failed from
   preview-only output.
 - Do not promise background monitoring unless a real automation layer
-  actually exists outside the MCP call you are making right now.
+  actually exists outside the current request call you are making right now.
 - When questionnaire recruitment is involved, say Cookiy is recruiting.
   Do not name downstream recruitment suppliers or the underlying
   questionnaire engine.

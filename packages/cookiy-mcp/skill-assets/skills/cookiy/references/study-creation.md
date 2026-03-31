@@ -7,7 +7,7 @@ from a research goal.
 
 ## Prerequisites
 
-- Cookiy MCP is connected (cookiy_introduce succeeds)
+- Cookiy is connected (cookiy doctor succeeds)
 - User has a research goal or question in mind
 
 ## Workflow
@@ -19,7 +19,7 @@ upload each one before creating the study.
 
 For each image:
 ```
-cookiy_media_upload
+cookiy study guide upload
   image_data: <base64 string>   (for local/chat images)
   image_url: <url>              (for remote images)
   content_type: image/png       (or jpeg, gif, webp)
@@ -31,7 +31,7 @@ Collect the returned `s3_key` from each upload. You must pair each
 ### 2. Create the study
 
 ```
-cookiy_study_create
+cookiy study create
   query: <research goal in plain language>
   language: <source language code, e.g. "en", "zh", "ja">
   thinking: "none" | "medium" | "high"  (optional, default none)
@@ -53,7 +53,7 @@ On 402: display `payment_summary` and `checkout_url` to the user.
 ### 3. Poll guide generation status
 
 ```
-cookiy_guide_status
+cookiy study guide status
   study_id: <from step 2>
 ```
 
@@ -63,7 +63,7 @@ Guide generation is asynchronous and may take 10-60 seconds.
 ### 4. Retrieve the generated guide
 
 ```
-cookiy_guide_get
+cookiy study guide get
   study_id: <from step 2>
 ```
 
@@ -93,7 +93,7 @@ fields to the user for confirmation:
 - Directly impacts cost and timeline.
 
 **interview_duration**
-- MCP interviews are capped at 15 minutes.
+- Cookiy interviews are capped at 15 minutes.
 - Typical range is 5-10 minutes for quick feedback and 10-15 minutes
   for deeper studies.
 - Longer interviews usually increase completion risk and recruitment
