@@ -1,12 +1,6 @@
 # Cookiy CLI reference
 
-The `cookiy` command is shipped with the `cookiy-mcp` npm package
-(`bin/cookiy.mjs`). In this repository you can also run:
-
-- `./cookiy.sh` at the repo root, or
-- `skills/cookiy/scripts/cookiy.sh`
-
-They resolve to the same Node entrypoint.
+**Canonical CLI for this skill:** [`scripts/cookiy.sh`](../scripts/cookiy.sh) — **bash and curl only** (no Node.js). From the repository root you can run `./cookiy.sh`, which `exec`s the same script.
 
 This document is **user/agent facing**: it describes CLI verbs only. It does
 not document IDE wiring or transport protocols.
@@ -21,17 +15,17 @@ not document IDE wiring or transport protocols.
 | `COOKIY_SERVER_URL` | Optional override of the API base URL (normally read from the credentials file) |
 | `COOKIY_MCP_URL` | Full JSON-RPC MCP URL (e.g. `https://s-api.cookiy.ai/mcp`). Highest precedence over `mcp_url` in the file and over `API base + /mcp`. |
 
-**Stable credential path:** by default the CLI reads and writes **`~/.mcp/cookiy/credentials.json`** (or `COOKIY_CREDENTIALS`). `cookiy login` merges new tokens into that file so paths do not change between login and daily commands.
+**Stable credential path:** by default the CLI reads **`~/.mcp/cookiy/credentials.json`** (or `COOKIY_CREDENTIALS`).
 
-**Obtaining credentials:**
+**Obtaining credentials (shell CLI):** `cookiy.sh` does **not** implement an interactive `login` subcommand. You need a JSON file that includes at least:
 
-1. **Terminal-only (recommended for the CLI):** `cookiy login` — browser OAuth, same PKCE flow as headless install; writes the file above. Optional: `cookiy login dev` (alias) or `--server-url`.
-2. **IDE + skill install:** `npx cookiy-mcp --client <cursor|codex|…>` also writes credentials (and configures MCP). Headless: `npx cookiy-mcp --client manus -y` adds helper scripts under `~/.mcp/cookiy/<name>/` but the **CLI default path** remains `~/.mcp/cookiy/credentials.json` unless you set `COOKIY_CREDENTIALS`.
+- `access_token` (required to call the API)
+- `refresh_token` (recommended — used when the access token expires)
+- `server_url` and/or `mcp_url` (recommended — otherwise use `--server-url` / `--mcp-url` / `COOKIY_MCP_URL`)
 
-Resume: if OAuth is interrupted, run `cookiy login` again; it reuses `~/.mcp/cookiy/pending-oauth-cli.json` next to the credentials file.
+Provision this file through your team’s Cookiy onboarding (for example completing account link in the IDE once MCP is configured, or copying a file from an environment that already authenticated). After the file exists, run `./cookiy.sh doctor` to verify connectivity.
 
-The CLI reads `access_token` (and refreshes with `refresh_token` when the
-server returns unauthorized) exactly like the generated shell helpers.
+The shell CLI sends the same JSON-RPC `tools/call` envelope as MCP clients; token refresh behavior depends on the hosted service and whether `refresh_token` is present in the file.
 
 ---
 
@@ -56,42 +50,13 @@ the full tool result JSON. For automation, pipe to `jq` as needed.
 
 ## Command tree
 
-### `cookiy login [env-or-url]`
+All examples below use `./cookiy.sh`; substitute `skills/cookiy/scripts/cookiy.sh` if you prefer a non-root path.
 
-Interactive browser OAuth (PKCE). Writes **`access_token`**, **`refresh_token`**, `client_id`, `token_endpoint`, `server_url`, `mcp_url` into the credentials file (merges with existing JSON). Does **not** install IDE MCP configs.
-
-Optional first argument: environment alias (`prod`, `dev`, `preview`, …) or a full API base URL — same rules as the installer.
-
-### Agents (Cursor, etc.): auto-continue after login
-
-`cookiy login` is **synchronous**: it does not return until the OAuth flow
-completes and tokens are saved (or it exits with an error). So the user should
-**not** need to send a second message such as “authorization done” if the agent
-waits for the command to finish.
-
-**Recommended pattern:** chain the next step so one terminal run covers setup
-and verification:
-
-```bash
-cookiy login && cookiy doctor
-```
-
-**Avoid:**
-
-- Running `login` in the **background** (the agent will think it finished too soon).
-- **Short tool timeouts** on `login` — prefer several minutes if the runtime
-  lets you set it; otherwise the process may be killed while the user is still
-  in the browser.
-
-**OAuth codes:** do not paste authorization codes or callback URLs into chat;
-use the terminal window that is waiting on `cookiy login` only if manual paste
-is required.
-
-### `cookiy doctor`
+### `./cookiy.sh doctor`
 
 Connectivity / introduce call with empty arguments.
 
-### `cookiy help <topic>`
+### `./cookiy.sh help <topic>`
 
 Topics include: `overview`, `study`, `ai_interview`, `guide`, `recruitment`,
 `report`, `billing`, `quantitative` (aliases may work — server-side).
@@ -100,16 +65,16 @@ Topics include: `overview`, `study`, `ai_interview`, `guide`, `recruitment`,
 
 | Command | Notes |
 | --- | --- |
-| `cookiy study list` | Optional: `--query`, `--status`, `--limit`, `--cursor` |
-| `cookiy study create` | Requires `--query`, `--language`; optional `--thinking`, `--attachments` as JSON via `--json` merge in future; `--wait` polls activity |
-| `cookiy study get` | Requires `--study-id` |
-| `cookiy study progress` | Alias: `cookiy study activity`. Requires `--study-id`; optional `--job-id`, `--include-debug` |
-| `cookiy study show` | Requires `--study-id`; `--part record|progress|both` |
-| `cookiy study guide status` | `--study-id` |
-| `cookiy study guide get` | `--study-id` |
-| `cookiy study guide impact` | `--study-id` and `--json` patch object |
-| `cookiy study guide patch` | `--study-id`, `--base-revision`, `--idempotency-key`, `--json` patch; optional confirmation fields |
-| `cookiy study guide upload` | `--content-type` plus `--image-data` or `--image-url`; `--study-id` if required by server |
+| `./cookiy.sh study list` | Optional: `--query`, `--status`, `--limit`, `--cursor` |
+| `./cookiy.sh study create` | Requires `--query`, `--language`; optional `--thinking`, `--attachments` as JSON via `--json` merge in future; `--wait` polls activity |
+| `./cookiy.sh study get` | Requires `--study-id` |
+| `./cookiy.sh study progress` | Alias: `./cookiy.sh study activity`. Requires `--study-id`; optional `--job-id`, `--include-debug` |
+| `./cookiy.sh study show` | Requires `--study-id`; `--part record|progress|both` |
+| `./cookiy.sh study guide status` | `--study-id` |
+| `./cookiy.sh study guide get` | `--study-id` |
+| `./cookiy.sh study guide impact` | `--study-id` and `--json` patch object |
+| `./cookiy.sh study guide patch` | `--study-id`, `--base-revision`, `--idempotency-key`, `--json` patch; optional confirmation fields |
+| `./cookiy.sh study guide upload` | `--content-type` plus `--image-data` or `--image-url`; `--study-id` if required by server |
 
 **Kebab → API field:** `--study-id` maps to `study_id`, etc.
 
@@ -117,36 +82,36 @@ Topics include: `overview`, `study`, `ai_interview`, `guide`, `recruitment`,
 
 | Command | Notes |
 | --- | --- |
-| `cookiy interview list` | `--study-id`, optional `--include-simulation`, `--cursor` |
-| `cookiy interview playback` | `--study-id`, `--interview-id` |
-| `cookiy interview simulate start` | Persona fields via flags or merge `--json`; `--wait` polls simulated job |
-| `cookiy interview simulate status` | `--study-id`, `--job-id` |
+| `./cookiy.sh interview list` | `--study-id`, optional `--include-simulation`, `--cursor` |
+| `./cookiy.sh interview playback` | `--study-id`, `--interview-id` |
+| `./cookiy.sh interview simulate start` | Persona fields via flags or merge `--json`; `--wait` polls simulated job |
+| `./cookiy.sh interview simulate status` | `--study-id`, `--job-id` |
 
 ### Recruitment
 
 | Command | Notes |
 | --- | --- |
-| `cookiy recruit start` | Preview without `confirmation_token`; confirm with token. Additional fields may be passed via repeated flags or `--json` merge |
-| `cookiy recruit status` | `--study-id` |
+| `./cookiy.sh recruit start` | Preview without `confirmation_token`; confirm with token. Additional fields may be passed via repeated flags or `--json` merge |
+| `./cookiy.sh recruit status` | `--study-id` |
 
 ### Report
 
 | Command | Notes |
 | --- | --- |
-| `cookiy report status` | `--study-id` |
-| `cookiy report share-link` | `--study-id` |
+| `./cookiy.sh report status` | `--study-id` |
+| `./cookiy.sh report share-link` | `--study-id` |
 
 ### Quantitative
 
 | Command | Maps to survey operations |
 | --- | --- |
-| `cookiy quant list` |  |
-| `cookiy quant create` |  |
-| `cookiy quant detail` | Include structure flags as in `tool-contract.md` |
-| `cookiy quant patch` |  |
-| `cookiy quant report` |  |
-| `cookiy quant results` |  |
-| `cookiy quant stats` |  |
+| `./cookiy.sh quant list` |  |
+| `./cookiy.sh quant create` |  |
+| `./cookiy.sh quant detail` | Include structure flags as in `tool-contract.md` |
+| `./cookiy.sh quant patch` |  |
+| `./cookiy.sh quant report` |  |
+| `./cookiy.sh quant results` |  |
+| `./cookiy.sh quant stats` |  |
 
 Use `--json '{...}'` to supply fields not covered by flags (JSON keys use
 `snake_case` as the server expects).
@@ -155,13 +120,13 @@ Use `--json '{...}'` to supply fields not covered by flags (JSON keys use
 
 | Command | Notes |
 | --- | --- |
-| `cookiy billing balance` | No required args |
-| `cookiy billing checkout` | `--amount-usd-cents` (integer) or `--json` |
+| `./cookiy.sh billing balance` | No required args |
+| `./cookiy.sh billing checkout` | `--amount-usd-cents` (integer) or `--json` |
 
-### Escape hatch: `cookiy tool call`
+### Escape hatch: `./cookiy.sh tool call`
 
 ```
-cookiy tool call <server_operation_name> --json '{"field": "value"}'
+./cookiy.sh tool call <server_operation_name> --json '{"field": "value"}'
 ```
 
 Use this when a field is not yet mapped to a subcommand. Operation names are
@@ -172,4 +137,4 @@ the same source the Cookiy team publishes for integrators.
 
 ## Version
 
-`cookiy --version` matches the `cookiy-mcp` package version string.
+`./cookiy.sh --version` prints the version string embedded in [`scripts/cookiy.sh`](../scripts/cookiy.sh) (`VERSION=` near the top of that file).

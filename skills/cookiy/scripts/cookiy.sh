@@ -3,7 +3,7 @@
 # No dependencies beyond bash, curl, grep, sed, awk.
 set -euo pipefail
 
-VERSION="1.9.2"
+VERSION="1.9.3"
 DEFAULT_SERVER_URL="https://s-api.cookiy.ai"
 DEFAULT_CREDENTIALS_PATH="${COOKIY_CREDENTIALS:-$HOME/.mcp/cookiy/credentials.json}"
 TIMEOUT=120
@@ -90,7 +90,7 @@ ACCESS_TOKEN=""
 MCP_ENDPOINT=""
 
 load_credentials() {
-  [[ -f "$CREDENTIALS_PATH" ]] || die "Missing credentials at $CREDENTIALS_PATH. Run npx cookiy-mcp to authenticate."
+  [[ -f "$CREDENTIALS_PATH" ]] || die "Missing credentials at $CREDENTIALS_PATH. See skills/cookiy/cli/commands.md — place a valid credentials.json (access_token, etc.) from your Cookiy account setup."
   ACCESS_TOKEN="$(cred_val access_token)"
   [[ -n "$ACCESS_TOKEN" ]] || die "No access_token in $CREDENTIALS_PATH"
 }
