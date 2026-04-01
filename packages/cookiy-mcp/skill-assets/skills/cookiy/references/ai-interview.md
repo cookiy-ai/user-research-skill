@@ -8,7 +8,7 @@ the discussion guide with AI personas.
 ## Prerequisites
 
 - Study exists (`study_id` is known)
-- Discussion guide is ready (`cookiy_guide_status` returns ready)
+- Discussion guide is ready (`cookiy study guide status` returns ready)
 
 If the guide is not ready, inform the user and either wait or
 transition to Study Creation workflow.
@@ -18,7 +18,7 @@ transition to Study Creation workflow.
 ### 1. Confirm guide readiness
 
 ```
-cookiy_guide_status
+cookiy study guide status
   study_id: <study_id>
 ```
 
@@ -31,7 +31,7 @@ Choose one of these persona input modes:
 
 **Auto-generate (simplest — recommended for most cases):**
 ```
-cookiy_simulated_interview_generate
+cookiy interview simulate start
   study_id: <study_id>
   auto_generate_personas: true
   persona_count: <number, 1-20>
@@ -39,14 +39,14 @@ cookiy_simulated_interview_generate
 
 **Single custom persona:**
 ```
-cookiy_simulated_interview_generate
+cookiy interview simulate start
   study_id: <study_id>
   interviewee_persona: "A 35-year-old marketing manager who..."
 ```
 
 **Multiple custom personas:**
 ```
-cookiy_simulated_interview_generate
+cookiy interview simulate start
   study_id: <study_id>
   interviewee_personas: [
     "A 25-year-old student who...",
@@ -56,7 +56,7 @@ cookiy_simulated_interview_generate
 
 **Multi-language personas (object form):**
 ```
-cookiy_simulated_interview_generate
+cookiy interview simulate start
   study_id: <study_id>
   interviewee_personas: [
     {
@@ -85,7 +85,7 @@ On 402: display `payment_summary` and `checkout_url`.
 ### 3. Poll simulation status
 
 ```
-cookiy_simulated_interview_status
+cookiy interview simulate status
   study_id: <study_id>
   job_id: <from step 2>
 ```
@@ -96,7 +96,7 @@ take 1-5 minutes per persona.
 ### 4. List completed interviews
 
 ```
-cookiy_interview_list
+cookiy interview list
   study_id: <study_id>
   include_simulation: true
 ```
@@ -114,7 +114,7 @@ The runtime may also return:
 For each interview the user wants to review:
 
 ```
-cookiy_interview_playback_get
+cookiy interview playback
   study_id: <study_id>
   interview_id: <from step 4>
 ```

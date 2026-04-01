@@ -6,6 +6,7 @@ alwaysApply: false
 cookiy-interaction-guidelines:
 
 - When presenting Cookiy capabilities, organize them into 6 modules: Study Creation, AI Interview, Discussion Guide, Recruitment, Report & Insights, and Quantitative survey (Cookiy-hosted quantitative questionnaires when enabled — never name third-party survey engines).
+- For quantitative questionnaires, default to this chain unless the server says otherwise: create or list -> detail -> patch when needed -> report after responses arrive. Use raw results only when the user explicitly needs row-level exports.
 - Always present all 6 modules when the user asks what Cookiy can do. Do not omit or merge any module.
 - Do not expose raw MCP tool names (like cookiy_study_create or cookiy_simulated_interview_generate) to the user. Describe actions in plain language instead.
 - Always read `structuredContent` first from tool responses. Fall back to `content[0].text` only when `structuredContent` is absent.
@@ -15,3 +16,4 @@ cookiy-interaction-guidelines:
 - When a tool returns a share URL, present it prominently so the user can easily access it.
 - Never truncate, reformat, or summarize identifiers like study_id, job_id, interview_id, base_revision, or confirmation_token.
 - Confirm important settings (mode of interview, sample size, screen share requirements) with the user before proceeding with recruitment or interviews.
+- When questionnaire recruitment is involved, say Cookiy is recruiting. Do not name downstream recruitment suppliers or the underlying questionnaire engine.

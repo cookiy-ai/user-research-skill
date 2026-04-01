@@ -378,10 +378,15 @@ public MCP surface:
   - `cookiy_balance_get`
   - `cookiy_billing_cash_checkout` (add cash credit via Stripe Checkout)
 - Quantitative survey (optional; requires server-side integration):
+  - `cookiy_quant_survey_list`
   - `cookiy_quant_survey_create`
   - `cookiy_quant_survey_detail`
-  - `cookiy_quant_survey_list`
+  - `cookiy_quant_survey_patch`
+  - `cookiy_quant_survey_report`
   - `cookiy_quant_survey_results`
+  - `cookiy_quant_survey_stats` (legacy compatibility)
+
+Recommended quantitative workflow: create or list -> detail -> patch when needed -> report after responses arrive. Use `results` only for raw row exports.
 
 Manual report generation is no longer part of the public MCP skill contract. The public docs in this repo are aligned to the current runtime behavior.
 

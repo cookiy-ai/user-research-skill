@@ -15,7 +15,7 @@ script) for an existing study.
 ### 1. Get current guide
 
 ```
-cookiy_guide_get
+cookiy study guide get
   study_id: <study_id>
 ```
 
@@ -32,7 +32,7 @@ the user.
 Before applying changes, preview their impact:
 
 ```
-cookiy_guide_impact
+cookiy study guide impact
   study_id: <study_id>
   patch: { <dot-notation changes> }
 ```
@@ -52,7 +52,7 @@ Present the impact preview to the user for confirmation.
 ### 3. Apply the edit
 
 ```
-cookiy_guide_patch
+cookiy study guide patch
   study_id: <study_id>
   base_revision: <revision from step 1>
   idempotency_key: <generate a unique key for this edit>
@@ -61,17 +61,17 @@ cookiy_guide_patch
 ```
 
 Rules:
-- `base_revision` MUST come from the most recent `cookiy_guide_get`.
+- `base_revision` MUST come from the most recent `cookiy study guide get`.
 - `idempotency_key` MUST be unique per new edit operation.
   Reuse the same key only when retrying a failed attempt of the
   same edit.
-- `interview_duration` must be 15 minutes or less in MCP context.
+- `interview_duration` must be 15 minutes or less in Cookiy.
 
 ### 4. Handle conflicts
 
 **409 Revision conflict:**
 The guide was modified since you last fetched it. Go back to step 1:
-re-fetch the guide with `cookiy_guide_get`, get the new `revision`,
+re-fetch the guide with `cookiy study guide get`, get the new `revision`,
 and retry the patch with the same `idempotency_key`.
 
 **Recruit reconfigure required:**
@@ -89,7 +89,7 @@ instead of inventing your own structure.
 
 ### 5. Verify the update (optional)
 
-Call `cookiy_guide_get` again to confirm the patch was applied
+Call `cookiy study guide get` again to confirm the patch was applied
 correctly.
 
 ## Rules

@@ -137,7 +137,7 @@ Auto-generated interview scripts you can edit. Preview the impact of changes bef
 - `cookiy_guide_status` — Check guide generation status
 
 ### Recruitment
-Recruit real respondents through third-party panel providers to participate in AI-moderated interviews (including optional quantitative-survey modes when the server exposes them).
+Recruit real respondents through Cookiy-managed recruitment flows to participate in AI-moderated interviews (including optional quantitative-survey modes when the server exposes them).
 - `cookiy_recruit_create` — Launch or reconfigure recruitment
 - `cookiy_recruit_status` — Monitor recruitment progress
 
@@ -155,7 +155,12 @@ When the deployment has quantitative survey integration configured:
 - `cookiy_quant_survey_list` — List surveys
 - `cookiy_quant_survey_create` — Create a questionnaire
 - `cookiy_quant_survey_detail` — Public respondent URLs and optional structure
+- `cookiy_quant_survey_patch` — Apply safe questionnaire edits
+- `cookiy_quant_survey_report` — Default summary/report entrypoint
 - `cookiy_quant_survey_results` — Fetch response payloads
+- `cookiy_quant_survey_stats` — Legacy compatibility stats view
+
+Recommended quantitative workflow: create or list -> detail -> patch when needed -> report after responses arrive. Use `results` only for raw row exports.
 
 ## Example Workflow
 

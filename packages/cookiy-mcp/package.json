@@ -1,6 +1,6 @@
 {
   "name": "cookiy-mcp",
-  "version": "1.7.18",
+  "version": "1.7.19",
   "description": "One-command bootstrap for Cookiy local skills and MCP connections in your AI coding clients",
   "homepage": "https://cookiy.ai",
   "repository": {
@@ -12,7 +12,8 @@
   },
   "type": "module",
   "bin": {
-    "cookiy-mcp": "bin/cli.mjs"
+    "cookiy-mcp": "bin/cli.mjs",
+    "cookiy": "bin/cookiy.mjs"
   },
   "files": [
     "bin/",
@@ -25,7 +26,7 @@
     "node": ">=18.0.0"
   },
   "scripts": {
-    "test": "node --test test/*.test.mjs test/clients/*.test.mjs test/skills/*.test.mjs",
+    "test": "node --test test/*.test.mjs test/clients/*.test.mjs test/skills/*.test.mjs test/mcp-call-http.test.mjs",
     "build:bundle": "node ./scripts/build-bundle.mjs",
     "build:macos": "node ./scripts/build-macos-binary.mjs",
     "build:brew-formula": "node ./scripts/generate-homebrew-formula.mjs"
