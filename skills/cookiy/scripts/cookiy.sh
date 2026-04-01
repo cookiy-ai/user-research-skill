@@ -3,7 +3,7 @@
 # No dependencies beyond bash, curl, grep, sed, awk.
 set -euo pipefail
 
-VERSION="1.9.6"
+VERSION="1.9.7"
 DEFAULT_SERVER_URL="https://s-api.cookiy.ai"
 DEFAULT_CREDENTIALS_PATH="${COOKIY_CREDENTIALS:-$HOME/.mcp/cookiy/credentials.json}"
 TIMEOUT=120
@@ -129,9 +129,40 @@ check_rpc_error() {
   return 0
 }
 
-# Extract .result (or .result.structuredContent) and pretty-print with awk
-extract_result() {
-  cat  # pass through raw JSON — pipe to jq externally if you want formatting
+# Read full JSON-RPC tools/call response on stdin; print like Node renderResult:
+# result.structuredContent if that key exists, else result. Pretty JSON. Requires jq or python3.
+emit_mcp_tool_printable() {
+  local raw
+  raw="$(cat)"
+  if command -v jq >/dev/null 2>&1; then
+    echo "$raw" | jq '
+      .result as $r
+      | if ($r | type) == "object" and ($r | has("structuredContent"))
+        then $r.structuredContent
+        else $r
+        end
+    '
+    return
+  fi
+  if command -v python3 >/dev/null 2>&1; then
+    echo "$raw" | python3 -c '
+import json, sys
+raw = sys.stdin.read()
+try:
+    d = json.loads(raw)
+except json.JSONDecodeError as e:
+    print("Invalid JSON from MCP:", e, file=sys.stderr)
+    sys.exit(1)
+r = d.get("result")
+if isinstance(r, dict) and "structuredContent" in r:
+    out = r["structuredContent"]
+else:
+    out = r
+print(json.dumps(out, indent=2, ensure_ascii=False))
+'
+    return
+  fi
+  die "Need jq or python3 to print MCP tools/call result (structuredContent or result). Install one or pipe raw curl to jq yourself."
 }
 
 # invoke <tool_name> <arguments_json>
@@ -155,7 +186,7 @@ invoke() {
     || die "MCP tools/call request failed"
   check_rpc_error "$call_resp" || exit 1
 
-  echo "$call_resp" | extract_result
+  echo "$call_resp" | emit_mcp_tool_printable
 }
 
 # --- arg builder -----------------------------------------------------------
