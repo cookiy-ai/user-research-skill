@@ -24,7 +24,9 @@ service.
    (environment variables, default credential paths). Then run
    `cookiy doctor` via
    [`scripts/cookiy.sh`](scripts/cookiy.sh) or a globally linked `cookiy`
-   binary from the `cookiy-mcp` package. Do not paste raw tokens into chat.
+   binary from the `cookiy-mcp` package. Do not paste raw tokens or OAuth
+   **authorization codes** into chat — only into the terminal that is running
+   `cookiy login` if that fallback is needed (see **Login runbook** below).
 2. **Route by intent (one reference):** open exactly **one** workflow file
    from the Intent Router below. For natural-language progress questions,
    start with `cookiy study progress` or `cookiy study show`.
@@ -56,6 +58,34 @@ Always confirm Cookiy is reachable with valid credentials:
    install.
 3. If the user’s goal is exclusively setup or repair, stop after a short,
    plain-language success message — do not jump into research intake.
+
+### Login runbook (agents — avoid an extra chat turn)
+
+`cookiy login` **blocks** until OAuth finishes (local browser callback to
+`127.0.0.1`, or paste-in-terminal fallback). The process exits **only after**
+tokens are written; there is no separate “tell the agent authorization
+completed” step if the command is allowed to run to completion.
+
+When the user needs login **and** a follow-up (e.g. `doctor`, billing, or a
+study command), prefer **one foreground terminal invocation** that chains after
+success, for example:
+
+```bash
+cookiy login && cookiy doctor
+```
+
+(or `./cookiy.sh login && ./cookiy.sh doctor` from this repo).
+
+Rules for agent `run_terminal_cmd` (or equivalent):
+
+- **Do not** run `cookiy login` in the background — the tool must wait for exit.
+- **Ask for a long enough command timeout** when the host allows it (OAuth often
+  needs several minutes while the user uses the browser). Short defaults can
+  kill the process mid-flow; then the user must send another message.
+- After `login` exits **0**, continue with the next Cookiy command **in the same
+  agent turn** when possible (e.g. the chained `&&` above already did `doctor`).
+- Remind the user once: complete approval in the browser; normally no code paste
+  is needed. If a terminal still asks for paste, use **that** terminal — not chat.
 
 When `cookiy doctor` is only used as a smoke test, summarize the outcome in
 one sentence for the user. Do not dump raw JSON unless debugging.

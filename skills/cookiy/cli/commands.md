@@ -62,6 +62,31 @@ Interactive browser OAuth (PKCE). Writes **`access_token`**, **`refresh_token`**
 
 Optional first argument: environment alias (`prod`, `dev`, `preview`, …) or a full API base URL — same rules as the installer.
 
+### Agents (Cursor, etc.): auto-continue after login
+
+`cookiy login` is **synchronous**: it does not return until the OAuth flow
+completes and tokens are saved (or it exits with an error). So the user should
+**not** need to send a second message such as “authorization done” if the agent
+waits for the command to finish.
+
+**Recommended pattern:** chain the next step so one terminal run covers setup
+and verification:
+
+```bash
+cookiy login && cookiy doctor
+```
+
+**Avoid:**
+
+- Running `login` in the **background** (the agent will think it finished too soon).
+- **Short tool timeouts** on `login` — prefer several minutes if the runtime
+  lets you set it; otherwise the process may be killed while the user is still
+  in the browser.
+
+**OAuth codes:** do not paste authorization codes or callback URLs into chat;
+use the terminal window that is waiting on `cookiy login` only if manual paste
+is required.
+
 ### `cookiy doctor`
 
 Connectivity / introduce call with empty arguments.
