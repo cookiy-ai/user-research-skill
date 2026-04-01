@@ -19,15 +19,42 @@ not document IDE wiring or transport protocols.
 
 **Stable credential path:** by default the CLI reads **`~/.mcp/cookiy/credentials.json`** (or `COOKIY_CREDENTIALS`).
 
-**Obtaining credentials (shell CLI):** `cookiy.sh` does **not** implement an interactive `login` subcommand. You need a JSON file that includes at least:
+### Browser sign-in (recommended — no Node.js or MCP)
 
-- `access_token` (required to call the API)
-- `refresh_token` (recommended — used when the access token expires)
-- `server_url` and/or `mcp_url` (recommended — otherwise use `--server-url` / `--mcp-url` / `COOKIY_MCP_URL`)
+`cookiy.sh` has **no** interactive `login` subcommand. For **skill + shell CLI**
+only, obtain tokens from the hosted sign-in page in a normal browser:
 
-Provision this file through your team’s Cookiy onboarding (for example completing account link in the IDE, or copying a file from an environment that already authenticated). After the file exists, run `./cookiy.sh doctor` to verify connectivity.
+| Environment | Sign-in URL (path is always `/login`) |
+| --- | --- |
+| Production (short-link app) | `https://s.cookiy.ai/login` |
+| Example non-production | `https://dev.cookiy.ai/login` — use the web origin your Cookiy deployment documents |
 
-The shell CLI speaks the same hosted JSON-RPC `tools/call` protocol Cookiy exposes at your `mcp_url` / `--mcp-url`; token refresh depends on the service and whether `refresh_token` is present in the file.
+1. Open the URL, complete bot check and **Google** or **Facebook** sign-in (or
+   registration, including invite code if your workspace requires it).
+2. On success, the page shows an **`access_token`** and a **sample
+   `credentials.json`** (with `mcp_url` / `server_url` placeholders). Copy
+   them into your credentials file on the machine where you run `./cookiy.sh`.
+3. **Do not** paste tokens or OAuth **authorization codes** into agent chat.
+4. Run `./cookiy.sh doctor` to verify connectivity.
+
+**Required in `credentials.json` for API calls:**
+
+- `access_token` (required)
+- `mcp_url` and/or `server_url` (required in practice — e.g. production MCP
+  JSON-RPC is `https://s-api.cookiy.ai/mcp` and API base `https://s-api.cookiy.ai`,
+  unless your environment uses different hosts)
+
+**Refresh tokens:** the browser sign-in flow currently issues an **access token**
+only. When it expires, open `/login` again and update `credentials.json`, or
+use an optional Node-based installer path (below).
+
+**Optional (Node.js — MCP / `cookiy-mcp` installer):** if you install via
+`npx cookiy-mcp` or an IDE marketplace flow, you may instead complete OAuth
+through that tool (local callback). That path is **not** required for
+`./cookiy.sh`.
+
+The shell CLI speaks the same hosted JSON-RPC `tools/call` protocol Cookiy
+exposes at your `mcp_url` / `--mcp-url`.
 
 ---
 

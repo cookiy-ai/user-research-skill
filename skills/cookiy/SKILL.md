@@ -15,18 +15,23 @@ reports — driven through **`cookiy.sh`** (bash + curl) against the Cookiy
 hosted service. This skill does not use npm, Node.js, or any packaged `.mjs`
 CLI — only the shell script under `skills/cookiy/scripts/`.
 
+**Signing in for the shell CLI:** use the hosted **browser sign-in** page
+(see [`cli/commands.md`](cli/commands.md)) to create `credentials.json`.
+That flow does **not** require Node.js, MCP, or a local OAuth callback
+listener.
+
 ---
 
 ## Progressive disclosure
 
 0. **Stay in this file first.** Do not load all `references/*.md` or the
    full `cli/commands.md` unless the user asks for a deep read.
-1. **Credentials + health:** follow [`cli/commands.md`](cli/commands.md)
-   (environment variables, credential file layout). Then run
-   `./cookiy.sh doctor` using [`scripts/cookiy.sh`](scripts/cookiy.sh) or
-   [`../../cookiy.sh`](../../cookiy.sh) at the repo root. Do not paste raw
-   tokens or OAuth **authorization codes** into chat (see **Credentials
-   runbook** below).
+1. **Credentials + health:** read [`cli/commands.md`](cli/commands.md)
+   (browser sign-in URL, `credentials.json` shape, environment variables).
+   Place the file on disk, then run `./cookiy.sh doctor` using
+   [`scripts/cookiy.sh`](scripts/cookiy.sh) or [`../../cookiy.sh`](../../cookiy.sh)
+   at the repo root. Do not paste raw tokens or OAuth **authorization codes**
+   into chat (see **Credentials runbook** below).
 2. **Route by intent (one reference):** open exactly **one** workflow file
    from the Intent Router below. For natural-language progress questions,
    start with `./cookiy.sh study progress` or `./cookiy.sh study show`.
@@ -49,8 +54,10 @@ CLI — only the shell script under `skills/cookiy/scripts/`.
 
 Always confirm Cookiy is reachable with valid credentials:
 
-1. Ensure `credentials.json` exists at the path described in `cli/commands.md`
-   (the shell CLI does **not** implement `login`).
+1. Ensure `credentials.json` exists at the path described in `cli/commands.md`.
+   First-time setup: use the **browser CLI sign-in** page (URLs in `commands.md`)
+   to sign in or register, then save tokens to that file — **no Node or MCP**
+   required for this path. (`cookiy.sh` does **not** implement `login`.)
 2. Run `./cookiy.sh doctor` (introduce / connectivity). If it fails, fix
    tokens, `mcp_url` / `server_url`, or network — then retry.
 3. If the user’s goal is exclusively setup or repair, stop after a short,
@@ -58,15 +65,20 @@ Always confirm Cookiy is reachable with valid credentials:
 
 ### Credentials runbook (agents)
 
-`cookiy.sh` **cannot** perform OAuth by itself. The user (or their IDE setup)
-must place a valid `credentials.json` where the CLI expects it.
+`cookiy.sh` cannot open a browser or perform OAuth itself. The user must
+have a valid `credentials.json` on disk (default path in `cli/commands.md`).
 
+- **Preferred path (skill + shell, no Node):** direct the user to open the
+  **Cookiy CLI sign-in** URL in a browser (see `cli/commands.md`), complete
+  Google/Facebook sign-in or registration (invite code when required), then
+  copy the **`access_token`** and recommended `mcp_url` / `server_url`
+  fields into `credentials.json` on the machine where `./cookiy.sh` runs.
+  **Do not** paste access tokens or OAuth codes into the agent chat.
 - **Do not** paste access tokens, refresh tokens, or OAuth authorization codes
   into chat.
-- If the file is missing, direct the user to complete Cookiy account linking
-  where your team documents it (for example the Cookiy integration in the
-  IDE), or to copy `credentials.json` from a machine that already
-  authenticated.
+- **Optional:** users who already use **`npx cookiy-mcp`** / IDE MCP installs
+  may obtain tokens through that installer (Node.js + local OAuth). That is
+  separate from the shell-only flow above.
 - After the file is in place, verify with `./cookiy.sh doctor` before study
   commands.
 

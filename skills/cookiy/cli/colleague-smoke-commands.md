@@ -3,7 +3,7 @@
 ## 你需要准备什么
 
 1. **本机已有 Cookiy 凭据**：默认 `~/.mcp/cookiy/credentials.json`，或通过环境变量 `COOKIY_CREDENTIALS` 指向该文件。  
-   - shell 版 **没有** `login`，需先在本机/IDE 完成账号关联或从已登录机器拷贝凭据。  
+   - shell 版 **没有** `login`。请用浏览器打开 **CLI 登录页**（生产示例：`https://s.cookiy.ai/login`；其他环境用团队提供的同路径 `/login` 域名），完成 Google/Facebook 登录或注册后，把页面中的 **access_token** 与示例 `mcp_url` / `server_url` 写入上述 JSON 文件。**无需 Node、也无需装 MCP** 即可完成。  
 2. **本仓库路径**：克隆或同步 `cookiy-skill` 后进入仓库根目录。
 
 ---

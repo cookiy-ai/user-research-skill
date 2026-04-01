@@ -215,6 +215,25 @@ npx cookiy-mcp -y
 
 The installer auto-detects installed AI clients. On supported clients, it installs a local Cookiy skill copy first and then configures MCP. Other clients fall back to MCP-only setup.
 
+### Skill + `cookiy.sh` only (no Node.js)
+
+Use this when you run the **bash CLI** from this repo (`./cookiy.sh`) and **do
+not** want Node.js, `npx`, or MCP for sign-in:
+
+1. Open **`https://s.cookiy.ai/login`** in a browser (Cookiy production
+   short-link web app). For dev/preview stacks, your team may use another
+   origin with the same **`/login`** path (for example `https://dev.cookiy.ai/login`).
+2. Complete Google/Facebook sign-in or account creation (invite code if your
+   workspace requires it).
+3. Copy **`access_token`** and the suggested **`mcp_url`** / **`server_url`**
+   into `~/.mcp/cookiy/credentials.json`. See
+   [`skills/cookiy/cli/commands.md`](skills/cookiy/cli/commands.md). **Do not
+   paste tokens into agent chat.**
+4. From the repo root, run `./cookiy.sh doctor` to verify.
+
+This browser flow is independent of MCP; MCP remains optional for IDE clients
+that use `npx cookiy-mcp`.
+
 ### macOS with Homebrew
 
 ```bash
