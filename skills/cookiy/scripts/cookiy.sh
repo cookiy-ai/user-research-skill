@@ -3,7 +3,7 @@
 # No dependencies beyond bash, curl, grep, sed, awk.
 set -euo pipefail
 
-VERSION="1.9.1"
+VERSION="1.9.2"
 DEFAULT_SERVER_URL="https://s-api.cookiy.ai"
 DEFAULT_CREDENTIALS_PATH="${COOKIY_CREDENTIALS:-$HOME/.mcp/cookiy/credentials.json}"
 TIMEOUT=120
@@ -163,13 +163,23 @@ invoke() {
 # Only includes keys listed in the allowed-keys spec.
 # Usage: build_json "key1 key2 key3" "$@"
 # Numeric keys: limit, amount_usd_cents, persona_count, target_participants, max_price_per_interview
-# Boolean keys: include_debug, auto_launch, force_reconfigure, wait, auto_generate_personas, recruit_reconfigure_confirmed
+# survey_id: digits only → JSON number (LimeSurvey sid); otherwise string
+# Boolean keys: include_debug, include_simulation, include_structure, auto_launch, force_reconfigure, wait, auto_generate_personas, recruit_reconfigure_confirmed
 # The rest are strings.
 # Sets global: BUILT_JSON, ARG_WAIT, ARG_JSON_RAW, ARG_POSITIONALS
 
 ARG_WAIT=""
 ARG_JSON_RAW=""
 ARG_POSITIONALS=""
+
+# CLI string → JSON true/false (for MCP tools that expect boolean, not "true" strings)
+bool_json() {
+  case "$1" in
+    true|True|TRUE|1|yes|Yes|YES|on|On|ON) echo true ;;
+    false|False|FALSE|0|no|No|NO|off|Off|OFF) echo false ;;
+    *) die "Invalid boolean value: $1 (use true or false)" ;;
+  esac
+}
 
 build_json() {
   local allowed="$1"; shift
@@ -199,12 +209,14 @@ build_json() {
       esac
       $first || json+=","
       first=false
-      # Numeric
       case "$key" in
         limit|amount_usd_cents|persona_count|target_participants|max_price_per_interview)
           json+="\"$key\":$val" ;;
-        include_debug|auto_launch|force_reconfigure|auto_generate_personas|recruit_reconfigure_confirmed)
-          json+="\"$key\":$val" ;;
+        survey_id)
+          if [[ "$val" =~ ^[0-9]+$ ]]; then json+="\"$key\":$val"
+          else json+="\"$key\":\"$(json_escape "$val")\""; fi ;;
+        include_debug|include_simulation|include_structure|auto_launch|force_reconfigure|auto_generate_personas|recruit_reconfigure_confirmed)
+          json+="\"$key\":$(bool_json "$val")" ;;
         *)
           json+="\"$key\":\"$(json_escape "$val")\"" ;;
       esac
@@ -242,6 +254,15 @@ require_key() {
   local key="$1"
   local msg="$2"
   if ! echo "$BUILT_JSON" | grep -q "\"$key\""; then
+    die "$msg"
+  fi
+}
+
+# Require key present and value not empty string (still allows numeric / non-string JSON values)
+require_non_empty_string_value() {
+  local key="$1" msg="$2"
+  require_key "$key" "$msg"
+  if echo "$BUILT_JSON" | grep -qE "\"$key\"[[:space:]]*:[[:space:]]*\"\"(,|})"; then
     die "$msg"
   fi
 }
@@ -459,7 +480,7 @@ interview)
     playback)
       build_json "study_id interview_id" "${itail[@]+"${itail[@]}"}"
       require_key study_id "interview playback requires --study-id"
-      require_key interview_id "interview playback requires --interview-id"
+      require_non_empty_string_value interview_id "interview playback requires --interview-id (set from interview list output)"
       invoke cookiy_interview_playback_get "$BUILT_JSON"
       ;;
     simulate)
@@ -482,7 +503,7 @@ interview)
         status)
           build_json "study_id job_id" "${srest[@]+"${srest[@]}"}"
           require_key study_id "interview simulate status requires --study-id"
-          require_key job_id "interview simulate status requires --job-id"
+          require_non_empty_string_value job_id "interview simulate status requires --job-id (from simulate start response, or export JOB_ID after --wait)"
           invoke cookiy_simulated_interview_status "$BUILT_JSON"
           ;;
         *) die "interview simulate start|status" ;;
@@ -547,6 +568,14 @@ quant)
   esac
   build_json "survey_id study_id include_structure structure_presentation query cursor limit" "${qtail[@]+"${qtail[@]}"}"
   merge_raw_json
+  case "$sub" in
+    detail|patch|report|results|stats)
+      require_key survey_id "quant $sub requires --survey-id (numeric sid from quant list)"
+      if echo "$BUILT_JSON" | grep -qE "\"survey_id\"[[:space:]]*:[[:space:]]*\"\"(,|})"; then
+        die "quant $sub requires non-empty --survey-id (e.g. export SURVEY_ID=487898)"
+      fi
+      ;;
+  esac
   invoke "$tool" "$BUILT_JSON"
   ;;
 

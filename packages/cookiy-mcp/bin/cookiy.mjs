@@ -126,7 +126,8 @@ function pickSnake(args, keys) {
     if (args[k] !== undefined && args[k] !== false) {
       let v = args[k];
       if (k === 'limit' || k === 'amount_usd_cents') v = Number(v);
-      if (k === 'include_debug') v = boolish(v);
+      if (k === 'include_debug' || k === 'include_simulation' || k === 'include_structure') v = boolish(v);
+      if (k === 'survey_id' && /^\d+$/.test(String(v))) v = Number(v);
       o[k] = v;
     }
   }
