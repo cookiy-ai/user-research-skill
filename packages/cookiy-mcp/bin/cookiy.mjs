@@ -211,6 +211,7 @@ function extractStudyId(createResult) {
   const data = sc?.data ?? sc;
   return (
     data?.study_id
+    || data?.studyId
     || data?.study?.id
     || data?.id
     || null
