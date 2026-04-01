@@ -5,6 +5,8 @@
 This document is **user/agent facing**: it describes CLI verbs only. It does
 not document IDE wiring or transport protocols.
 
+**同事复制即测**（含默认 `STUDY_ID`、完整命令块）：[`colleague-smoke-commands.md`](colleague-smoke-commands.md).
+
 ---
 
 ## Environment and credentials
@@ -56,7 +58,17 @@ All examples below use `./cookiy.sh`; substitute `skills/cookiy/scripts/cookiy.s
 
 Connectivity / introduce call with empty arguments.
 
-### `./cookiy.sh help <topic>`
+### `./cookiy.sh help` — local CLI manual (no credentials)
+
+Prints a **POSIX/man-style** reference: **NAME / SYNOPSIS / GLOBAL OPTIONS / COMMANDS**, with each command showing **Usage** and **Flags** (similar to common `--help` from Cobra / git-style tools). Same output for:
+
+```bash
+./cookiy.sh help
+./cookiy.sh help commands
+./cookiy.sh help cli
+```
+
+### `./cookiy.sh help <topic>` — server workflow help (needs credentials)
 
 Topics include: `overview`, `study`, `ai_interview`, `guide`, `recruitment`,
 `report`, `billing`, `quantitative` (aliases may work — server-side).

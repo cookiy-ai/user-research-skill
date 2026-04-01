@@ -3,7 +3,7 @@
 # No dependencies beyond bash, curl, grep, sed, awk.
 set -euo pipefail
 
-VERSION="1.9.4"
+VERSION="1.9.6"
 DEFAULT_SERVER_URL="https://s-api.cookiy.ai"
 DEFAULT_CREDENTIALS_PATH="${COOKIY_CREDENTIALS:-$HOME/.mcp/cookiy/credentials.json}"
 TIMEOUT=120
@@ -64,7 +64,7 @@ Environment:
 
 Commands:
   doctor                      Connectivity check
-  help <topic>                Workflow help
+  help [commands|cli|<topic>] Local CLI manual (no topic / commands / cli) or server workflow help
   study list|create|get|progress|activity|show|guide ...
   interview list|playback|simulate ...
   recruit start|status
@@ -325,6 +325,153 @@ extract_job_id() {
   echo "$jid"
 }
 
+# Local CLI reference (no credentials; printed by: help | help commands | help cli)
+# Layout: POSIX/man-inspired sections; Usage + Flags blocks similar to Cobra/docker-style --help.
+print_cli_commands_reference() {
+  cat <<EOF
+NAME
+    cookiy.sh — Cookiy hosted API client (bash, JSON-RPC)
+
+SYNOPSIS
+    cookiy.sh [GLOBAL OPTION ...] <command> [ARG ...]
+
+VERSION
+    ${VERSION}
+
+DESCRIPTION
+    Long options use kebab-case; they are sent as snake_case JSON fields (e.g. --study-id → study_id).
+    Wrapper-only: --wait (poll after some commands), --json (merge extra fields; not sent as a literal key).
+    Numeric sid for quant: --survey-id 12345 becomes JSON number when value is all digits.
+
+GLOBAL OPTIONS
+    --credentials <path>   Credentials JSON (default: ~/.mcp/cookiy/credentials.json)
+    --mcp-url <url>      Full JSON-RPC URL (overrides COOKIY_MCP_URL / file)
+    --server-url <url>   API base URL override
+
+ENVIRONMENT
+    COOKIY_CREDENTIALS     Path to credentials.json
+    COOKIY_MCP_URL         Full MCP JSON-RPC URL
+    COOKIY_SERVER_URL      API base when not in file
+
+DOCUMENTATION
+    skills/cookiy/cli/commands.md
+
+COMMANDS
+
+doctor — connectivity / introduce
+    Usage:   cookiy.sh doctor
+    Flags:   (none)
+    Note:    Requires credentials.
+
+help — this text or server topics
+    Usage:   cookiy.sh help
+             cookiy.sh help commands
+             cookiy.sh help cli
+             cookiy.sh help <topic>
+    Flags:   (none)
+    Note:    Empty, "commands", or "cli" prints this reference offline. <topic> calls the
+             hosted help tool and needs credentials (e.g. overview, quantitative).
+
+tool call — direct tool invocation
+    Usage:   cookiy.sh tool call <operation> --json '<object>'
+    Flags:   --json <object>   (required) arguments for the MCP operation <operation>
+
+study list — list studies
+    Usage:   cookiy.sh study list [--query <s>] [--status <s>] [--limit <n>] [--cursor <s>]
+    Flags:   --query <string>   --status <string>   --limit <integer>   --cursor <string>
+
+study create — create study from natural language
+    Usage:   cookiy.sh study create --query <s> --language <s> [--thinking <s>] [--attachments <s>] [--wait]
+    Flags:   --query <string> (required)   --language <string> (required)
+             --thinking <string>   --attachments <string>   --wait (poll activity)
+
+study get — fetch study record
+    Usage:   cookiy.sh study get --study-id <uuid>
+    Flags:   --study-id <uuid> (required)
+
+study progress | study activity — activity summary
+    Usage:   cookiy.sh study progress --study-id <uuid> [--job-id <uuid>] [--include-debug <bool>]
+             cookiy.sh study activity   (same as progress)
+    Flags:   --study-id (required)   --job-id   --include-debug <true|false>
+
+study show — study record and/or activity
+    Usage:   cookiy.sh study show --study-id <uuid> [--part record|progress|both|all] [--job-id <uuid>] [--include-debug <bool>]
+    Flags:   --study-id (required)   --part (default: both)   --job-id   --include-debug
+
+study guide status | study guide get
+    Usage:   cookiy.sh study guide status --study-id <uuid>
+             cookiy.sh study guide get --study-id <uuid>
+    Flags:   --study-id (required)
+
+study guide impact — preview patch
+    Usage:   cookiy.sh study guide impact --study-id <uuid> --json '<patch>'
+    Flags:   --study-id (required)   --json '<patch>' (required)
+
+study guide patch — apply patch
+    Usage:   cookiy.sh study guide patch --study-id <uuid> --base-revision <s> --idempotency-key <s> --json '<patch>' [--change-message <s>] [--recruit-reconfigure-confirmed <bool>]
+    Flags:   --study-id (required)   --base-revision (required)   --idempotency-key (required)   --json (required)
+             --change-message   --recruit-reconfigure-confirmed <bool>
+
+study guide upload — attach media
+    Usage:   cookiy.sh study guide upload --content-type <s> (--image-data <s> | --image-url <s>) [--study-id <uuid>]
+    Flags:   --content-type (required)   --image-data | --image-url (one required)   --study-id
+
+interview list
+    Usage:   cookiy.sh interview list --study-id <uuid> [--include-simulation <bool>] [--cursor <s>]
+    Flags:   --study-id (required)   --include-simulation   --cursor
+
+interview playback
+    Usage:   cookiy.sh interview playback --study-id <uuid> --interview-id <uuid>
+    Flags:   --study-id (required)   --interview-id (required, non-empty)
+
+interview simulate start
+    Usage:   cookiy.sh interview simulate start --study-id <uuid> [--auto-generate-personas <bool>] [--persona-count <n>] [--interviewee-persona <s>] [--json '<obj>'] [--wait]
+    Flags:   --study-id (required)   --auto-generate-personas   --persona-count   --interviewee-persona   --json   --wait
+
+interview simulate status
+    Usage:   cookiy.sh interview simulate status --study-id <uuid> --job-id <uuid>
+    Flags:   --study-id (required)   --job-id (required, non-empty)
+
+recruit start
+    Usage:   cookiy.sh recruit start --study-id <uuid> [--confirmation-token <s>] [--plain-text <s>] [--target-participants <n>] [--execution-duration <n>] [--max-price-per-interview <n>] [--channel-name <s>] [--auto-launch <bool>] [--force-reconfigure <bool>] [--recruit-mode <s>] [--survey-public-url <s>] [--json '<obj>']
+    Flags:   --study-id (required); others optional; --json merges extra fields
+
+recruit status
+    Usage:   cookiy.sh recruit status --study-id <uuid>
+    Flags:   --study-id (required)
+
+report status | report share-link
+    Usage:   cookiy.sh report status --study-id <uuid>
+             cookiy.sh report share-link --study-id <uuid>
+    Flags:   --study-id (required)
+
+quant list | quant create
+    Usage:   cookiy.sh quant list [--survey-id <sid>] [--study-id <uuid>] [--include-structure <bool>] [--structure-presentation <s>] [--query <s>] [--cursor <s>] [--limit <n>] [--json '<obj>']
+             cookiy.sh quant create  (same optional flags)
+    Flags:   all optional for list/create; numeric --survey-id → JSON number
+
+quant detail | patch | report | results | stats
+    Usage:   cookiy.sh quant detail --survey-id <sid> [flags as quant list]
+             cookiy.sh quant patch | report | results | stats  (same pattern)
+    Flags:   --survey-id (required, numeric sid); other filters optional as above
+
+billing balance
+    Usage:   cookiy.sh billing balance
+    Flags:   (none)
+
+billing checkout
+    Usage:   cookiy.sh billing checkout [--amount-usd-cents <n>] [--json '<obj>']
+    Flags:   provide amount via --amount-usd-cents and/or merged --json
+
+BOOLEAN FLAGS (values: true | false | 1 | 0 | yes | no | on | off)
+    --include-debug   --include-simulation   --include-structure
+    --auto-launch   --force-reconfigure   --auto-generate-personas   --recruit-reconfigure-confirmed
+
+FILES
+    Default credentials: ~/.mcp/cookiy/credentials.json
+EOF
+}
+
 # === Parse global options ==================================================
 
 ARGS=()
@@ -347,6 +494,15 @@ case "$CMD" in
   -v|--version) echo "$VERSION"; exit 0 ;;
 esac
 
+# Local CLI manual: no credentials
+if [[ "$CMD" == "help" ]]; then
+  htopic="${TAIL[0]:-}"
+  if [[ -z "$htopic" || "$htopic" == "commands" || "$htopic" == "cli" ]]; then
+    print_cli_commands_reference
+    exit 0
+  fi
+fi
+
 # All commands below need credentials
 load_credentials
 resolve_mcp_endpoint
@@ -361,7 +517,7 @@ doctor)
 
 help)
   topic="${TAIL[*]:-}"
-  [[ -n "$topic" ]] || die "Usage: cookiy help <topic>"
+  [[ -n "$topic" ]] || die "Usage: cookiy help <topic> (or: cookiy help commands)"
   invoke cookiy_help "{\"topic\":\"$(json_escape "$topic")\"}"
   ;;
 
