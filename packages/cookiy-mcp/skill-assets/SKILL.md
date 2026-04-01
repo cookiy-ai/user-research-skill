@@ -50,11 +50,10 @@ service.
 Always confirm Cookiy is reachable with valid credentials:
 
 1. Ensure credentials exist (see `cli/commands.md`).
-2. Run `cookiy doctor` (introduce / connectivity). If it fails, repair
-   credentials or environment — typically by re-running the existing
-   **Cookiy installer** for your environment (`npx cookiy-mcp` and the
-   `--client` flag appropriate to the host app). This skill does not
-   redefine that installer; it only requires a working login bundle.
+2. Run `cookiy doctor` (introduce / connectivity). If it fails, run
+   **`cookiy login`** (browser OAuth to the default credentials path) or
+   repair via `npx cookiy-mcp --client …` when the user also needs IDE/skill
+   install.
 3. If the user’s goal is exclusively setup or repair, stop after a short,
    plain-language success message — do not jump into research intake.
 

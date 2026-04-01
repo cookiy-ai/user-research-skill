@@ -44,6 +44,7 @@ export function resolveServerBaseUrl(creds) {
 }
 
 export function resolveMcpEndpoint(creds, serverBaseUrl) {
+  if (process.env.COOKIY_MCP_URL) return process.env.COOKIY_MCP_URL;
   if (creds?.mcp_url) return creds.mcp_url;
   return mcpUrl(serverBaseUrl || resolveServerBaseUrl(creds));
 }

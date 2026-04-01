@@ -206,7 +206,7 @@ export async function verifyCookiyMcpConnection(endpoint, accessToken, {
   return true;
 }
 
-async function openBrowser(url) {
+export async function openBrowser(url) {
   const { command, args } = buildBrowserOpenCommand(url);
 
   return new Promise((resolve) => {
@@ -249,7 +249,7 @@ function closeServer(server) {
   }
 }
 
-function waitForAuthCode(port, expectedState) {
+export function waitForAuthCode(port, expectedState) {
   return new Promise((resolve, reject) => {
     let settled = false;
     let serverFailed = false;
@@ -339,7 +339,7 @@ function waitForAuthCode(port, expectedState) {
   });
 }
 
-function findAvailablePort(startPort) {
+export function findAvailablePort(startPort) {
   return new Promise((resolve, reject) => {
     const server = createServer();
     server.listen(startPort, '127.0.0.1', () => {

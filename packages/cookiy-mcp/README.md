@@ -96,6 +96,16 @@ npx cookiy-mcp --remove
 npx cookiy-mcp -y
 ```
 
+## Cookiy CLI (`cookiy`)
+
+The same package installs a **`cookiy`** binary for terminal use against the hosted MCP JSON-RPC API.
+
+- **`cookiy login`** — Browser OAuth (PKCE). Writes tokens to **`~/.mcp/cookiy/credentials.json`** by default (or `COOKIY_CREDENTIALS`). Same stable path for all `cookiy` commands. Optional: `cookiy login dev` or `--server-url`.
+- **`cookiy doctor`** / **`cookiy study …`** — Use after login.
+
+Environment: `COOKIY_MCP_URL` (full MCP URL) overrides derived `https://<api>/mcp` for this process.
+
+
 ## What You Get After Bootstrap
 
 On supported clients, the CLI installs a local Cookiy skill copy first.

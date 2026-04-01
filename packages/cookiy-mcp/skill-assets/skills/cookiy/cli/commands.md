@@ -19,11 +19,16 @@ not document IDE wiring or transport protocols.
 | --- | --- |
 | `COOKIY_CREDENTIALS` | Path to `credentials.json` (default: `~/.mcp/cookiy/credentials.json` on Unix-like systems) |
 | `COOKIY_SERVER_URL` | Optional override of the API base URL (normally read from the credentials file) |
+| `COOKIY_MCP_URL` | Full JSON-RPC MCP URL (e.g. `https://s-api.cookiy.ai/mcp`). Highest precedence over `mcp_url` in the file and over `API base + /mcp`. |
 
-**Obtaining credentials:** use the existing Cookiy bootstrap for your host
-environment. The headless / sandbox flow (`npx cookiy-mcp --client manus -y`)
-writes `credentials.json` plus helper scripts under `~/.mcp/cookiy/`. Other
-clients use the same installer with a different `--client` value.
+**Stable credential path:** by default the CLI reads and writes **`~/.mcp/cookiy/credentials.json`** (or `COOKIY_CREDENTIALS`). `cookiy login` merges new tokens into that file so paths do not change between login and daily commands.
+
+**Obtaining credentials:**
+
+1. **Terminal-only (recommended for the CLI):** `cookiy login` — browser OAuth, same PKCE flow as headless install; writes the file above. Optional: `cookiy login dev` (alias) or `--server-url`.
+2. **IDE + skill install:** `npx cookiy-mcp --client <cursor|codex|…>` also writes credentials (and configures MCP). Headless: `npx cookiy-mcp --client manus -y` adds helper scripts under `~/.mcp/cookiy/<name>/` but the **CLI default path** remains `~/.mcp/cookiy/credentials.json` unless you set `COOKIY_CREDENTIALS`.
+
+Resume: if OAuth is interrupted, run `cookiy login` again; it reuses `~/.mcp/cookiy/pending-oauth-cli.json` next to the credentials file.
 
 The CLI reads `access_token` (and refreshes with `refresh_token` when the
 server returns unauthorized) exactly like the generated shell helpers.
@@ -37,6 +42,7 @@ These flags may appear **before** the subcommand:
 | Flag | Purpose |
 | --- | --- |
 | `--server-url <url>` | Force a specific Cookiy API base URL |
+| `--mcp-url <url>` | Full MCP JSON-RPC URL for this process (overrides `COOKIY_MCP_URL` / file) |
 | `--credentials <path>` | Use an alternate credentials file |
 
 ---
@@ -49,6 +55,12 @@ the full tool result JSON. For automation, pipe to `jq` as needed.
 ---
 
 ## Command tree
+
+### `cookiy login [env-or-url]`
+
+Interactive browser OAuth (PKCE). Writes **`access_token`**, **`refresh_token`**, `client_id`, `token_endpoint`, `server_url`, `mcp_url` into the credentials file (merges with existing JSON). Does **not** install IDE MCP configs.
+
+Optional first argument: environment alias (`prod`, `dev`, `preview`, …) or a full API base URL — same rules as the installer.
 
 ### `cookiy doctor`
 

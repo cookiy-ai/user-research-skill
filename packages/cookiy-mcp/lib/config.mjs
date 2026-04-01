@@ -1,6 +1,6 @@
 export const DEFAULT_SERVER_URL = 'https://s-api.cookiy.ai';
 export const SERVER_NAME = 'cookiy';
-export const VERSION = '1.8.0';
+export const VERSION = '1.9.0';
 
 // Legacy names from previous versions — removed during install to avoid duplicates
 export const LEGACY_SERVER_NAMES = ['cookiy_mcp', 'cookiy-mcp', 'cookiy_v1', 'cookiy-v1'];

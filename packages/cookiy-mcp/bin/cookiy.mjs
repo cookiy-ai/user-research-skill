@@ -2,7 +2,14 @@
 /**
  * Cookiy CLI — thin wrapper over hosted JSON-RPC (same tools as cookiy-mcp server).
  */
-import { VERSION } from '../lib/config.mjs';
+import {
+  VERSION,
+  DEFAULT_SERVER_URL,
+  ENV_ALIASES,
+  resolveApiUrl,
+  mcpUrl,
+} from '../lib/config.mjs';
+
 import { callCookiyTool, isUnauthorizedError } from '../lib/mcp-call-http.mjs';
 import {
   defaultCredentialsPath,
@@ -11,6 +18,8 @@ import {
   resolveMcpEndpoint,
   resolveServerBaseUrl,
 } from '../lib/cookiy-credentials.mjs';
+import { readJsonFile } from '../lib/util.mjs';
+import { runCookiyCliOAuthLogin } from '../lib/cookiy-cli-oauth.mjs';
 
 function usage() {
   return `Cookiy CLI v${VERSION}
@@ -20,9 +29,16 @@ Usage:
 
 Global options:
   --server-url     Override Cookiy API base URL (default: from credentials or production)
+  --mcp-url        Full JSON-RPC URL (overrides COOKIY_MCP_URL and credentials mcp_url for this process)
   --credentials    Path to credentials.json (default: ~/.mcp/cookiy/credentials.json or \$COOKIY_CREDENTIALS)
 
+Environment:
+  COOKIY_CREDENTIALS   Path to credentials.json
+  COOKIY_SERVER_URL    API base when not in file
+  COOKIY_MCP_URL       Full MCP URL (e.g. https://s-api.cookiy.ai/mcp)
+
 Commands:
+  login [env|url]    Browser OAuth; writes tokens to the credentials path above (stable; same file for all cookiy commands)
   doctor                      Connectivity check (introduce)
   help <topic>                 Workflow help (--topic for natural form also accepted as first arg)
   study list|create|get|progress|activity|show|guide ...
@@ -33,10 +49,11 @@ Commands:
   billing balance|checkout
   tool call <operation>        Escape hatch: --json '<arguments-object>'
 
-Authenticate: use \`npx cookiy-mcp\` for your IDE client, or headless \`--client manus\`
-which writes credentials under ~/.mcp/cookiy/.
+Authenticate: \`cookiy login\` (recommended), or \`npx cookiy-mcp\` for IDE + skill install.
 
 Examples:
+  cookiy login
+  cookiy login dev
   cookiy doctor
   cookiy study list --limit 10
   cookiy study create --query "..." --language zh
@@ -49,15 +66,20 @@ function die(msg, code = 1) {
   process.exit(code);
 }
 
-/** Pull --server-url / --credentials from front of argv; return { rest, serverUrl, credentialsPath } */
+/** Pull global flags from front of argv */
 function extractGlobalOpts(argv) {
   const rest = [];
   let serverUrl = null;
   let credentialsPath = null;
+  let mcpUrl = null;
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--server-url' && argv[i + 1]) {
       serverUrl = argv[++i];
+      continue;
+    }
+    if (a === '--mcp-url' && argv[i + 1]) {
+      mcpUrl = argv[++i];
       continue;
     }
     if (a === '--credentials' && argv[i + 1]) {
@@ -66,7 +88,7 @@ function extractGlobalOpts(argv) {
     }
     rest.push(a);
   }
-  return { rest, serverUrl, credentialsPath };
+  return { rest, serverUrl, credentialsPath, mcpUrl };
 }
 
 /**
@@ -152,10 +174,13 @@ async function pollSimStatus(ctx, studyId, jobId, { intervalMs = 2000, maxRounds
   }
 }
 
-function createContext(credentialsPath, serverUrlOverride) {
+function createContext(credentialsPath, serverUrlOverride, mcpUrlOverride) {
   let creds = loadCredentialsFile(credentialsPath);
   if (serverUrlOverride) {
     creds = { ...creds, server_url: serverUrlOverride };
+  }
+  if (mcpUrlOverride) {
+    creds = { ...creds, mcp_url: mcpUrlOverride };
   }
   const serverBase = resolveServerBaseUrl(creds);
   const mcpEndpoint = resolveMcpEndpoint(creds, serverBase);
@@ -208,12 +233,42 @@ async function main(argv) {
     process.exit(0);
   }
 
-  const { rest, serverUrl, credentialsPath: credOpt } = extractGlobalOpts(argv);
+  const { rest, serverUrl, credentialsPath: credOpt, mcpUrl: gMcp } = extractGlobalOpts(argv);
   const credentialsPath = credOpt || defaultCredentialsPath();
-  const ctx = createContext(credentialsPath, serverUrl);
-
   const [cmd, ...tail] = rest;
   if (!cmd) die('Missing command. Run cookiy --help');
+
+  if (cmd === 'login') {
+    const pos = tail.filter((a) => !a.startsWith('--'));
+    const aliasOrUrl = pos[0];
+    const rawFromPos = aliasOrUrl
+      ? (ENV_ALIASES[aliasOrUrl.toLowerCase()] || aliasOrUrl)
+      : '';
+    const rawServer =
+      serverUrl
+      || rawFromPos
+      || process.env.COOKIY_SERVER_URL
+      || readJsonFile(credentialsPath)?.server_url
+      || DEFAULT_SERVER_URL;
+    const resolvedServer = resolveApiUrl(rawServer);
+    let mcpEp = process.env.COOKIY_MCP_URL || gMcp;
+    if (!mcpEp) {
+      const prev = readJsonFile(credentialsPath);
+      mcpEp = prev?.mcp_url || mcpUrl(resolvedServer);
+    }
+    try {
+      await runCookiyCliOAuthLogin({
+        serverUrl: resolvedServer,
+        credentialsPath,
+        mcpEndpoint: mcpEp,
+      });
+    } catch (err) {
+      die(err?.message || String(err), 1);
+    }
+    return;
+  }
+
+  const ctx = createContext(credentialsPath, serverUrl, gMcp);
 
   try {
     if (cmd === 'doctor') {
