@@ -1,6 +1,6 @@
 # Cookiy CLI reference
 
-**Canonical CLI for this skill:** [`scripts/cookiy.sh`](../scripts/cookiy.sh) — **bash and curl only** (no Node.js). From the repository root you can run `./cookiy.sh`, which `exec`s the same script.
+**Canonical CLI for this skill:** [`scripts/cookiy.sh`](../scripts/cookiy.sh) — **bash and curl only** (no npm/Node). From the repository root you can run `./cookiy.sh`, which `exec`s the same script.
 
 This document is **user/agent facing**: it describes CLI verbs only. It does
 not document IDE wiring or transport protocols.
@@ -23,9 +23,9 @@ not document IDE wiring or transport protocols.
 - `refresh_token` (recommended — used when the access token expires)
 - `server_url` and/or `mcp_url` (recommended — otherwise use `--server-url` / `--mcp-url` / `COOKIY_MCP_URL`)
 
-Provision this file through your team’s Cookiy onboarding (for example completing account link in the IDE once MCP is configured, or copying a file from an environment that already authenticated). After the file exists, run `./cookiy.sh doctor` to verify connectivity.
+Provision this file through your team’s Cookiy onboarding (for example completing account link in the IDE, or copying a file from an environment that already authenticated). After the file exists, run `./cookiy.sh doctor` to verify connectivity.
 
-The shell CLI sends the same JSON-RPC `tools/call` envelope as MCP clients; token refresh behavior depends on the hosted service and whether `refresh_token` is present in the file.
+The shell CLI speaks the same hosted JSON-RPC `tools/call` protocol Cookiy exposes at your `mcp_url` / `--mcp-url`; token refresh depends on the service and whether `refresh_token` is present in the file.
 
 ---
 

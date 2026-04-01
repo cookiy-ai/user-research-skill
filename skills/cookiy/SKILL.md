@@ -12,8 +12,8 @@ description: >
 Cookiy gives your AI agent user-research capabilities: interview guides,
 AI-moderated interviews with real or simulated participants, and insight
 reports — driven through **`cookiy.sh`** (bash + curl) against the Cookiy
-hosted service. End users and agents should not rely on Node.js or
-`cookiy.mjs` for this skill.
+hosted service. This skill does not use npm, Node.js, or any packaged `.mjs`
+CLI — only the shell script under `skills/cookiy/scripts/`.
 
 ---
 
@@ -40,9 +40,6 @@ hosted service. End users and agents should not rely on Node.js or
 6. **Pure methodology (no Cookiy API):** use
    [`../pm-research/SKILL.md`](../pm-research/SKILL.md) only when the user
    wants general research methods, not platform operations.
-7. **Maintainer mirror:** the npm installer package also copies this skill
-   under `packages/cookiy-mcp/skill-assets/`; keep paths in sync when editing
-   (optional for end users who only use the git skill tree).
 
 ---
 
@@ -67,9 +64,9 @@ must place a valid `credentials.json` where the CLI expects it.
 - **Do not** paste access tokens, refresh tokens, or OAuth authorization codes
   into chat.
 - If the file is missing, direct the user to complete Cookiy account linking
-  in the environment that provisioned MCP (often the same flow that installs
-  the Cookiy integration), or to copy `credentials.json` from a machine that
-  already authenticated.
+  where your team documents it (for example the Cookiy integration in the
+  IDE), or to copy `credentials.json` from a machine that already
+  authenticated.
 - After the file is in place, verify with `./cookiy.sh doctor` before study
   commands.
 

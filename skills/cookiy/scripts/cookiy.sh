@@ -3,7 +3,7 @@
 # No dependencies beyond bash, curl, grep, sed, awk.
 set -euo pipefail
 
-VERSION="1.9.3"
+VERSION="1.9.4"
 DEFAULT_SERVER_URL="https://s-api.cookiy.ai"
 DEFAULT_CREDENTIALS_PATH="${COOKIY_CREDENTIALS:-$HOME/.mcp/cookiy/credentials.json}"
 TIMEOUT=120
