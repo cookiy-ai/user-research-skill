@@ -291,6 +291,7 @@ extract_study_id() {
   local r="$1"
   local sid
   sid="$(echo "$r" | json_get study_id)"
+  if [[ -z "$sid" ]]; then sid="$(echo "$r" | json_get studyId)"; fi
   if [[ -z "$sid" ]]; then sid="$(echo "$r" | json_get id)"; fi
   echo "$sid"
 }
