@@ -14,47 +14,47 @@ not document IDE wiring or transport protocols.
 | Variable | Meaning |
 | --- | --- |
 | `COOKIY_CREDENTIALS` | Path to `credentials.json` (default: `~/.mcp/cookiy/credentials.json` on Unix-like systems) |
-| `COOKIY_SERVER_URL` | Optional override of the API base URL (normally read from the credentials file) |
-| `COOKIY_MCP_URL` | Full JSON-RPC MCP URL (e.g. `https://s-api.cookiy.ai/mcp`). Highest precedence over `mcp_url` in the file and over `API base + /mcp`. |
+| `COOKIY_MCP_URL` | Optional full JSON-RPC MCP URL (e.g. `https://s-api.cookiy.ai/mcp`). Overrides `mcp_url` in the file when set for a given run. |
+| `COOKIY_LOGIN_PROBE_TIMEOUT` | Optional seconds for MCP `initialize` probe at start of `login` (default **30**). |
+| `COOKIY_SERVER_URL` | Optional API base URL for **`login`** (and MCP resolution when no `mcp_url`). Avoids typing `--server-url` if you export this once per shell. |
 
-**Stable credential path:** by default the CLI reads **`~/.mcp/cookiy/credentials.json`** (or `COOKIY_CREDENTIALS`).
+**Credential file:** the CLI reads **`~/.mcp/cookiy/credentials.json`** unless you pass `--credentials` or set `COOKIY_CREDENTIALS`.
 
-### Browser sign-in (recommended — no Node.js or MCP)
+**`login` without long flags** (paths/hosts only via environment):
 
-`cookiy.sh` has **no** interactive `login` subcommand. For **skill + shell CLI**
-only, obtain tokens from the hosted sign-in page in a normal browser:
+```bash
+export COOKIY_CREDENTIALS="$HOME/.mcp/cookiy/alternate-credentials.json"
+export COOKIY_SERVER_URL='https://<api-host>'   # omit for production default in script
+./cookiy.sh login
+```
 
-| Environment | Sign-in URL (path is always `/login`) |
-| --- | --- |
-| Production (short-link app) | `https://s.cookiy.ai/login` |
-| Example non-production | `https://dev.cookiy.ai/login` — use the web origin your Cookiy deployment documents |
+### Sign-in: `login` (single path)
 
-1. Open the URL, complete bot check and **Google** or **Facebook** sign-in (or
-   registration, including invite code if your workspace requires it).
-2. On success, the page shows an **`access_token`** and a **sample
-   `credentials.json`** (with `mcp_url` / `server_url` placeholders). Copy
-   them into your credentials file on the machine where you run `./cookiy.sh`.
-3. **Do not** paste tokens or OAuth **authorization codes** into agent chat.
-4. Run `./cookiy.sh doctor` to verify connectivity.
+**Flow:** First, if `credentials.json` already exists and `access_token` can complete an MCP **`initialize`** against the MCP URL resolved for this run (file + optional `--mcp-url` / `COOKIY_MCP_URL`), **`login` exits immediately** — no browser — and you can go straight to `doctor` / `study` / etc. If the file is missing, the token is empty, or MCP returns an error, the script **opens the OAuth (PKCE + dynamic registration) flow**, and **merges the new tokens into** `credentials.json`.
 
-**Required in `credentials.json` for API calls:**
+Requires **bash**, **curl**, **jq**, **openssl**. If the pasted redirect URL has a URL-encoded `code=`, **python3** is used to decode it. Optional: **`COOKIY_LOGIN_PROBE_TIMEOUT`** (seconds, default **30**) caps how long the pre-check `initialize` may take.
 
-- `access_token` (required)
-- `mcp_url` and/or `server_url` (required in practice — e.g. production MCP
-  JSON-RPC is `https://s-api.cookiy.ai/mcp` and API base `https://s-api.cookiy.ai`,
-  unless your environment uses different hosts)
+**Default command** (production API / MCP unless you override with env or flags):
 
-**Refresh tokens:** the browser sign-in flow currently issues an **access token**
-only. When it expires, open `/login` again and update `credentials.json`, or
-use an optional Node-based installer path (below).
+```bash
+./cookiy.sh --credentials "$HOME/.mcp/cookiy/credentials.json" login
+```
 
-**Optional (Node.js — MCP / `cookiy-mcp` installer):** if you install via
-`npx cookiy-mcp` or an IDE marketplace flow, you may instead complete OAuth
-through that tool (local callback). That path is **not** required for
-`./cookiy.sh`.
+Callback is fixed to `http://127.0.0.1:18247/callback` — after sign-in, copy the **full address bar URL** from that page (even if the browser shows a connection error), paste it into the terminal, press Enter.
 
-The shell CLI speaks the same hosted JSON-RPC `tools/call` protocol Cookiy
-exposes at your `mcp_url` / `--mcp-url`.
+Then verify:
+
+```bash
+./cookiy.sh doctor
+```
+
+(Use the same `--credentials` path as for `login` if it is not the default.)
+
+**Required in `credentials.json` after `login`:** `access_token`, `server_url`, `mcp_url`, and other fields the script saves. Do **not** paste tokens or OAuth authorization codes into agent chat.
+
+**Refresh / retry:** when the token expires or MCP rejects it, run the same `login` again — the pre-check fails and the browser flow runs. A `refresh_token` is stored when the server returns one.
+
+The shell CLI uses the hosted JSON-RPC `tools/call` protocol at your `mcp_url` / `COOKIY_MCP_URL` / `--mcp-url`.
 
 ---
 
@@ -64,9 +64,8 @@ These flags may appear **before** the subcommand:
 
 | Flag | Purpose |
 | --- | --- |
-| `--server-url <url>` | Force a specific Cookiy API base URL |
+| `--credentials <path>` | Credentials file path |
 | `--mcp-url <url>` | Full MCP JSON-RPC URL for this process (overrides `COOKIY_MCP_URL` / file) |
-| `--credentials <path>` | Use an alternate credentials file |
 
 ---
 
@@ -80,6 +79,10 @@ the full tool result JSON. For automation, pipe to `jq` as needed.
 ## Command tree
 
 All examples below use `./cookiy.sh`; substitute `skills/cookiy/scripts/cookiy.sh` if you prefer a non-root path.
+
+### `./cookiy.sh login`
+
+OAuth sign-in for **production**; writes `credentials.json`. Does not require an existing file. Takes **no** subcommand arguments (only global flags such as `--credentials`).
 
 ### `./cookiy.sh doctor`
 
@@ -160,7 +163,7 @@ Use `--json '{...}'` to supply fields not covered by flags (JSON keys use
 | Command | Notes |
 | --- | --- |
 | `./cookiy.sh billing balance` | No required args |
-| `./cookiy.sh billing checkout` | `--amount-usd-cents` (integer) or `--json` |
+| `./cookiy.sh billing checkout` | `--amount-cents` (USD integer cents, min 100) or `--json` |
 
 ### Escape hatch: `./cookiy.sh tool call`
 
@@ -177,3 +180,10 @@ the same source the Cookiy team publishes for integrators.
 ## Version
 
 `./cookiy.sh --version` prints the version string embedded in [`scripts/cookiy.sh`](../scripts/cookiy.sh) (`VERSION=` near the top of that file).
+
+---
+
+## Related
+
+- Tool contracts and errors: [`references/tool-contract.md`](../references/tool-contract.md)
+- Command tree (Chinese notes): [`cli/cli-command-tree.md`](cli-command-tree.md)
