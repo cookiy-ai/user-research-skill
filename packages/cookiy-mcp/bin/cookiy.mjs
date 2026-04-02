@@ -125,7 +125,7 @@ function pickSnake(args, keys) {
   for (const k of keys) {
     if (args[k] !== undefined && args[k] !== false) {
       let v = args[k];
-      if (k === 'limit' || k === 'amount_cents') v = Number(v);
+      if (k === 'limit' || k === 'amount_usd_cents') v = Number(v);
       if (k === 'include_debug') v = boolish(v);
       o[k] = v;
     }
@@ -507,12 +507,8 @@ async function main(argv) {
         return;
       }
       if (sub === 'checkout') {
-        const body = {
-          ...pickSnake(a, ['amount_cents']),
-          ...(a.json ? JSON.parse(a.json) : {}),
-        };
-        if (body.amount_cents === undefined) die('billing checkout requires --amount-cents or --json with amount_cents');
-        body.amount_cents = Number(body.amount_cents);
+        const body = pickSnake(a, ['amount_usd_cents']);
+        if (body.amount_usd_cents === undefined && a.json) Object.assign(body, JSON.parse(a.json));
         renderResult(await ctx.invoke('cookiy_billing_cash_checkout', body));
         return;
       }

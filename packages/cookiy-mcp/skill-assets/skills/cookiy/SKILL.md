@@ -15,9 +15,10 @@ reports — driven through **`cookiy.sh`** (bash + curl) against the Cookiy
 hosted service. This skill does not use npm, Node.js, or any packaged `.mjs`
 CLI — only the shell script under `skills/cookiy/scripts/`.
 
-**Signing in for the shell CLI:** run
-**`./cookiy.sh --credentials "$HOME/.mcp/cookiy/credentials.json" login`**
-(bash + curl + jq + openssl; see [`cli/commands.md`](cli/commands.md)). No npm/Node for `cookiy.sh`.
+**Signing in for the shell CLI:** use the hosted **browser sign-in** page
+(see [`cli/commands.md`](cli/commands.md)) to create `credentials.json`.
+That flow does **not** require Node.js, MCP, or a local OAuth callback
+listener.
 
 ---
 
@@ -26,14 +27,14 @@ CLI — only the shell script under `skills/cookiy/scripts/`.
 0. **Stay in this file first.** Do not load all `references/*.md` or the
    full `cli/commands.md` unless the user asks for a deep read.
 1. **Credentials + health:** read [`cli/commands.md`](cli/commands.md)
-   (`login` flow, `credentials.json` shape, environment variables).
-   After `login`, run `./cookiy.sh doctor` using
+   (browser sign-in URL, `credentials.json` shape, environment variables).
+   Place the file on disk, then run `./cookiy.sh doctor` using
    [`scripts/cookiy.sh`](scripts/cookiy.sh) or [`../../cookiy.sh`](../../cookiy.sh)
    at the repo root. Do not paste raw tokens or OAuth **authorization codes**
    into chat (see **Credentials runbook** below).
 2. **Route by intent (one reference):** open exactly **one** workflow file
    from the Intent Router below. For natural-language progress questions,
-   start with `./cookiy.sh study status` (see [`cli/cli-command-tree.md`](cli/cli-command-tree.md)).
+   start with `./cookiy.sh study progress` or `./cookiy.sh study show`.
 3. **Cross-cutting rules:** billing, HTTP 402, identifiers, pacing, and
    server hints → [`references/tool-contract.md`](references/tool-contract.md).
 4. **Quantitative studies:** `./cookiy.sh help quantitative` and the
@@ -54,8 +55,9 @@ CLI — only the shell script under `skills/cookiy/scripts/`.
 Always confirm Cookiy is reachable with valid credentials:
 
 1. Ensure `credentials.json` exists at the path described in `cli/commands.md`.
-   First-time setup: **`./cookiy.sh --credentials "$HOME/.mcp/cookiy/credentials.json" login`**
-   — **no npm/Node** required for `cookiy.sh`.
+   First-time setup: use the **browser CLI sign-in** page (URLs in `commands.md`)
+   to sign in or register, then save tokens to that file — **no Node or MCP**
+   required for this path. (`cookiy.sh` does **not** implement `login`.)
 2. Run `./cookiy.sh doctor` (introduce / connectivity). If it fails, fix
    tokens, `mcp_url` / `server_url`, or network — then retry.
 3. If the user’s goal is exclusively setup or repair, stop after a short,
@@ -63,16 +65,20 @@ Always confirm Cookiy is reachable with valid credentials:
 
 ### Credentials runbook (agents)
 
-The user must have a valid `credentials.json` on disk (default path in
-`cli/commands.md`), or create it via **`./cookiy.sh --credentials "$HOME/.mcp/cookiy/credentials.json" login`**.
+`cookiy.sh` cannot open a browser or perform OAuth itself. The user must
+have a valid `credentials.json` on disk (default path in `cli/commands.md`).
 
-- **Setup (skill + shell, no npm):** run that **`login`** command on the machine
-  that will call Cookiy. If credentials already work for MCP, it **exits without
-  a browser**; otherwise complete sign-in when prompted and paste the redirect
-  URL (or raw code) into the terminal. **Do not** paste access tokens or OAuth
-  codes into the agent chat.
+- **Preferred path (skill + shell, no Node):** direct the user to open the
+  **Cookiy CLI sign-in** URL in a browser (see `cli/commands.md`), complete
+  Google/Facebook sign-in or registration (invite code when required), then
+  copy the **`access_token`** and recommended `mcp_url` / `server_url`
+  fields into `credentials.json` on the machine where `./cookiy.sh` runs.
+  **Do not** paste access tokens or OAuth codes into the agent chat.
 - **Do not** paste access tokens, refresh tokens, or OAuth authorization codes
   into chat.
+- **Optional:** users who already use **`npx cookiy-mcp`** / IDE MCP installs
+  may obtain tokens through that installer (Node.js + local OAuth). That is
+  separate from the shell-only flow above.
 - After the file is in place, verify with `./cookiy.sh doctor` before study
   commands.
 
@@ -108,7 +114,7 @@ Avoid listing low-level server identifiers in user-facing prose.
 | Recruit real participants | Recruitment | [`references/recruitment.md`](references/recruitment.md) |
 | Report status or share link | Report and insights | [`references/report-insights.md`](references/report-insights.md) |
 | Quantitative questionnaires | Quantitative survey | `./cookiy.sh help quantitative` + [`references/tool-contract.md`](references/tool-contract.md) |
-| Natural-language study progress | Prefer `./cookiy.sh study status` | [`cli/cli-command-tree.md`](cli/cli-command-tree.md) |
+| Natural-language study progress | Prefer `./cookiy.sh study progress` / `./cookiy.sh study show` | [`references/tool-contract.md`](references/tool-contract.md) |
 | Add cash credit (USD cents) | `./cookiy.sh billing checkout` | [`references/tool-contract.md`](references/tool-contract.md) |
 | Check balance | `./cookiy.sh billing balance` | [`references/tool-contract.md`](references/tool-contract.md) |
 | List studies | `./cookiy.sh study list` | [`cli/commands.md`](cli/commands.md) |
@@ -130,7 +136,7 @@ specification. In short:
   only if needed.
 - **Hints:** honor `next_recommended_tools`, `status_message`, and
   `presentation_hint`.
-- **Progress questions:** prefer `./cookiy.sh study status` before drilling into
+- **Progress questions:** prefer `./cookiy.sh study progress` before drilling into
   atomic operations.
 - **Quantitative default chain** unless the server directs otherwise:
   `./cookiy.sh quant list` or `./cookiy.sh quant create` → `./cookiy.sh quant detail` →
@@ -138,8 +144,8 @@ specification. In short:
   exist; use `./cookiy.sh quant results` only when raw exports are explicitly
   required.
 - **Recruitment evidence order:** `./cookiy.sh interview list` →
-  `./cookiy.sh study status`（`sources.recruit`）或 `./cookiy.sh tool call cookiy_recruit_status …` →
-  latest `./cookiy.sh recruit start` response → `./cookiy.sh study get` state.
+  `./cookiy.sh recruit status` → latest `./cookiy.sh recruit start` response →
+  `./cookiy.sh study get` state.
 - **Identifiers:** never truncate or rewrite `study_id`, `job_id`,
   `interview_id`, `base_revision`, `confirmation_token`, etc.
 - **Payments (HTTP 402):** follow `structuredContent.data.payment_summary`

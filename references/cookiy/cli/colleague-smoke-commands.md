@@ -2,25 +2,24 @@
 
 ## 你需要准备什么
 
-1. **Cookiy 凭据（生产）**：见下方 **第一步**：用 `./cookiy.sh --credentials "$HOME/.mcp/cookiy/credentials.json" login` 写入默认路径；**无需 Node、无需装 MCP。** 也可用 `COOKIY_CREDENTIALS` 指向其他文件（`login` 与后续命令用同一路径）。
+1. **本机已有 Cookiy 凭据**：默认 `~/.mcp/cookiy/credentials.json`，或通过环境变量 `COOKIY_CREDENTIALS` 指向该文件。  
+   - shell 版 **没有** `login`。请用浏览器打开 **CLI 登录页**（生产示例：`https://s.cookiy.ai/login`；其他环境用团队提供的同路径 `/login` 域名），完成 Google/Facebook 登录或注册后，把页面中的 **access_token** 与示例 `mcp_url` / `server_url` 写入上述 JSON 文件。**无需 Node、也无需装 MCP** 即可完成。  
 2. **本仓库路径**：克隆或同步 `cookiy-skill` 后进入仓库根目录。
 
 ---
 
-## 第一步：进入仓库并登录（在仓库根目录执行）
+## 第一步：一条命令设置 CLI（在仓库根目录执行）
 
 ```bash
 cd /path/to/cookiy-skill
 CLI="$(pwd)/cookiy.sh"
-"$CLI" --credentials "$HOME/.mcp/cookiy/credentials.json" login
 ```
 
-浏览器完成登录/注册后，把地址栏里的回调 URL 粘贴回终端。然后可用 `"$CLI" doctor` 自检。
-
-若凭据不在默认路径，可设：
+若凭据不在默认路径，可加（按需二选一或都设）：
 
 ```bash
 # export COOKIY_CREDENTIALS="$HOME/.mcp/cookiy/credentials.json"
+# export COOKIY_MCP_URL="https://dev3-api.cookiy.ai/mcp"
 ```
 
 **粘贴规范：** 两条命令之间必须**换行**或写 `&&`，不要粘成 `doctor$CLI` 连在一起。
