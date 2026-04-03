@@ -15,20 +15,13 @@ before showing to the user.
 scripts/cookiy.sh study guide get --study-id <uuid>
 ```
 
-### study guide upload
+### study guide wait
 
-Upload an image and get an image key back. The key can then be included in the JSON payload when
-updating the guide via `study guide update`.
+Wait until the discussion/interview guide has been generated for the study.
 
 ```
-scripts/cookiy.sh study guide upload --content-type <s> (--image-data <s> | --image-url <s>)
+scripts/cookiy.sh study guide wait --study-id <uuid>
 ```
-
-| Flag | Required | Purpose |
-|------|----------|---------|
-| `--content-type` | yes | MIME type (e.g. `image/jpeg`) |
-| `--image-data` | one of these | Base64 data **without** the `data:` prefix |
-| `--image-url` | one of these | URL to the image |
 
 ### study guide update
 

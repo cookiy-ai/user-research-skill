@@ -6,7 +6,7 @@ Commands for launching participant recruitment for interviews.
 
 ## CLI Commands
 
-### recruit start
+### study recruit start
 
 Launch recruitment to find participants for a study's interviews. This is a two-step process:
 preview first, then confirm to launch.
@@ -16,7 +16,7 @@ previous recruit (e.g. first call with `--target-participants 10`, second call w
 `--target-participants 12` — the study ends up with 12).
 
 ```
-scripts/cookiy.sh recruit start --study-id <uuid> [--confirmation-token <s>] [--plain-text <s>] [--target-participants <n>]
+scripts/cookiy.sh study recruit start --study-id <uuid> [--confirmation-token <s>] [--plain-text <s>] [--target-participants <n>]
 ```
 
 | Flag | Required | Purpose |
@@ -34,10 +34,10 @@ Recruitment is a **two-step confirm flow**:
 
 ### Step 1 — Preview
 
-Call `recruit start` **without** `--confirmation-token`:
+Call `study recruit start` **without** `--confirmation-token`:
 
 ```
-scripts/cookiy.sh recruit start --study-id <uuid> [--plain-text <s>] [--target-participants <n>]
+scripts/cookiy.sh study recruit start --study-id <uuid> [--plain-text <s>] [--target-participants <n>]
 ```
 
 The response contains:
@@ -50,10 +50,10 @@ payment, so always wait for explicit confirmation.
 
 ### Step 2 — Confirm and Launch
 
-Once the user confirms, call `recruit start` again with the `--confirmation-token`:
+Once the user confirms, call `study recruit start` again with the `--confirmation-token`:
 
 ```
-scripts/cookiy.sh recruit start --study-id <uuid> --confirmation-token <token>
+scripts/cookiy.sh study recruit start --study-id <uuid> --confirmation-token <token>
 ```
 
 This launches the actual recruitment. The process takes time (hours to days depending on audience

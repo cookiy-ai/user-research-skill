@@ -65,12 +65,23 @@ scripts/cookiy.sh study create --query <s> --language <s> [--thinking <s>] [--at
 | Flag | Required | Purpose |
 |------|----------|---------|
 | `--query` | yes | Natural language — can be a one-sentence goal or a complete research plan / interview guide |
-| `--language` | yes | Discussion guide language (e.g. `en`, `zh`) |
-| `--thinking` | no | Add when the query is rough or vague so the backend reasons more carefully. Omit for well-defined queries. |
-| `--attachments` | no | Path to supplementary files |
+| `--thinking` | no | `medium` or `high`. Use when the query is rough or vague so the backend reasons more carefully. Omit for well-defined queries. |
+| `--attachments` | no | JSON array of `{s3_key, description}`, max 10 items. `s3_key` comes from the `study upload` command response. `description` is required. |
 | `--wait` | no | Wait until the discussion guide finishes generating before returning. Include this by default. |
 
 The response includes a **study ID** — save it; every subsequent command needs it.
+
+**image upload** — Upload an image and get an s3 key back. The key can be used in `study create --attachments` or in guide update payloads.
+
+```
+scripts/cookiy.sh study upload --content-type <s> (--image-data <s> | --image-url <s>)
+```
+
+| Flag | Required | Purpose |
+|------|----------|---------|
+| `--content-type` | yes | MIME type (e.g. `image/jpeg`) |
+| `--image-data` | one of these | Base64 data **without** the `data:` prefix |
+| `--image-url` | one of these | URL to the image |
 
 **study status** — Check the current stage of a study (guide generation, recruitment, interviews,
 etc.). Call this whenever you need to know what's happening before taking the next step.
@@ -89,19 +100,7 @@ Only read these when you need to perform the specific operation:
 | [`cookiy-study-recruit.md`](cookiy-study-recruit.md) | Launching and managing participant recruitment |
 | [`cookiy-study-simulated.md`](cookiy-study-simulated.md) | Running simulated interviews with AI personas |
 
-#### Report
-
-**report link** — Get the public URL for the study report.
-
-```
-scripts/cookiy.sh report link --study-id <uuid>
-```
-
-**report content** — Get the markdown content of the study report directly.
-
-```
-scripts/cookiy.sh report content --study-id <uuid>
-```
+| [`cookiy-study-report.md`](cookiy-study-report.md) | Report retrieval (link and content) |
 
 ### Billing
 
