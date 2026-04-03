@@ -48,19 +48,16 @@ Environment:
 
 Commands:
   save-token <token>          Save raw access token (validates against MCP first)
-  help [commands|cli|<topic>] Offline manual (commands|cli) or hosted help <topic>
-  study list|create|get|...   Includes study interview|recruit|report (preferred)
-  interview …               Alias for study interview …
-  recruit …                 Alias for study recruit …
-  report …                  Prefer study report … (alias: same as study report)
-  quant list|create|...
+  help                        Offline CLI reference
+  study list|create|status|upload|.. Includes guide|interview|recruit|report
+  quant list|create|get|update|report
   billing balance|checkout
 
 Examples:
   cookiy.sh save-token eyJhbGciOi...
   cookiy.sh help commands
   cookiy.sh study list --limit 10
-  cookiy.sh study create --query "..." --language zh --wait
+  cookiy.sh study create --query "..." --wait
 EOF
 }
 
@@ -251,9 +248,9 @@ invoke() {
 # Parses --key value pairs from "$@" and builds a JSON object.
 # Only includes keys listed in the allowed-keys spec.
 # Usage: build_json "key1 key2 key3" "$@"
-# Numeric keys: limit, amount_cents, persona_count, target_participants, max_price_per_interview
+# Numeric keys: limit, amount_usd_cents, persona_count, target_participants
 # survey_id: digits only → JSON number (LimeSurvey sid); otherwise string
-# Boolean keys: include_debug, include_simulation, include_structure, auto_launch, force_reconfigure, wait, auto_generate_personas, recruit_reconfigure_confirmed
+# Boolean keys: include_simulation, include_structure, auto_generate_personas
 # The rest are strings.
 # Sets global: BUILT_JSON, ARG_WAIT, ARG_JSON_RAW, ARG_POSITIONALS
 
@@ -299,12 +296,15 @@ build_json() {
       $first || json+=","
       first=false
       case "$key" in
-        limit|amount_cents|persona_count|target_participants|max_price_per_interview|timeout_ms)
-          json+="\"$key\":$val" ;;
+        limit|amount_usd_cents|persona_count|target_participants|timeout_ms)
+          # amount_usd_cents → MCP param name amount_cents
+          local json_key="$key"
+          [[ "$key" == "amount_usd_cents" ]] && json_key="amount_cents"
+          json+="\"$json_key\":$val" ;;
         survey_id)
           if [[ "$val" =~ ^[0-9]+$ ]]; then json+="\"$key\":$val"
           else json+="\"$key\":\"$(json_escape "$val")\""; fi ;;
-        include_debug|include_simulation|include_structure|auto_launch|force_reconfigure|auto_generate_personas|recruit_reconfigure_confirmed)
+        include_simulation|include_structure|auto_generate_personas)
           json+="\"$key\":$(bool_json "$val")" ;;
         *)
           json+="\"$key\":\"$(json_escape "$val")\"" ;;
@@ -371,14 +371,6 @@ extract_study_id() {
   echo "$sid"
 }
 
-extract_job_id() {
-  local r="$1"
-  local jid
-  jid="$(echo "$r" | json_get job_id)"
-  if [[ -z "$jid" ]]; then jid="$(echo "$r" | json_get jobId)"; fi
-  echo "$jid"
-}
-
 # Local CLI reference (no credentials; printed by: help | help commands | help cli)
 # Layout: POSIX/man-inspired sections; Usage + Flags blocks similar to Cobra/docker-style --help.
 print_cli_commands_reference() {
@@ -412,89 +404,85 @@ DOCUMENTATION
 
 COMMANDS
 
-help — this text or server topics
+help — offline CLI reference
     Usage:   cookiy.sh help
-             cookiy.sh help commands
-             cookiy.sh help cli
-             cookiy.sh help <topic>
-    Flags:   (none)
-    Note:    Empty, "commands", or "cli" prints this reference offline. <topic> calls the
-             hosted help tool and needs credentials (e.g. overview, quantitative).
+    Note:    Prints this reference. No credentials needed.
 
 study list — list studies
     Usage:   cookiy.sh study list [--limit <n>] [--cursor <s>]
     Flags:   --limit <integer>   --cursor <string>
 
-study create — create study from natural language
-    Usage:   cookiy.sh study create --query <s> --language <s> [--thinking <s>] [--attachments <s>] [--wait] [--timeout-ms <n>]
-    Flags:   --query <string> (required)   --language <string> (required)
+study guide create — create study from natural language
+    Usage:   cookiy.sh study guide create --query <s> [--thinking <s>] [--attachments <s>] [--wait] [--timeout-ms <n>]
+    Flags:   --query <string> (required)
              --thinking <string>   --attachments <string>   --wait (MCP wait_for_guide)   --timeout-ms (optional)
 
-study get — fetch study record
-    Usage:   cookiy.sh study get --study-id <uuid>
-    Flags:   --study-id <uuid> (required)
+study status — study record and activity
+    Usage:   cookiy.sh study status --study-id <uuid>
+    Flags:   --study-id (required)
+    Calls both cookiy_study_get and cookiy_activity_get for the study.
 
-study progress | study activity — activity summary
-    Usage:   cookiy.sh study progress --study-id <uuid> [--job-id <uuid>] [--include-debug <bool>]
-             cookiy.sh study activity   (same as progress)
-    Flags:   --study-id (required)   --job-id   --include-debug <true|false>
-
-study show — study record and/or activity
-    Usage:   cookiy.sh study show --study-id <uuid> [--part record|progress|both|all] [--job-id <uuid>] [--include-debug <bool>]
-    Flags:   --study-id (required)   --part (default: both)   --job-id   --include-debug
-
-study guide status | study guide wait | study guide get
-    Usage:   cookiy.sh study guide status --study-id <uuid>
-             cookiy.sh study guide wait --study-id <uuid> [--timeout-ms <n>]
+study guide wait | get
+    Usage:   cookiy.sh study guide wait --study-id <uuid> [--timeout-ms <n>]
              cookiy.sh study guide get --study-id <uuid>
     Flags:   --study-id (required)
-
     study guide wait blocks until guide ready/failed or timeout (server-side).
 
-study guide impact — preview patch
-    Usage:   cookiy.sh study guide impact --study-id <uuid> --json '<patch>'
-    Flags:   --study-id (required)   --json '<patch>' (required)
-
-study guide patch — apply patch
-    Usage:   cookiy.sh study guide patch --study-id <uuid> --base-revision <s> --idempotency-key <s> --json '<patch>' [--change-message <s>] [--recruit-reconfigure-confirmed <bool>]
+study guide update — apply patch to discussion guide
+    Usage:   cookiy.sh study guide update --study-id <uuid> --base-revision <s> --idempotency-key <s> --json '<patch>' [--change-message <s>]
     Flags:   --study-id (required)   --base-revision (required)   --idempotency-key (required)   --json (required)
-             --change-message   --recruit-reconfigure-confirmed <bool>
+             --change-message
 
-study guide upload — attach media
-    Usage:   cookiy.sh study guide upload --content-type <s> (--image-data <s> | --image-url <s>) [--study-id <uuid>]
-    Flags:   --content-type (required)   --image-data | --image-url (one required)   --study-id
+study upload — attach media (image upload)
+    Usage:   cookiy.sh study upload --content-type <s> (--image-data <s> | --image-url <s>)
+    Flags:   --content-type (required)   --image-data | --image-url (one required)
 
-study interview … (preferred)  Alias: interview … → study interview …
-    list | playback | simulate start|status|wait — same flags; use study interview …
+study interview list | playback [url|content] | simulate start|wait
+    Usage:   cookiy.sh study interview list --study-id <uuid> [--include-simulation <bool>] [--cursor <s>]
+             cookiy.sh study interview playback --study-id <uuid> [--interview-id <uuid>]
+             cookiy.sh study interview playback url --study-id <uuid> [--interview-id <uuid>]
+             cookiy.sh study interview playback content --study-id <uuid> [--interview-id <uuid>]
+             cookiy.sh study interview simulate start --study-id <uuid> [--persona-count <n>] [--auto-generate-personas <bool>] [--interviewee-persona <s>] [--wait] [--timeout-ms <n>] [--json '<obj>']
+             cookiy.sh study interview simulate wait --study-id <uuid> --job-id <uuid> [--timeout-ms <n>]
 
-interview simulate wait
-    Usage:   cookiy.sh study interview simulate wait --study-id <uuid> --job-id <uuid> [--timeout-ms <n>]
+study recruit start
+    Usage:   cookiy.sh study recruit start --study-id <uuid> [--confirmation-token <s>] [--plain-text <s>] [--target-participants <n>]
 
-study recruit …   Alias: recruit …
-study report status | study report wait | study report share-link   Alias: report …
-    study report wait blocks until report PREVIEW/READY or timeout (server-side).
+study report content | link
+    Usage:   cookiy.sh study report content --study-id <uuid> [--wait] [--timeout-ms <n>]
+             cookiy.sh study report link --study-id <uuid>
+    report content with --wait or --timeout-ms polls server-side until PREVIEW/READY or timeout.
 
-quant list | quant create
-    Usage:   cookiy.sh quant list [--survey-id <sid>] [--study-id <uuid>] [--include-structure <bool>] [--structure-presentation <s>] [--query <s>] [--cursor <s>] [--limit <n>] [--json '<obj>']
-             cookiy.sh quant create  (same optional flags)
-    Flags:   all optional for list/create; numeric --survey-id → JSON number
+quant list — list surveys
+    Usage:   cookiy.sh quant list [--study-id <uuid>] [--json '<obj>']
+    Flags:   --study-id (optional)
 
-quant detail | patch | report | results | stats
-    Usage:   cookiy.sh quant detail --survey-id <sid> [flags as quant list]
-             cookiy.sh quant patch | report | results | stats  (same pattern)
-    Flags:   --survey-id (required, numeric sid); other filters optional as above
+quant create — create survey
+    Usage:   cookiy.sh quant create [--study-id <uuid>] --json '<obj>'
+    Flags:   --study-id (optional)   --json (required: survey_title, groups[], etc.)
+
+quant get — survey detail with structure
+    Usage:   cookiy.sh quant get --survey-id <n> [--study-id <uuid>] [--language <s>] [--include-structure <bool>] [--structure-presentation <s>] [--json '<obj>']
+    Flags:   --survey-id (required, numeric)   --study-id   --language   --include-structure   --structure-presentation
+
+quant update — patch survey
+    Usage:   cookiy.sh quant update --survey-id <n> --json '<obj>'
+    Flags:   --survey-id (required, numeric)   --json (required: survey, groups, questions, etc.)
+
+quant report — survey report
+    Usage:   cookiy.sh quant report --survey-id <n> [--json '<obj>']
+    Flags:   --survey-id (required, numeric)   --json (optional: language, completion_status, etc.)
 
 billing balance
     Usage:   cookiy.sh billing balance
     Output:  one plain-text line: MCP .data.balance_summary only (jq).
 
 billing checkout
-    Usage:   cookiy.sh billing checkout --amount-cents <n> [--json '<obj>']
-    Flags:   USD integer cents (min 100); MCP argument name is amount_cents.
+    Usage:   cookiy.sh billing checkout --amount-usd-cents <n> [--json '<obj>']
+    Flags:   USD integer cents (min 100); internally mapped to MCP amount_cents.
 
 BOOLEAN FLAGS (values: true | false | 1 | 0 | yes | no | on | off)
-    --include-debug   --include-simulation   --include-structure
-    --auto-launch   --force-reconfigure   --auto-generate-personas   --recruit-reconfigure-confirmed
+    --include-simulation   --include-structure   --auto-generate-personas
 
 save-token — store raw access token from browser sign-in
     Usage:   cookiy.sh save-token <access_token>
@@ -527,32 +515,15 @@ done
 CMD="${ARGS[0]}"
 TAIL=("${ARGS[@]:1}")
 
-# Preferred command prefixes (aliases)
-if [[ "$CMD" == "interview" ]]; then
-  CMD="study"
-  TAIL=("interview" "${TAIL[@]}")
-fi
-if [[ "$CMD" == "recruit" ]]; then
-  CMD="study"
-  TAIL=("recruit" "${TAIL[@]}")
-fi
-if [[ "$CMD" == "report" ]]; then
-  CMD="study"
-  TAIL=("report" "${TAIL[@]}")
-fi
-
 case "$CMD" in
   -h|--help) usage; exit 0 ;;
   -v|--version) echo "$VERSION"; exit 0 ;;
 esac
 
-# Local CLI manual: no credentials
+# Local CLI manual: no credentials needed
 if [[ "$CMD" == "help" ]]; then
-  htopic="${TAIL[0]:-}"
-  if [[ -z "$htopic" || "$htopic" == "commands" || "$htopic" == "cli" ]]; then
-    print_cli_commands_reference
-    exit 0
-  fi
+  print_cli_commands_reference
+  exit 0
 fi
 
 # save-token: no prior credentials required
@@ -571,12 +542,6 @@ resolve_mcp_endpoint
 
 case "$CMD" in
 
-help)
-  topic="${TAIL[*]:-}"
-  [[ -n "$topic" ]] || die "Usage: cookiy help <topic> (or: cookiy help commands)"
-  invoke cookiy_help "{\"topic\":\"$(json_escape "$topic")\"}"
-  ;;
-
 study)
   sub="${TAIL[0]:-}"
   stail=("${TAIL[@]:1}")
@@ -586,55 +551,30 @@ study)
       build_json "limit cursor" "${stail[@]+"${stail[@]}"}"
       invoke cookiy_study_list "$BUILT_JSON"
       ;;
-    create)
-      build_json "query language thinking attachments timeout_ms" "${stail[@]+"${stail[@]}"}"
-      require_key query "study create requires --query"
-      require_key language "study create requires --language"
-      payload="$BUILT_JSON"
-      if [[ "$ARG_WAIT" == "true" ]]; then
-        payload="$(echo "$payload" | jq -c '. + {wait_for_guide: true}')"
-      fi
-      invoke cookiy_study_create "$payload"
-      ;;
-    get)
+    status)
       build_json "study_id" "${stail[@]+"${stail[@]}"}"
-      require_key study_id "study get requires --study-id"
+      require_key study_id "study status requires --study-id"
       invoke cookiy_study_get "$BUILT_JSON"
-      ;;
-    progress|activity)
-      build_json "study_id job_id include_debug" "${stail[@]+"${stail[@]}"}"
-      require_key study_id "study progress requires --study-id"
       invoke cookiy_activity_get "$BUILT_JSON"
       ;;
-    show)
-      build_json "study_id part job_id include_debug" "${stail[@]+"${stail[@]}"}"
-      require_key study_id "study show requires --study-id"
-      local_study_id="$(built_get study_id)"
-      local_part="$(built_get part)"
-      case "${local_part:-both}" in
-        both|all|"")
-          invoke cookiy_study_get "{\"study_id\":\"$local_study_id\"}"
-          build_json "study_id job_id include_debug" "${stail[@]+"${stail[@]}"}"
-          invoke cookiy_activity_get "$BUILT_JSON"
-          ;;
-        record)
-          invoke cookiy_study_get "{\"study_id\":\"$local_study_id\"}"
-          ;;
-        progress)
-          build_json "study_id job_id include_debug" "${stail[@]+"${stail[@]}"}"
-          invoke cookiy_activity_get "$BUILT_JSON"
-          ;;
-        *) die "study show: --part record|progress|both" ;;
-      esac
+    upload)
+      build_json "image_data image_url content_type" "${stail[@]+"${stail[@]}"}"
+      require_key content_type "study upload requires --content-type"
+      invoke cookiy_media_upload "$BUILT_JSON"
       ;;
     guide)
       gcmd="${stail[0]:-}"
       gtail=("${stail[@]:1}")
       case "$gcmd" in
-        status)
-          build_json "study_id" "${gtail[@]+"${gtail[@]}"}"
-          require_key study_id "study guide status requires --study-id"
-          invoke cookiy_guide_status "$BUILT_JSON"
+        create)
+          build_json "query thinking attachments timeout_ms" "${gtail[@]+"${gtail[@]}"}"
+          require_key query "study guide create requires --query"
+          payload="$BUILT_JSON"
+          # --wait or --timeout-ms implies server-side wait
+          if [[ "$ARG_WAIT" == "true" ]] || echo "$payload" | grep -q '"timeout_ms"'; then
+            payload="$(echo "$payload" | jq -c '. + {wait_for_guide: true}')"
+          fi
+          invoke cookiy_study_create "$payload"
           ;;
         wait)
           build_json "study_id timeout_ms" "${gtail[@]+"${gtail[@]}"}"
@@ -646,27 +586,15 @@ study)
           require_key study_id "study guide get requires --study-id"
           invoke cookiy_guide_get "$BUILT_JSON"
           ;;
-        impact)
-          build_json "study_id" "${gtail[@]+"${gtail[@]}"}"
-          require_key study_id "study guide impact requires --study-id"
-          [[ -n "$ARG_JSON_RAW" ]] || die "study guide impact requires --json patch object"
-          local_sid="$(built_get study_id)"
-          invoke cookiy_guide_impact "{\"study_id\":\"$local_sid\",\"patch\":$ARG_JSON_RAW}"
-          ;;
-        patch)
-          build_json "study_id base_revision idempotency_key change_message recruit_reconfigure_confirmed" "${gtail[@]+"${gtail[@]}"}"
-          require_key study_id "study guide patch requires --study-id"
-          require_key base_revision "study guide patch requires --base-revision"
-          require_key idempotency_key "study guide patch requires --idempotency-key"
-          [[ -n "$ARG_JSON_RAW" ]] || die "study guide patch requires --json"
+        update)
+          build_json "study_id base_revision idempotency_key change_message" "${gtail[@]+"${gtail[@]}"}"
+          require_key study_id "study guide update requires --study-id"
+          require_key base_revision "study guide update requires --base-revision"
+          require_key idempotency_key "study guide update requires --idempotency-key"
+          [[ -n "$ARG_JSON_RAW" ]] || die "study guide update requires --json"
           # Inject patch key: strip trailing }, append ,"patch":...}
           BUILT_JSON="${BUILT_JSON%\}},\"patch\":$ARG_JSON_RAW}"
           invoke cookiy_guide_patch "$BUILT_JSON"
-          ;;
-        upload)
-          build_json "study_id image_data image_url content_type" "${gtail[@]+"${gtail[@]}"}"
-          require_key content_type "study guide upload requires --content-type"
-          invoke cookiy_media_upload "$BUILT_JSON"
           ;;
         *) die "Unknown: study guide ${gcmd:-}" ;;
       esac
@@ -681,10 +609,29 @@ study)
           invoke cookiy_interview_list "$BUILT_JSON"
           ;;
         playback)
-          build_json "study_id interview_id" "${itail[@]+"${itail[@]}"}"
-          require_key study_id "study interview playback requires --study-id"
-          require_non_empty_string_value interview_id "study interview playback requires --interview-id"
-          invoke cookiy_interview_playback_get "$BUILT_JSON"
+          psub="${itail[0]:-}"
+          ptail=("${itail[@]:1}")
+          case "$psub" in
+            url)
+              build_json "study_id interview_id" "${ptail[@]+"${ptail[@]}"}"
+              require_key study_id "study interview playback url requires --study-id"
+              result="$(invoke cookiy_interview_playback_get "$BUILT_JSON")"
+              echo "$result" | jq '{playback_page_url: (.interviews // [. ])[].playback_page_url, playback_page_expires_at: (.interviews // [. ])[].playback_page_expires_at}'
+              ;;
+            content)
+              build_json "study_id interview_id" "${ptail[@]+"${ptail[@]}"}"
+              require_key study_id "study interview playback content requires --study-id"
+              result="$(invoke cookiy_interview_playback_get "$BUILT_JSON")"
+              echo "$result" | jq '{transcript: (.interviews // [. ])[].transcript, turn_count: (.interviews // [. ])[].turn_count, transcript_available: (.interviews // [. ])[].transcript_available}'
+              ;;
+            --*|"")
+              # No subcommand — return full playback (default behavior)
+              build_json "study_id interview_id" "${itail[@]+"${itail[@]}"}"
+              require_key study_id "study interview playback requires --study-id"
+              invoke cookiy_interview_playback_get "$BUILT_JSON"
+              ;;
+            *) die "study interview playback [url|content] --study-id <uuid> [--interview-id <uuid>]" ;;
+          esac
           ;;
         simulate)
           ssub="${itail[0]:-}"
@@ -695,16 +642,11 @@ study)
               merge_raw_json
               require_key study_id "study interview simulate start requires --study-id"
               payload="$BUILT_JSON"
-              if [[ "$ARG_WAIT" == "true" ]]; then
+              # --wait or --timeout-ms implies server-side wait
+              if [[ "$ARG_WAIT" == "true" ]] || echo "$payload" | grep -q '"timeout_ms"'; then
                 payload="$(echo "$payload" | jq -c '. + {wait: true}')"
               fi
               invoke cookiy_simulated_interview_generate "$payload"
-              ;;
-            status)
-              build_json "study_id job_id" "${srest[@]+"${srest[@]}"}"
-              require_key study_id "study interview simulate status requires --study-id"
-              require_non_empty_string_value job_id "study interview simulate status requires --job-id"
-              invoke cookiy_simulated_interview_status "$BUILT_JSON"
               ;;
             wait)
               build_json "study_id job_id timeout_ms" "${srest[@]+"${srest[@]}"}"
@@ -712,7 +654,7 @@ study)
               require_non_empty_string_value job_id "study interview simulate wait requires --job-id"
               invoke cookiy_simulated_interview_status "$(echo "$BUILT_JSON" | jq -c '. + {wait: true}')"
               ;;
-            *) die "study interview simulate start|status|wait" ;;
+            *) die "study interview simulate start|wait" ;;
           esac
           ;;
         *) die "Unknown study interview subcommand: ${isub:-}" ;;
@@ -723,39 +665,33 @@ study)
       rrest=("${stail[@]:1}")
       case "$rsub" in
         start)
-          build_json "study_id confirmation_token plain_text target_participants execution_duration max_price_per_interview channel_name auto_launch force_reconfigure recruit_mode survey_public_url" "${rrest[@]+"${rrest[@]}"}"
-          merge_raw_json
+          build_json "study_id confirmation_token plain_text target_participants" "${rrest[@]+"${rrest[@]}"}"
           require_key study_id "study recruit start requires --study-id"
           invoke cookiy_recruit_create "$BUILT_JSON"
           ;;
-        status)
-          build_json "study_id" "${rrest[@]+"${rrest[@]}"}"
-          require_key study_id "study recruit status requires --study-id"
-          invoke cookiy_recruit_status "$BUILT_JSON"
-          ;;
-        *) die "study recruit start|status" ;;
+        *) die "study recruit start" ;;
       esac
       ;;
     report)
       rsub="${stail[0]:-}"
       rrest=("${stail[@]:1}")
       case "$rsub" in
-        status)
-          build_json "study_id" "${rrest[@]+"${rrest[@]}"}"
-          require_key study_id "study report status requires --study-id"
-          invoke cookiy_report_status "$BUILT_JSON"
-          ;;
-        wait)
+        content)
           build_json "study_id timeout_ms" "${rrest[@]+"${rrest[@]}"}"
-          require_key study_id "study report wait requires --study-id"
-          invoke cookiy_report_status "$(echo "$BUILT_JSON" | jq -c '. + {wait: true}')"
+          require_key study_id "study report content requires --study-id"
+          payload="$BUILT_JSON"
+          # --wait or --timeout-ms implies server-side wait
+          if [[ "$ARG_WAIT" == "true" ]] || echo "$payload" | grep -q '"timeout_ms"'; then
+            payload="$(echo "$payload" | jq -c '. + {wait: true}')"
+          fi
+          invoke cookiy_report_status "$payload"
           ;;
-        share-link)
+        link)
           build_json "study_id" "${rrest[@]+"${rrest[@]}"}"
-          require_key study_id "study report share-link requires --study-id"
+          require_key study_id "study report link requires --study-id"
           invoke cookiy_report_share_link_get "$BUILT_JSON"
           ;;
-        *) die "study report status|wait|share-link" ;;
+        *) die "study report content|link" ;;
       esac
       ;;
     *) die "Unknown study subcommand: ${sub:-}" ;;
@@ -767,26 +703,38 @@ quant)
   qtail=("${TAIL[@]:1}")
 
   case "$sub" in
-    list)    tool=cookiy_quant_survey_list ;;
-    create)  tool=cookiy_quant_survey_create ;;
-    detail)  tool=cookiy_quant_survey_detail ;;
-    patch)   tool=cookiy_quant_survey_patch ;;
-    report)  tool=cookiy_quant_survey_report ;;
-    results) tool=cookiy_quant_survey_results ;;
-    stats)   tool=cookiy_quant_survey_stats ;;
-    *)       die "quant list|create|detail|patch|report|results|stats" ;;
-  esac
-  build_json "survey_id study_id include_structure structure_presentation query cursor limit" "${qtail[@]+"${qtail[@]}"}"
-  merge_raw_json
-  case "$sub" in
-    detail|patch|report|results|stats)
-      require_key survey_id "quant $sub requires --survey-id (numeric sid from quant list)"
-      if echo "$BUILT_JSON" | grep -qE "\"survey_id\"[[:space:]]*:[[:space:]]*\"\"(,|})"; then
-        die "quant $sub requires non-empty --survey-id (e.g. export SURVEY_ID=487898)"
-      fi
+    list)
+      build_json "study_id" "${qtail[@]+"${qtail[@]}"}"
+      merge_raw_json
+      invoke cookiy_quant_survey_list "$BUILT_JSON"
+      ;;
+    create)
+      build_json "study_id" "${qtail[@]+"${qtail[@]}"}"
+      merge_raw_json
+      invoke cookiy_quant_survey_create "$BUILT_JSON"
+      ;;
+    get)
+      build_json "survey_id study_id language include_structure structure_presentation" "${qtail[@]+"${qtail[@]}"}"
+      merge_raw_json
+      require_key survey_id "quant get requires --survey-id (numeric sid from quant list)"
+      invoke cookiy_quant_survey_detail "$BUILT_JSON"
+      ;;
+    update)
+      build_json "survey_id" "${qtail[@]+"${qtail[@]}"}"
+      merge_raw_json
+      require_key survey_id "quant update requires --survey-id (numeric sid from quant list)"
+      invoke cookiy_quant_survey_patch "$BUILT_JSON"
+      ;;
+    report)
+      build_json "survey_id" "${qtail[@]+"${qtail[@]}"}"
+      merge_raw_json
+      require_key survey_id "quant report requires --survey-id (numeric sid from quant list)"
+      invoke cookiy_quant_survey_report "$BUILT_JSON"
+      ;;
+    *)
+      die "quant list|create|get|update|report"
       ;;
   esac
-  invoke "$tool" "$BUILT_JSON"
   ;;
 
 billing)
@@ -800,9 +748,9 @@ billing)
       echo "$result" | print_balance_summary_only
       ;;
     checkout)
-      build_json "amount_cents" "${btail[@]+"${btail[@]}"}"
+      build_json "amount_usd_cents" "${btail[@]+"${btail[@]}"}"
       merge_raw_json
-      require_key amount_cents "billing checkout requires --amount-cents <integer> and/or --json with amount_cents"
+      require_key amount_cents "billing checkout requires --amount-usd-cents <integer> (or --json with amount_cents)"
       invoke cookiy_billing_cash_checkout "$BUILT_JSON"
       ;;
     *) die "billing balance|checkout" ;;
