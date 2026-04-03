@@ -65,7 +65,7 @@ scripts/cookiy.sh study create --query <s> --language <s> [--thinking <s>] [--at
 | Flag | Required | Purpose |
 |------|----------|---------|
 | `--query` | yes | Natural language — can be a one-sentence goal or a complete research plan / interview guide |
-| `--language` | yes | Interview language (e.g. `en`, `zh`) |
+| `--language` | yes | Discussion guide language (e.g. `en`, `zh`) |
 | `--thinking` | no | Add when the query is rough or vague so the backend reasons more carefully. Omit for well-defined queries. |
 | `--attachments` | no | Path to supplementary files |
 | `--wait` | no | Wait until the discussion guide finishes generating before returning. Include this by default. |
@@ -85,9 +85,9 @@ Only read these when you need to perform the specific operation:
 
 | File | Covers |
 |------|--------|
-| [`cookiy-study-guide.md`](cookiy-study-guide.md) | Viewing and editing discussion guides (empty for now) |
-| [`cookiy-study-recruit.md`](cookiy-study-recruit.md) | Launching and managing participant recruitment (empty for now) |
-| [`cookiy-study-simulated.md`](cookiy-study-simulated.md) | Running simulated interviews with AI personas (empty for now) |
+| [`cookiy-study-guide.md`](cookiy-study-guide.md) | Viewing and editing discussion guides |
+| [`cookiy-study-recruit.md`](cookiy-study-recruit.md) | Launching and managing participant recruitment |
+| [`cookiy-study-simulated.md`](cookiy-study-simulated.md) | Running simulated interviews with AI personas |
 
 #### Report
 
@@ -105,7 +105,7 @@ scripts/cookiy.sh report content --study-id <uuid>
 
 ### Billing
 
-Payment and billing related guidance and operations. Refer to [`cookiy-billing.md`](cookiy-billing.md) (empty for now).
+Payment and billing related guidance and operations. Refer to [`cookiy-billing.md`](cookiy-billing.md).
 
 ### Auth
 
