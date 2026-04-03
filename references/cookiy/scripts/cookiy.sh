@@ -76,8 +76,7 @@ die_no_access() {
   local url
   url="$(resolve_login_url)"
   die "Access denied — token is missing or expired.
-Sign in:  $url
-Then run:  cookiy.sh save-token <your_access_token>"
+Sign in:  $url"
 }
 
 # --- save-token command ----------------------------------------------------

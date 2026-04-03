@@ -59,7 +59,7 @@ scripts/cookiy.sh study list [--limit <n>] [--cursor <s>]
 generated asynchronously.
 
 ```
-scripts/cookiy.sh study create --query <s> --language <s> [--thinking <s>] [--attachments <s>] [--wait]
+scripts/cookiy.sh study create --query <s> [--thinking <s>] [--attachments <s>] [--wait]
 ```
 
 | Flag | Required | Purpose |
