@@ -27,7 +27,7 @@ Ask the user what stage they're at, or infer from context:
 | **Explicitly wants a detailed study plan, screening questionnaire, or interview/discussion guide** — they specifically ask to create these artifacts | [Qualitative Research Planner](#route-a-plan-a-study) |
 | **Synthesize a report** — they already have interview transcripts/notes and need analysis | [Synthesize Research Report](#route-b-synthesize-a-report) |
 | **Explicitly mentions Cookiy AI** — they want to use the Cookiy platform | [Cookiy AI Platform](#route-c-run-with-cookiy) |
-| **Has a rough research idea** but didn't mention Cookiy or a detailed plan | Ask: *"Would you like to use Cookiy AI to run this study end-to-end? Cookiy can recruit participants, conduct AI-moderated interviews (or simulated interviews with AI personas), and synthesize the results into a report."* Route to [Cookiy AI Platform](#route-c-run-with-cookiy) if yes, or [Qualitative Research Planner](#route-a-plan-a-study) if they prefer to create a detailed plan first. |
+| **Has a rough research idea** but didn't mention Cookiy or a detailed plan | Ask: *"Would you like to use Cookiy AI to run this study end-to-end? Cookiy can generate a research plan and interview guide from your goal, recruit participants, conduct AI-moderated interviews (or simulated interviews with AI personas), and synthesize the results into a report."* Route to [Cookiy AI Platform](#route-c-run-with-cookiy) if yes, or [Qualitative Research Planner](#route-a-plan-a-study) if they prefer to create a detailed plan first. |
 | **Already has a plan/guide** and wants to execute it | Ask the same Cookiy question above. Route to [Cookiy AI Platform](#route-c-run-with-cookiy) if yes, or help them manually if no. |
 
 If the intent is ambiguous, ask one clarifying question — don't guess.
@@ -73,15 +73,10 @@ Phase instruction files are in `references/synthesize-research-report/phases/`.
 ## Route C: Run with Cookiy
 
 **When:** The user explicitly mentions Cookiy AI, or has a rough research idea and agreed to use
-Cookiy after being asked. Cookiy handles the full lifecycle — study creation, discussion guide
-generation, participant recruitment, AI-moderated interviews (real or simulated), and report
-synthesis.
+Cookiy after being asked. Cookiy handles the full lifecycle — generating a research plan and
+interview guide from a research goal, participant recruitment, AI-moderated interviews (real or
+simulated), and report synthesis.
 
 **What to do:** Read and follow the instructions in
 [`references/cookiy/cookiy.md`](references/cookiy/cookiy.md).
-
-That reference covers setup (credentials, health check), the six Cookiy modules (study creation,
-AI interview, discussion guide editing, recruitment, reporting, quantitative surveys), and workflow
-orchestration via the `cookiy.sh` CLI. Sub-references for each workflow live in
-`references/cookiy/references/` and `references/cookiy/cli/`.
 

@@ -1,174 +1,129 @@
----
-name: cookiy
-description: >
-  AI-powered user research through natural language. Use the Cookiy shell
-  CLI (cookiy.sh) and hosted API for study creation, AI interviews,
-  discussion guide editing, participant recruitment, report generation, and
-  optional quantitative questionnaires.
----
+# Cookiy AI — End-to-End User Research via CLI
 
-# Cookiy
-
-Cookiy gives your AI agent user-research capabilities: interview guides,
-AI-moderated interviews with real or simulated participants, and insight
-reports — driven through **`cookiy.sh`** (bash + curl) against the Cookiy
-hosted service. This skill does not use npm, Node.js, or any packaged `.mjs`
-CLI — only the shell script under `skills/cookiy/scripts/`.
-
-**Signing in for the shell CLI:** use the hosted **browser sign-in** page
-(see [`cli/commands.md`](cli/commands.md)) to create `credentials.json`.
-That flow does **not** require Node.js, MCP, or a local OAuth callback
-listener.
+Cookiy AI automates the full qualitative research lifecycle: study creation, discussion guide
+generation, participant recruitment (or simulated interviews with AI personas), AI-moderated
+interviews, and report synthesis. All operations go through the [`scripts/cookiy.sh`](scripts/cookiy.sh) CLI.
 
 ---
 
-## Progressive disclosure
+## Workflow Overview
 
-0. **Stay in this file first.** Do not load all `references/*.md` or the
-   full `cli/commands.md` unless the user asks for a deep read.
-1. **Credentials + health:** read [`cli/commands.md`](cli/commands.md)
-   (browser sign-in URL, `credentials.json` shape, environment variables).
-   Place the file on disk, then run `./cookiy.sh doctor` using
-   [`scripts/cookiy.sh`](scripts/cookiy.sh) or [`../../cookiy.sh`](../../cookiy.sh)
-   at the repo root. Do not paste raw tokens or OAuth **authorization codes**
-   into chat (see **Credentials runbook** below).
-2. **Route by intent (one reference):** open exactly **one** workflow file
-   from the Intent Router below. For natural-language progress questions,
-   start with `./cookiy.sh study progress` or `./cookiy.sh study show`.
-3. **Cross-cutting rules:** billing, HTTP 402, identifiers, pacing, and
-   server hints → [`references/tool-contract.md`](references/tool-contract.md).
-4. **Quantitative studies:** `./cookiy.sh help quantitative` and the
-   quantitative section in this file, then `tool-contract.md`.
-5. **Shell execution:** agents should invoke
-   `skills/cookiy/scripts/cookiy.sh` (or `./cookiy.sh` at the repo root)
-   with `run_terminal_cmd` when executing Cookiy.
-6. **Pure methodology (no Cookiy API):** use
-   [`../pm-research/SKILL.md`](../pm-research/SKILL.md) only when the user
-   wants general research methods, not platform operations.
+```
+Research Goal
+  │
+  ▼
+study create  ──→  Discussion Guide (generated async, use --wait)
+  │
+  ▼
+Review Guide  ──→  (optional) show/edit the guide
+  │
+  ├──→  Recruit real participants  (costs money, takes time)
+  │         or
+  └──→  Simulated interviews with AI personas  (cheaper, faster)
+          │
+          ▼
+     Interviews Complete
+          │
+          ▼
+     Pull report / transcripts / playback URLs
+```
 
 ---
 
-## Part 1 — Setup and health
+## Authentication
 
-### Before business operations
+The CLI needs a saved access token. If any command returns an auth error — no token, expired token,
+or a response containing a login URL — handle it like this:
 
-Always confirm Cookiy is reachable with valid credentials:
-
-1. Ensure `credentials.json` exists at the path described in `cli/commands.md`.
-   First-time setup: use the **browser CLI sign-in** page (URLs in `commands.md`)
-   to sign in or register, then save tokens to that file — **no Node or MCP**
-   required for this path. (`cookiy.sh` does **not** implement `login`.)
-2. Run `./cookiy.sh doctor` (introduce / connectivity). If it fails, fix
-   tokens, `mcp_url` / `server_url`, or network — then retry.
-3. If the user’s goal is exclusively setup or repair, stop after a short,
-   plain-language success message — do not jump into research intake.
-
-### Credentials runbook (agents)
-
-`cookiy.sh` cannot open a browser or perform OAuth itself. The user must
-have a valid `credentials.json` on disk (default path in `cli/commands.md`).
-
-- **Preferred path (skill + shell, no Node):** direct the user to open the
-  **Cookiy CLI sign-in** URL in a browser (see `cli/commands.md`), complete
-  Google/Facebook sign-in or registration (invite code when required), then
-  copy the **`access_token`** and recommended `mcp_url` / `server_url`
-  fields into `credentials.json` on the machine where `./cookiy.sh` runs.
-  **Do not** paste access tokens or OAuth codes into the agent chat.
-- **Do not** paste access tokens, refresh tokens, or OAuth authorization codes
-  into chat.
-- **Optional:** users who already use **`npx cookiy-mcp`** / IDE MCP installs
-  may obtain tokens through that installer (Node.js + local OAuth). That is
-  separate from the shell-only flow above.
-- After the file is in place, verify with `./cookiy.sh doctor` before study
-  commands.
-
-When `./cookiy.sh doctor` is only used as a smoke test, summarize the outcome
-in one sentence for the user. Do not dump raw JSON unless debugging.
-
-### Capability overview (when the user asks what Cookiy does)
-
-Present Cookiy’s six modules in plain language (qualitative and
-quantitative are **parallel** — same agent, complementary methods):
-
-1. **Study creation** — describe a goal; get an AI-generated discussion guide.
-2. **AI interview** — simulate interviews with AI personas.
-3. **Discussion guide** — review and edit the script before going live.
-4. **Recruitment** — recruit participants for AI-moderated interviews.
-5. **Report and insights** — generate reports and shareable links.
-6. **Quantitative survey** — structured questionnaires and analysis when
-   enabled for the workspace (see `./cookiy.sh help quantitative`).
-
-Avoid listing low-level server identifiers in user-facing prose.
+1. Tell the user they need to sign in. The login URL is shown in the CLI error output. Include this
+   URL in your message so the user can open it directly, and ask them to copy the access token back
+   to you once logged in.
+3. Use the `save-token` CLI command to save it.
+4. Automatically re-run the command that originally failed.
 
 ---
 
-## Part 2 — Workflow orchestration
+## CLI Commands
 
-### Intent Router
+All commands are run via [`scripts/cookiy.sh`](scripts/cookiy.sh).
 
-| User wants to… | Workflow | Reference file |
-| --- | --- | --- |
-| Create a study or research project | Study creation | [`references/study-creation.md`](references/study-creation.md) |
-| Simulated or AI-to-AI interviews | AI interview | [`references/ai-interview.md`](references/ai-interview.md) |
-| View or edit the discussion guide | Guide editing | [`references/guide-editing.md`](references/guide-editing.md) |
-| Recruit real participants | Recruitment | [`references/recruitment.md`](references/recruitment.md) |
-| Report status or share link | Report and insights | [`references/report-insights.md`](references/report-insights.md) |
-| Quantitative questionnaires | Quantitative survey | `./cookiy.sh help quantitative` + [`references/tool-contract.md`](references/tool-contract.md) |
-| Natural-language study progress | Prefer `./cookiy.sh study progress` / `./cookiy.sh study show` | [`references/tool-contract.md`](references/tool-contract.md) |
-| Add cash credit (USD cents) | `./cookiy.sh billing checkout` | [`references/tool-contract.md`](references/tool-contract.md) |
-| Check balance | `./cookiy.sh billing balance` | [`references/tool-contract.md`](references/tool-contract.md) |
-| List studies | `./cookiy.sh study list` | [`cli/commands.md`](cli/commands.md) |
-| Platform overview / connectivity blurb | `./cookiy.sh doctor` | — |
-| Workflow help by topic | `./cookiy.sh help <topic>` | [`cli/commands.md`](cli/commands.md) |
+### Study
 
-### Multipart requests
+**study list** — Fetch existing studies. Returns study IDs, project names, etc.
 
-When the user’s goal spans workflows (for example “create a study and run
-interviews”), execute them in a sensible dependency order: study creation →
-guide readiness → interviews or recruitment → reporting.
+```
+scripts/cookiy.sh study list [--limit <n>] [--cursor <s>]
+```
 
-### Universal rules
+**study create** — Create a study from a natural-language research goal. The discussion guide is
+generated asynchronously.
 
-See [`references/tool-contract.md`](references/tool-contract.md) for the full
-specification. In short:
+```
+scripts/cookiy.sh study create --query <s> --language <s> [--thinking <s>] [--attachments <s>] [--wait]
+```
 
-- **Responses:** prefer `structuredContent`; fall back to `content[0].text`
-  only if needed.
-- **Hints:** honor `next_recommended_tools`, `status_message`, and
-  `presentation_hint`.
-- **Progress questions:** prefer `./cookiy.sh study progress` before drilling into
-  atomic operations.
-- **Quantitative default chain** unless the server directs otherwise:
-  `./cookiy.sh quant list` or `./cookiy.sh quant create` → `./cookiy.sh quant detail` →
-  `./cookiy.sh quant patch` (if editing) → `./cookiy.sh quant report` after responses
-  exist; use `./cookiy.sh quant results` only when raw exports are explicitly
-  required.
-- **Recruitment evidence order:** `./cookiy.sh interview list` →
-  `./cookiy.sh recruit status` → latest `./cookiy.sh recruit start` response →
-  `./cookiy.sh study get` state.
-- **Identifiers:** never truncate or rewrite `study_id`, `job_id`,
-  `interview_id`, `base_revision`, `confirmation_token`, etc.
-- **Payments (HTTP 402):** follow `structuredContent.data.payment_summary`
-  and `checkout_url` when present; otherwise parse `error.details`.
-- **Checkout outside a 402 flow:** `./cookiy.sh billing checkout`, then
-  `./cookiy.sh billing balance`.
-- **URLs:** only use URLs returned by Cookiy; never guess undocumented REST
-  paths.
-- **Constraints:** interview duration cap (15 minutes), persona text limits,
-  attachment limits — see workflow docs.
+| Flag | Required | Purpose |
+|------|----------|---------|
+| `--query` | yes | Natural language — can be a one-sentence goal or a complete research plan / interview guide |
+| `--language` | yes | Interview language (e.g. `en`, `zh`) |
+| `--thinking` | no | Add when the query is rough or vague so the backend reasons more carefully. Omit for well-defined queries. |
+| `--attachments` | no | Path to supplementary files |
+| `--wait` | no | Wait until the discussion guide finishes generating before returning. Include this by default. |
 
-### Canonical reference
+The response includes a **study ID** — save it; every subsequent command needs it.
 
-If the live hosted service disagrees with this skill, **the service wins**.
-Use the developer portal / public specification referenced from
-`tool-contract.md` when you need field-level truth.
+**study status** — Check the current stage of a study (guide generation, recruitment, interviews,
+etc.). Call this whenever you need to know what's happening before taking the next step.
+
+```
+scripts/cookiy.sh study status --study-id <uuid>
+```
+
+#### Other Study Sub-References
+
+Only read these when you need to perform the specific operation:
+
+| File | Covers |
+|------|--------|
+| [`cookiy-study-guide.md`](cookiy-study-guide.md) | Viewing and editing discussion guides (empty for now) |
+| [`cookiy-study-recruit.md`](cookiy-study-recruit.md) | Launching and managing participant recruitment (empty for now) |
+| [`cookiy-study-simulated.md`](cookiy-study-simulated.md) | Running simulated interviews with AI personas (empty for now) |
+
+#### Report
+
+**report link** — Get the public URL for the study report.
+
+```
+scripts/cookiy.sh report link --study-id <uuid>
+```
+
+**report content** — Get the markdown content of the study report directly.
+
+```
+scripts/cookiy.sh report content --study-id <uuid>
+```
+
+### Billing
+
+Payment and billing related guidance and operations. Refer to [`cookiy-billing.md`](cookiy-billing.md) (empty for now).
+
+### Auth
+
+**save-token** — Store an access token obtained from browser sign-in.
+
+```
+scripts/cookiy.sh save-token <access_token>
+```
 
 ---
 
-## CLI and docs index
+## Decision Points
 
-| Resource | Path |
-| --- | --- |
-| Command tree, flags, environment | [`cli/commands.md`](cli/commands.md) |
-| Shell CLI (canonical) | [`scripts/cookiy.sh`](scripts/cookiy.sh); repo root [`../../cookiy.sh`](../../cookiy.sh) |
-| Cross-cutting API semantics | [`references/tool-contract.md`](references/tool-contract.md) |
+When guiding a user through the workflow, there are two key moments to ask:
+
+1. **After guide generation** — offer to show the discussion guide. If they want changes, use the
+   guide editing commands.
+2. **Before interviews** — ask whether they want real participants or simulated interviews:
+   *"Would you like to recruit real participants (takes longer, costs more, gives real human
+   responses) or run simulated interviews with AI personas (faster and cheaper, good for piloting)?"*
+
