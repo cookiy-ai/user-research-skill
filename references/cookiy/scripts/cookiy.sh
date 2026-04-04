@@ -182,11 +182,17 @@ post_jsonrpc() {
 # Check if a JSON-RPC response has an error. Prints error message to stderr and returns 1 if so.
 check_rpc_error() {
   local resp="$1"
-  # Look for "error":{"message":"..."}
+  # Use jq to reliably extract JSON-RPC error (handles nested objects)
   local err_msg
-  err_msg="$(echo "$resp" | sed -n 's/.*"error"[[:space:]]*:[[:space:]]*{[^}]*"message"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)"
+  err_msg="$(echo "$resp" | jq -r '.error.message // empty' 2>/dev/null)"
   if [[ -n "$err_msg" ]]; then
-    echo "$err_msg" >&2
+    local err_data
+    err_data="$(echo "$resp" | jq -r '.error.data // empty' 2>/dev/null)"
+    if [[ -n "$err_data" ]]; then
+      echo "$err_msg: $err_data" >&2
+    else
+      echo "$err_msg" >&2
+    fi
     return 1
   fi
   return 0
@@ -240,7 +246,13 @@ invoke() {
     || die "MCP tools/call request failed"
   check_rpc_error "$call_resp" || exit 1
 
-  echo "$call_resp" | emit_mcp_tool_printable
+  local printable
+  printable="$(echo "$call_resp" | emit_mcp_tool_printable)"
+  echo "$printable"
+  # Exit non-zero if MCP tool returned ok:false
+  if echo "$printable" | jq -e '.ok == false' >/dev/null 2>&1; then
+    return 1
+  fi
 }
 
 # --- arg builder -----------------------------------------------------------
@@ -290,12 +302,13 @@ build_json() {
       # Skip if not in allowed list
       case " $allowed " in
         *" $key "*) ;;
-        *) continue ;;
+        *) echo "Warning: unknown flag --${key//_/-} (ignored)" >&2; continue ;;
       esac
       $first || json+=","
       first=false
       case "$key" in
         limit|amount_usd_cents|persona_count|target_participants|timeout_ms)
+          [[ "$val" =~ ^-?[0-9]+$ ]] || die "--${key//_/-} requires an integer, got: $val"
           # amount_usd_cents → MCP param name amount_cents
           local json_key="$key"
           [[ "$key" == "amount_usd_cents" ]] && json_key="amount_cents"
@@ -421,11 +434,9 @@ study status — study record and activity
     Flags:   --study-id (required)
     Calls both cookiy_study_get and cookiy_activity_get for the study.
 
-study guide wait | get
-    Usage:   cookiy.sh study guide wait --study-id <uuid> [--timeout-ms <n>]
-             cookiy.sh study guide get --study-id <uuid>
+study guide get
+    Usage:   cookiy.sh study guide get --study-id <uuid>
     Flags:   --study-id (required)
-    study guide wait blocks until guide ready/failed or timeout (server-side).
 
 study guide update — apply patch to discussion guide
     Usage:   cookiy.sh study guide update --study-id <uuid> --base-revision <s> --idempotency-key <s> --json '<patch>' [--change-message <s>]
@@ -436,13 +447,11 @@ study upload — attach media (image upload)
     Usage:   cookiy.sh study upload --content-type <s> (--image-data <s> | --image-url <s>)
     Flags:   --content-type (required)   --image-data | --image-url (one required)
 
-study interview list | playback [url|content] | simulate start|wait
+study interview list | playback url|content | simulate start
     Usage:   cookiy.sh study interview list --study-id <uuid> [--include-simulation <bool>] [--cursor <s>]
-             cookiy.sh study interview playback --study-id <uuid> [--interview-id <uuid>]
              cookiy.sh study interview playback url --study-id <uuid> [--interview-id <uuid>]
              cookiy.sh study interview playback content --study-id <uuid> [--interview-id <uuid>]
              cookiy.sh study interview simulate start --study-id <uuid> [--persona-count <n>] [--auto-generate-personas <bool>] [--interviewee-persona <s>] [--wait] [--timeout-ms <n>] [--json '<obj>']
-             cookiy.sh study interview simulate wait --study-id <uuid> --job-id <uuid> [--timeout-ms <n>]
 
 study recruit start
     Usage:   cookiy.sh study recruit start --study-id <uuid> [--confirmation-token <s>] [--plain-text <s>] [--target-participants <n>]
@@ -553,8 +562,10 @@ study)
     status)
       build_json "study_id" "${stail[@]+"${stail[@]}"}"
       require_key study_id "study status requires --study-id"
-      invoke cookiy_study_get "$BUILT_JSON"
-      invoke cookiy_activity_get "$BUILT_JSON"
+      _s1=0; _s2=0
+      invoke cookiy_study_get "$BUILT_JSON" || _s1=$?
+      invoke cookiy_activity_get "$BUILT_JSON" || _s2=$?
+      [[ $_s1 -eq 0 && $_s2 -eq 0 ]] || exit 1
       ;;
     create)
       build_json "query thinking attachments timeout_ms" "${stail[@]+"${stail[@]}"}"
@@ -575,11 +586,6 @@ study)
       gcmd="${stail[0]:-}"
       gtail=("${stail[@]:1}")
       case "$gcmd" in
-        wait)
-          build_json "study_id timeout_ms" "${gtail[@]+"${gtail[@]}"}"
-          require_key study_id "study guide wait requires --study-id"
-          invoke cookiy_guide_status "$(echo "$BUILT_JSON" | jq -c '. + {wait: true}')"
-          ;;
         get)
           build_json "study_id" "${gtail[@]+"${gtail[@]}"}"
           require_key study_id "study guide get requires --study-id"
@@ -614,22 +620,18 @@ study)
             url)
               build_json "study_id interview_id" "${ptail[@]+"${ptail[@]}"}"
               require_key study_id "study interview playback url requires --study-id"
-              result="$(invoke cookiy_interview_playback_get "$BUILT_JSON")"
-              echo "$result" | jq '{playback_page_url: (.interviews // [. ])[].playback_page_url, playback_page_expires_at: (.interviews // [. ])[].playback_page_expires_at}'
+              # Inject view=url for MCP-level filtering
+              BUILT_JSON="$(echo "$BUILT_JSON" | jq -c '. + {view: "url"}')"
+              invoke cookiy_interview_playback_get "$BUILT_JSON"
               ;;
             content)
               build_json "study_id interview_id" "${ptail[@]+"${ptail[@]}"}"
               require_key study_id "study interview playback content requires --study-id"
-              result="$(invoke cookiy_interview_playback_get "$BUILT_JSON")"
-              echo "$result" | jq '{transcript: (.interviews // [. ])[].transcript, turn_count: (.interviews // [. ])[].turn_count, transcript_available: (.interviews // [. ])[].transcript_available}'
-              ;;
-            --*|"")
-              # No subcommand — return full playback (default behavior)
-              build_json "study_id interview_id" "${itail[@]+"${itail[@]}"}"
-              require_key study_id "study interview playback requires --study-id"
+              # Inject view=transcript for MCP-level filtering
+              BUILT_JSON="$(echo "$BUILT_JSON" | jq -c '. + {view: "transcript"}')"
               invoke cookiy_interview_playback_get "$BUILT_JSON"
               ;;
-            *) die "study interview playback [url|content] --study-id <uuid> [--interview-id <uuid>]" ;;
+            *) die "study interview playback url|content --study-id <uuid> [--interview-id <uuid>]" ;;
           esac
           ;;
         simulate)
@@ -647,13 +649,7 @@ study)
               fi
               invoke cookiy_simulated_interview_generate "$payload"
               ;;
-            wait)
-              build_json "study_id job_id timeout_ms" "${srest[@]+"${srest[@]}"}"
-              require_key study_id "study interview simulate wait requires --study-id"
-              require_non_empty_string_value job_id "study interview simulate wait requires --job-id"
-              invoke cookiy_simulated_interview_status "$(echo "$BUILT_JSON" | jq -c '. + {wait: true}')"
-              ;;
-            *) die "study interview simulate start|wait" ;;
+            *) die "study interview simulate start" ;;
           esac
           ;;
         *) die "Unknown study interview subcommand: ${isub:-}" ;;
@@ -678,12 +674,14 @@ study)
         content)
           build_json "study_id timeout_ms" "${rrest[@]+"${rrest[@]}"}"
           require_key study_id "study report content requires --study-id"
-          payload="$BUILT_JSON"
-          # --wait or --timeout-ms implies server-side wait
-          if [[ "$ARG_WAIT" == "true" ]] || echo "$payload" | grep -q '"timeout_ms"'; then
-            payload="$(echo "$payload" | jq -c '. + {wait: true}')"
+          # --wait or --timeout-ms: poll status first, then fetch content
+          if [[ "$ARG_WAIT" == "true" ]] || echo "$BUILT_JSON" | grep -q '"timeout_ms"'; then
+            wait_payload="$(echo "$BUILT_JSON" | jq -c '. + {wait: true}')"
+            _rrc=0
+            invoke cookiy_report_status "$wait_payload" > /dev/null || _rrc=$?
+            [[ $_rrc -eq 0 ]] || exit 1
           fi
-          invoke cookiy_report_status "$payload"
+          invoke cookiy_report_content_get "$(echo "$BUILT_JSON" | jq -c 'del(.timeout_ms)')"
           ;;
         link)
           build_json "study_id" "${rrest[@]+"${rrest[@]}"}"
@@ -693,7 +691,8 @@ study)
         *) die "study report content|link" ;;
       esac
       ;;
-    *) die "Unknown study subcommand: ${sub:-}" ;;
+    *) die "Unknown study subcommand: ${sub:-(none)}
+Available: list, status, upload, guide, interview, recruit, report" ;;
   esac
   ;;
 
@@ -743,8 +742,10 @@ billing)
   case "$sub" in
     balance)
       [[ ${#btail[@]} -eq 0 ]] || die "billing balance takes no arguments"
-      result="$(invoke cookiy_balance_get '{}')"
+      _brc=0
+      result="$(invoke cookiy_balance_get '{}')" || _brc=$?
       echo "$result" | print_balance_summary_only
+      [[ $_brc -eq 0 ]] || exit 1
       ;;
     checkout)
       build_json "amount_usd_cents" "${btail[@]+"${btail[@]}"}"
