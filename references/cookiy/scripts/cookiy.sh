@@ -412,9 +412,9 @@ study list — list studies
     Flags:   --limit <integer>   --cursor <string>
 
 study guide create — create study from natural language
-    Usage:   cookiy.sh study guide create --query <s> [--language <s>] [--thinking <s>] [--attachments <s>] [--wait] [--timeout-ms <n>]
+    Usage:   cookiy.sh study guide create --query <s> [--thinking <s>] [--attachments <s>] [--wait] [--timeout-ms <n>]
     Flags:   --query <string> (required)
-             --language <string>   --thinking <string>   --attachments <string>   --wait (MCP wait_for_guide)   --timeout-ms (optional)
+             --thinking <string>   --attachments <string>   --wait (MCP wait_for_guide)   --timeout-ms (optional)
 
 study status — study record and activity
     Usage:   cookiy.sh study status --study-id <uuid>
@@ -437,7 +437,7 @@ study upload — attach media (image upload)
     Flags:   --content-type (required)   --image-data | --image-url (one required)
 
 study interview list | playback [url|content] | simulate start|wait
-    Usage:   cookiy.sh study interview list --study-id <uuid> [--include-simulation <bool>] [--limit <n>] [--cursor <s>]
+    Usage:   cookiy.sh study interview list --study-id <uuid> [--include-simulation <bool>] [--cursor <s>]
              cookiy.sh study interview playback --study-id <uuid> [--interview-id <uuid>]
              cookiy.sh study interview playback url --study-id <uuid> [--interview-id <uuid>]
              cookiy.sh study interview playback content --study-id <uuid> [--interview-id <uuid>]
@@ -566,7 +566,7 @@ study)
       gtail=("${stail[@]:1}")
       case "$gcmd" in
         create)
-          build_json "query language thinking attachments timeout_ms" "${gtail[@]+"${gtail[@]}"}"
+          build_json "query thinking attachments timeout_ms" "${gtail[@]+"${gtail[@]}"}"
           require_key query "study guide create requires --query"
           payload="$BUILT_JSON"
           # --wait or --timeout-ms implies server-side wait
@@ -603,7 +603,7 @@ study)
       itail=("${stail[@]:1}")
       case "$isub" in
         list)
-          build_json "study_id include_simulation limit cursor" "${itail[@]+"${itail[@]}"}"
+          build_json "study_id include_simulation cursor" "${itail[@]+"${itail[@]}"}"
           require_key study_id "study interview list requires --study-id"
           invoke cookiy_interview_list "$BUILT_JSON"
           ;;
