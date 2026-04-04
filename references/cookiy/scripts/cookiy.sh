@@ -421,11 +421,9 @@ study status — study record and activity
     Flags:   --study-id (required)
     Calls both cookiy_study_get and cookiy_activity_get for the study.
 
-study guide wait | get
-    Usage:   cookiy.sh study guide wait --study-id <uuid> [--timeout-ms <n>]
-             cookiy.sh study guide get --study-id <uuid>
+study guide get
+    Usage:   cookiy.sh study guide get --study-id <uuid>
     Flags:   --study-id (required)
-    study guide wait blocks until guide ready/failed or timeout (server-side).
 
 study guide update — apply patch to discussion guide
     Usage:   cookiy.sh study guide update --study-id <uuid> --base-revision <s> --idempotency-key <s> --json '<patch>' [--change-message <s>]
@@ -574,11 +572,6 @@ study)
             payload="$(echo "$payload" | jq -c '. + {wait_for_guide: true}')"
           fi
           invoke cookiy_study_create "$payload"
-          ;;
-        wait)
-          build_json "study_id timeout_ms" "${gtail[@]+"${gtail[@]}"}"
-          require_key study_id "study guide wait requires --study-id"
-          invoke cookiy_guide_status "$(echo "$BUILT_JSON" | jq -c '. + {wait: true}')"
           ;;
         get)
           build_json "study_id" "${gtail[@]+"${gtail[@]}"}"
