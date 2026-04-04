@@ -182,11 +182,17 @@ post_jsonrpc() {
 # Check if a JSON-RPC response has an error. Prints error message to stderr and returns 1 if so.
 check_rpc_error() {
   local resp="$1"
-  # Look for "error":{"message":"..."}
+  # Use jq to reliably extract JSON-RPC error (handles nested objects)
   local err_msg
-  err_msg="$(echo "$resp" | sed -n 's/.*"error"[[:space:]]*:[[:space:]]*{[^}]*"message"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)"
+  err_msg="$(echo "$resp" | jq -r '.error.message // empty' 2>/dev/null)"
   if [[ -n "$err_msg" ]]; then
-    echo "$err_msg" >&2
+    local err_data
+    err_data="$(echo "$resp" | jq -r '.error.data // empty' 2>/dev/null)"
+    if [[ -n "$err_data" ]]; then
+      echo "$err_msg: $err_data" >&2
+    else
+      echo "$err_msg" >&2
+    fi
     return 1
   fi
   return 0
@@ -434,9 +440,8 @@ study upload — attach media (image upload)
     Usage:   cookiy.sh study upload --content-type <s> (--image-data <s> | --image-url <s>)
     Flags:   --content-type (required)   --image-data | --image-url (one required)
 
-study interview list | playback [url|content] | simulate start
+study interview list | playback url|content | simulate start
     Usage:   cookiy.sh study interview list --study-id <uuid> [--include-simulation <bool>] [--cursor <s>]
-             cookiy.sh study interview playback --study-id <uuid> [--interview-id <uuid>]
              cookiy.sh study interview playback url --study-id <uuid> [--interview-id <uuid>]
              cookiy.sh study interview playback content --study-id <uuid> [--interview-id <uuid>]
              cookiy.sh study interview simulate start --study-id <uuid> [--persona-count <n>] [--auto-generate-personas <bool>] [--interviewee-persona <s>] [--wait] [--timeout-ms <n>] [--json '<obj>']
@@ -617,13 +622,7 @@ study)
               BUILT_JSON="$(echo "$BUILT_JSON" | jq -c '. + {view: "transcript"}')"
               invoke cookiy_interview_playback_get "$BUILT_JSON"
               ;;
-            --*|"")
-              # No subcommand — return full playback (default behavior)
-              build_json "study_id interview_id" "${itail[@]+"${itail[@]}"}"
-              require_key study_id "study interview playback requires --study-id"
-              invoke cookiy_interview_playback_get "$BUILT_JSON"
-              ;;
-            *) die "study interview playback [url|content] --study-id <uuid> [--interview-id <uuid>]" ;;
+            *) die "study interview playback url|content --study-id <uuid> [--interview-id <uuid>]" ;;
           esac
           ;;
         simulate)
