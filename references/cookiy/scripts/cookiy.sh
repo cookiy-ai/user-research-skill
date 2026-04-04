@@ -562,7 +562,7 @@ study)
     status)
       build_json "study_id" "${stail[@]+"${stail[@]}"}"
       require_key study_id "study status requires --study-id"
-      local _s1=0 _s2=0
+      _s1=0; _s2=0
       invoke cookiy_study_get "$BUILT_JSON" || _s1=$?
       invoke cookiy_activity_get "$BUILT_JSON" || _s2=$?
       [[ $_s1 -eq 0 && $_s2 -eq 0 ]] || exit 1
@@ -677,7 +677,7 @@ study)
           # --wait or --timeout-ms: poll status first, then fetch content
           if [[ "$ARG_WAIT" == "true" ]] || echo "$BUILT_JSON" | grep -q '"timeout_ms"'; then
             wait_payload="$(echo "$BUILT_JSON" | jq -c '. + {wait: true}')"
-            local _rrc=0
+            _rrc=0
             invoke cookiy_report_status "$wait_payload" > /dev/null || _rrc=$?
             [[ $_rrc -eq 0 ]] || exit 1
           fi
@@ -742,7 +742,7 @@ billing)
   case "$sub" in
     balance)
       [[ ${#btail[@]} -eq 0 ]] || die "billing balance takes no arguments"
-      local _brc=0
+      _brc=0
       result="$(invoke cookiy_balance_get '{}')" || _brc=$?
       echo "$result" | print_balance_summary_only
       [[ $_brc -eq 0 ]] || exit 1
