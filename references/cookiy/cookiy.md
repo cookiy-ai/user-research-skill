@@ -55,8 +55,8 @@ All commands are run via [`scripts/cookiy.sh`](scripts/cookiy.sh).
 scripts/cookiy.sh study list [--limit <n>] [--cursor <s>]
 ```
 
-**study create** — Create a study from a natural-language research goal. The discussion guide is
-generated asynchronously.
+**study create** — Create a new study from a natural-language research goal. Also automatically
+creates the discussion/interview guide (generated asynchronously).
 
 ```
 scripts/cookiy.sh study create --query <s> [--thinking <s>] [--attachments <s>] [--wait]
@@ -71,7 +71,7 @@ scripts/cookiy.sh study create --query <s> [--thinking <s>] [--attachments <s>] 
 
 The response includes a **study ID** — save it; every subsequent command needs it.
 
-**image upload** — Upload an image and get an s3 key back. The key can be used in `study create --attachments` or in guide update payloads.
+**study upload** — Upload an image and get an s3 key back. The key can be used in `study create --attachments` or in guide update payloads.
 
 ```
 scripts/cookiy.sh study upload --content-type <s> (--image-data <s> | --image-url <s>)
@@ -99,7 +99,6 @@ Only read these when you need to perform the specific operation:
 | [`cookiy-study-guide.md`](cookiy-study-guide.md) | Viewing and editing discussion guides |
 | [`cookiy-study-recruit.md`](cookiy-study-recruit.md) | Launching and managing participant recruitment |
 | [`cookiy-study-simulated.md`](cookiy-study-simulated.md) | Running simulated interviews with AI personas |
-
 | [`cookiy-study-report.md`](cookiy-study-report.md) | Report retrieval (link and content) |
 
 ### Billing
