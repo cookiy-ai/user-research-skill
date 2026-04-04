@@ -71,7 +71,7 @@ scripts/cookiy.sh study create --query <s> [--thinking <s>] [--attachments <s>] 
 
 The response includes a **study ID** — save it; every subsequent command needs it.
 
-**image upload** — Upload an image and get an s3 key back. The key can be used in `study create --attachments` or in guide update payloads.
+**study upload** — Upload an image and get an s3 key back. The key can be used in `study create --attachments` or in guide update payloads.
 
 ```
 scripts/cookiy.sh study upload --content-type <s> (--image-data <s> | --image-url <s>)
