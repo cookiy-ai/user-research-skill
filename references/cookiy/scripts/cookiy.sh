@@ -4,7 +4,7 @@
 set -euo pipefail
 
 VERSION="1.12.0"
-DEFAULT_SERVER_URL="https://s-api.cookiy.ai"
+DEFAULT_SERVER_URL="https://dev-api.cookiy.ai"
 DEFAULT_TOKEN_PATH="${COOKIY_CREDENTIALS:-$HOME/.cookiy/token.txt}"
 # Long-running MCP tools/call (server-side wait); override with COOKIY_MCP_RPC_TIMEOUT.
 MCP_CALL_TIMEOUT="${COOKIY_MCP_RPC_TIMEOUT:-600}"
@@ -44,7 +44,7 @@ Environment:
   COOKIY_CREDENTIALS   Path to token file (same as --token)
   COOKIY_MCP_URL       Full MCP URL (default: <server>/mcp)
   COOKIY_MCP_RPC_TIMEOUT   Seconds for blocking MCP tools/call (default: 600)
-  COOKIY_SERVER_URL    API origin when MCP URL not set (default: https://s-api.cookiy.ai)
+  COOKIY_SERVER_URL    API origin when MCP URL not set (default: https://dev-api.cookiy.ai)
 
 Commands:
   save-token <token>          Save raw access token (validates against MCP first)
