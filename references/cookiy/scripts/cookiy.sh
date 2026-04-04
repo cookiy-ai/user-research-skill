@@ -246,7 +246,13 @@ invoke() {
     || die "MCP tools/call request failed"
   check_rpc_error "$call_resp" || exit 1
 
-  echo "$call_resp" | emit_mcp_tool_printable
+  local printable
+  printable="$(echo "$call_resp" | emit_mcp_tool_printable)"
+  echo "$printable"
+  # Exit non-zero if MCP tool returned ok:false
+  if echo "$printable" | jq -e '.ok == false' >/dev/null 2>&1; then
+    return 1
+  fi
 }
 
 # --- arg builder -----------------------------------------------------------
@@ -296,12 +302,13 @@ build_json() {
       # Skip if not in allowed list
       case " $allowed " in
         *" $key "*) ;;
-        *) continue ;;
+        *) echo "Warning: unknown flag --${key//_/-} (ignored)" >&2; continue ;;
       esac
       $first || json+=","
       first=false
       case "$key" in
         limit|amount_usd_cents|persona_count|target_participants|timeout_ms)
+          [[ "$val" =~ ^-?[0-9]+$ ]] || die "--${key//_/-} requires an integer, got: $val"
           # amount_usd_cents → MCP param name amount_cents
           local json_key="$key"
           [[ "$key" == "amount_usd_cents" ]] && json_key="amount_cents"
@@ -555,8 +562,10 @@ study)
     status)
       build_json "study_id" "${stail[@]+"${stail[@]}"}"
       require_key study_id "study status requires --study-id"
-      invoke cookiy_study_get "$BUILT_JSON"
-      invoke cookiy_activity_get "$BUILT_JSON"
+      local _s1=0 _s2=0
+      invoke cookiy_study_get "$BUILT_JSON" || _s1=$?
+      invoke cookiy_activity_get "$BUILT_JSON" || _s2=$?
+      [[ $_s1 -eq 0 && $_s2 -eq 0 ]] || exit 1
       ;;
     upload)
       build_json "image_data image_url content_type" "${stail[@]+"${stail[@]}"}"
@@ -668,7 +677,9 @@ study)
           # --wait or --timeout-ms: poll status first, then fetch content
           if [[ "$ARG_WAIT" == "true" ]] || echo "$BUILT_JSON" | grep -q '"timeout_ms"'; then
             wait_payload="$(echo "$BUILT_JSON" | jq -c '. + {wait: true}')"
-            invoke cookiy_report_status "$wait_payload" > /dev/null
+            local _rrc=0
+            invoke cookiy_report_status "$wait_payload" > /dev/null || _rrc=$?
+            [[ $_rrc -eq 0 ]] || exit 1
           fi
           invoke cookiy_report_content_get "$(echo "$BUILT_JSON" | jq -c 'del(.timeout_ms)')"
           ;;
@@ -680,7 +691,8 @@ study)
         *) die "study report content|link" ;;
       esac
       ;;
-    *) die "Unknown study subcommand: ${sub:-}" ;;
+    *) die "Unknown study subcommand: ${sub:-(none)}
+Available: list, status, upload, guide, interview, recruit, report" ;;
   esac
   ;;
 
@@ -730,8 +742,10 @@ billing)
   case "$sub" in
     balance)
       [[ ${#btail[@]} -eq 0 ]] || die "billing balance takes no arguments"
-      result="$(invoke cookiy_balance_get '{}')"
+      local _brc=0
+      result="$(invoke cookiy_balance_get '{}')" || _brc=$?
       echo "$result" | print_balance_summary_only
+      [[ $_brc -eq 0 ]] || exit 1
       ;;
     checkout)
       build_json "amount_usd_cents" "${btail[@]+"${btail[@]}"}"
