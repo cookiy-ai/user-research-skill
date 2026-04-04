@@ -55,8 +55,8 @@ All commands are run via [`scripts/cookiy.sh`](scripts/cookiy.sh).
 scripts/cookiy.sh study list [--limit <n>] [--cursor <s>]
 ```
 
-**study create** — Create a study from a natural-language research goal. The discussion guide is
-generated asynchronously.
+**study create** — Create a new study from a natural-language research goal. Also automatically
+creates the discussion/interview guide (generated asynchronously).
 
 ```
 scripts/cookiy.sh study create --query <s> [--thinking <s>] [--attachments <s>] [--wait]
@@ -99,7 +99,6 @@ Only read these when you need to perform the specific operation:
 | [`cookiy-study-guide.md`](cookiy-study-guide.md) | Viewing and editing discussion guides |
 | [`cookiy-study-recruit.md`](cookiy-study-recruit.md) | Launching and managing participant recruitment |
 | [`cookiy-study-simulated.md`](cookiy-study-simulated.md) | Running simulated interviews with AI personas |
-
 | [`cookiy-study-report.md`](cookiy-study-report.md) | Report retrieval (link and content) |
 
 ### Billing
