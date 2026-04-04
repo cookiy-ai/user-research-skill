@@ -434,13 +434,12 @@ study upload — attach media (image upload)
     Usage:   cookiy.sh study upload --content-type <s> (--image-data <s> | --image-url <s>)
     Flags:   --content-type (required)   --image-data | --image-url (one required)
 
-study interview list | playback [url|content] | simulate start|wait
+study interview list | playback [url|content] | simulate start
     Usage:   cookiy.sh study interview list --study-id <uuid> [--include-simulation <bool>] [--cursor <s>]
              cookiy.sh study interview playback --study-id <uuid> [--interview-id <uuid>]
              cookiy.sh study interview playback url --study-id <uuid> [--interview-id <uuid>]
              cookiy.sh study interview playback content --study-id <uuid> [--interview-id <uuid>]
              cookiy.sh study interview simulate start --study-id <uuid> [--persona-count <n>] [--auto-generate-personas <bool>] [--interviewee-persona <s>] [--wait] [--timeout-ms <n>] [--json '<obj>']
-             cookiy.sh study interview simulate wait --study-id <uuid> --job-id <uuid> [--timeout-ms <n>]
 
 study recruit start
     Usage:   cookiy.sh study recruit start --study-id <uuid> [--confirmation-token <s>] [--plain-text <s>] [--target-participants <n>]
@@ -642,13 +641,7 @@ study)
               fi
               invoke cookiy_simulated_interview_generate "$payload"
               ;;
-            wait)
-              build_json "study_id job_id timeout_ms" "${srest[@]+"${srest[@]}"}"
-              require_key study_id "study interview simulate wait requires --study-id"
-              require_non_empty_string_value job_id "study interview simulate wait requires --job-id"
-              invoke cookiy_simulated_interview_status "$(echo "$BUILT_JSON" | jq -c '. + {wait: true}')"
-              ;;
-            *) die "study interview simulate start|wait" ;;
+            *) die "study interview simulate start" ;;
           esac
           ;;
         *) die "Unknown study interview subcommand: ${isub:-}" ;;
