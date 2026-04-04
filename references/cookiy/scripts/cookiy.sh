@@ -614,14 +614,16 @@ study)
             url)
               build_json "study_id interview_id" "${ptail[@]+"${ptail[@]}"}"
               require_key study_id "study interview playback url requires --study-id"
-              result="$(invoke cookiy_interview_playback_get "$BUILT_JSON")"
-              echo "$result" | jq '{playback_page_url: (.interviews // [. ])[].playback_page_url, playback_page_expires_at: (.interviews // [. ])[].playback_page_expires_at}'
+              # Inject view=url for MCP-level filtering
+              BUILT_JSON="$(echo "$BUILT_JSON" | jq -c '. + {view: "url"}')"
+              invoke cookiy_interview_playback_get "$BUILT_JSON"
               ;;
             content)
               build_json "study_id interview_id" "${ptail[@]+"${ptail[@]}"}"
               require_key study_id "study interview playback content requires --study-id"
-              result="$(invoke cookiy_interview_playback_get "$BUILT_JSON")"
-              echo "$result" | jq '{transcript: (.interviews // [. ])[].transcript, turn_count: (.interviews // [. ])[].turn_count, transcript_available: (.interviews // [. ])[].transcript_available}'
+              # Inject view=transcript for MCP-level filtering
+              BUILT_JSON="$(echo "$BUILT_JSON" | jq -c '. + {view: "transcript"}')"
+              invoke cookiy_interview_playback_get "$BUILT_JSON"
               ;;
             --*|"")
               # No subcommand — return full playback (default behavior)
@@ -678,12 +680,12 @@ study)
         content)
           build_json "study_id timeout_ms" "${rrest[@]+"${rrest[@]}"}"
           require_key study_id "study report content requires --study-id"
-          payload="$BUILT_JSON"
-          # --wait or --timeout-ms implies server-side wait
-          if [[ "$ARG_WAIT" == "true" ]] || echo "$payload" | grep -q '"timeout_ms"'; then
-            payload="$(echo "$payload" | jq -c '. + {wait: true}')"
+          # --wait or --timeout-ms: poll status first, then fetch content
+          if [[ "$ARG_WAIT" == "true" ]] || echo "$BUILT_JSON" | grep -q '"timeout_ms"'; then
+            wait_payload="$(echo "$BUILT_JSON" | jq -c '. + {wait: true}')"
+            invoke cookiy_report_status "$wait_payload" > /dev/null
           fi
-          invoke cookiy_report_status "$payload"
+          invoke cookiy_report_content_get "$BUILT_JSON"
           ;;
         link)
           build_json "study_id" "${rrest[@]+"${rrest[@]}"}"
