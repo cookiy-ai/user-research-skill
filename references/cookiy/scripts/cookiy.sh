@@ -49,7 +49,7 @@ Environment:
 Commands:
   save-token <token>          Save raw access token (validates against MCP first)
   help                        Offline CLI reference
-  study list|create|status|upload|.. Includes guide|interview|recruit|report
+  study list|create|status|upload|..  Includes guide|interview|recruit|report
   quant list|create|get|update|report
   billing balance|checkout
 
@@ -57,7 +57,7 @@ Examples:
   cookiy.sh save-token eyJhbGciOi...
   cookiy.sh help commands
   cookiy.sh study list --limit 10
-  cookiy.sh study create --query "..." --wait
+  cookiy.sh study create --query "..."  --wait
 EOF
 }
 
@@ -411,8 +411,8 @@ study list — list studies
     Usage:   cookiy.sh study list [--limit <n>] [--cursor <s>]
     Flags:   --limit <integer>   --cursor <string>
 
-study guide create — create study from natural language
-    Usage:   cookiy.sh study guide create --query <s> [--thinking <s>] [--attachments <s>] [--wait] [--timeout-ms <n>]
+study create — create study from natural language
+    Usage:   cookiy.sh study create --query <s> [--thinking <s>] [--attachments <s>] [--wait] [--timeout-ms <n>]
     Flags:   --query <string> (required)
              --thinking <string>   --attachments <string>   --wait (MCP wait_for_guide)   --timeout-ms (optional)
 
@@ -556,6 +556,16 @@ study)
       invoke cookiy_study_get "$BUILT_JSON"
       invoke cookiy_activity_get "$BUILT_JSON"
       ;;
+    create)
+      build_json "query thinking attachments timeout_ms" "${stail[@]+"${stail[@]}"}"
+      require_key query "study create requires --query"
+      payload="$BUILT_JSON"
+      # --wait or --timeout-ms implies server-side wait
+      if [[ "$ARG_WAIT" == "true" ]] || echo "$payload" | grep -q '"timeout_ms"'; then
+        payload="$(echo "$payload" | jq -c '. + {wait_for_guide: true}')"
+      fi
+      invoke cookiy_study_create "$payload"
+      ;;
     upload)
       build_json "image_data image_url content_type" "${stail[@]+"${stail[@]}"}"
       require_key content_type "study upload requires --content-type"
@@ -565,16 +575,6 @@ study)
       gcmd="${stail[0]:-}"
       gtail=("${stail[@]:1}")
       case "$gcmd" in
-        create)
-          build_json "query thinking attachments timeout_ms" "${gtail[@]+"${gtail[@]}"}"
-          require_key query "study guide create requires --query"
-          payload="$BUILT_JSON"
-          # --wait or --timeout-ms implies server-side wait
-          if [[ "$ARG_WAIT" == "true" ]] || echo "$payload" | grep -q '"timeout_ms"'; then
-            payload="$(echo "$payload" | jq -c '. + {wait_for_guide: true}')"
-          fi
-          invoke cookiy_study_create "$payload"
-          ;;
         wait)
           build_json "study_id timeout_ms" "${gtail[@]+"${gtail[@]}"}"
           require_key study_id "study guide wait requires --study-id"
