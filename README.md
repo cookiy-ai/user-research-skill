@@ -107,7 +107,7 @@ npx cookiy-mcp --client codex -y
 
 # Then ask your agent:
 "Create a 6-participant checkout-abandonment study in English."
-"Run 3 simulated interviews with price-sensitive mobile shoppers."
+"Run 3 synthetic user interviews with price-sensitive mobile shoppers."
 "Share the report link as soon as a preview is ready."
 ```
 
@@ -122,7 +122,7 @@ What happens:
 | Use case | Ask your agent | What Cookiy does |
 |---|---|---|
 | Ecommerce checkout drop-off | "Create a 6-participant study to understand why mobile shoppers abandon checkout after shipping costs appear." | Creates the study, generates the guide, and highlights sample size, interview mode, and duration for review. |
-| SaaS onboarding friction | "Run 5 simulated interviews with first-time admins setting up SSO for the first time." | Queues AI interviews, polls status, and returns transcripts for early signal before spending on real participants. |
+| SaaS onboarding friction | "Run 5 synthetic user interviews with first-time admins setting up SSO for the first time." | Queues AI interviews, polls status, and returns transcripts for early signal before spending on real participants. |
 | Concept validation with real users | "Recruit bilingual parents in the US for 8 short interviews about a children's learning app, then share the report link when ready." | Previews targeting and pricing, launches recruitment after confirmation, tracks progress, and returns the report share link when available. |
 
 ## Quick Install

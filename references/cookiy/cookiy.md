@@ -1,7 +1,7 @@
 # Cookiy AI — End-to-End User Research via CLI
 
 Cookiy AI automates the full qualitative research lifecycle: study creation, discussion guide
-generation, participant recruitment (or simulated interviews with AI personas), AI-moderated
+generation, participant recruitment (or synthetic user interviews with AI personas), AI-moderated
 interviews, and report synthesis. All operations go through the [`scripts/cookiy.sh`](scripts/cookiy.sh) CLI.
 
 ---
@@ -19,7 +19,7 @@ Review Guide  ──→  (optional) show/edit the guide
   │
   ├──→  Recruit real participants  (costs money, takes time)
   │         or
-  └──→  Simulated interviews with AI personas  (cheaper, faster)
+  └──→  Synthetic user interviews with AI personas  (cheaper, faster)
           │
           ▼
      Interviews Complete
@@ -98,7 +98,7 @@ Only read these when you need to perform the specific operation:
 |------|--------|
 | [`cookiy-study-guide.md`](cookiy-study-guide.md) | Viewing and editing discussion guides |
 | [`cookiy-study-recruit.md`](cookiy-study-recruit.md) | Launching and managing participant recruitment |
-| [`cookiy-study-simulated.md`](cookiy-study-simulated.md) | Running simulated interviews with AI personas |
+| [`cookiy-study-simulated.md`](cookiy-study-simulated.md) | Running synthetic user interviews with AI personas |
 | [`cookiy-study-report.md`](cookiy-study-report.md) | Report retrieval (link and content) |
 
 ### Billing
@@ -121,7 +121,7 @@ When guiding a user through the workflow, there are two key moments to ask:
 
 1. **After guide generation** — offer to show the discussion guide. If they want changes, use the
    guide editing commands.
-2. **Before interviews** — ask whether they want real participants or simulated interviews:
+2. **Before interviews** — ask whether they want real participants or synthetic user interviews:
    *"Would you like to recruit real participants (takes longer, costs more, gives real human
-   responses) or run simulated interviews with AI personas (faster and cheaper, good for piloting)?"*
+   responses) or run synthetic user interviews with AI personas (faster and cheaper, good for piloting)?"*
 
