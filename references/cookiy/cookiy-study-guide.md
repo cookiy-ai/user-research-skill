@@ -34,7 +34,6 @@ scripts/cookiy.sh study guide update --study-id <uuid> --base-revision <s> --ide
 
 | Flag | Required | Purpose |
 |------|----------|---------|
-| `--study-id` | yes | Target study |
 | `--base-revision` | yes | The `revision` field from the `study guide get` response |
 | `--idempotency-key` | yes | Client-generated unique key (generate one yourself) |
 | `--change-message` | no | Human-readable description of the change |

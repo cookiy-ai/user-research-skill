@@ -2,7 +2,7 @@
 
 Cookiy AI automates the full qualitative research lifecycle: study creation, discussion guide
 generation, participant recruitment (or synthetic user interviews with AI personas), AI-moderated
-interviews, and report synthesis. All operations go through the [`scripts/cookiy.sh`](scripts/cookiy.sh) CLI.
+interviews, and report synthesis. All operations go through the [`scripts/cookiy.sh`](scripts/cookiy.sh) CLI (scripts folder is located under the same directory as this file).
 
 ---
 
@@ -97,8 +97,9 @@ Only read these when you need to perform the specific operation:
 | File | Covers |
 |------|--------|
 | [`cookiy-study-guide.md`](cookiy-study-guide.md) | Viewing and editing discussion guides |
-| [`cookiy-study-recruit.md`](cookiy-study-recruit.md) | Launching and managing participant recruitment |
-| [`cookiy-study-simulated.md`](cookiy-study-simulated.md) | Running synthetic user interviews with AI personas |
+| [`cookiy-study-recruit.md`](cookiy-study-recruit.md) | Launching and managing real participant recruitment |
+| [`cookiy-study-synthetic-user.md`](cookiy-study-synthetic-user.md) | Running synthetic user interviews with AI personas |
+| [`cookiy-study-interview.md`](cookiy-study-interview.md) | Interview retrieval for both real and synthetic interviews (playback link and transcript) |
 | [`cookiy-study-report.md`](cookiy-study-report.md) | Report retrieval (link and content) |
 
 ### Billing

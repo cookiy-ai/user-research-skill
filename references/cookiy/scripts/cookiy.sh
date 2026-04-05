@@ -49,7 +49,7 @@ Environment:
 Commands:
   save-token <token>          Save raw access token (validates against MCP first)
   help                        Offline CLI reference
-  study list|create|status|upload|..  Includes guide|interview|synthetic|report
+  study list|create|status|upload|..  Includes guide|interview|run-synthetic-user|report
   recruit start                       Qualitative or quant recruitment (auto-detects mode)
   quant list|create|get|update|report
   billing balance|checkout
@@ -457,8 +457,8 @@ study interview list | playback url|content
              cookiy.sh study interview playback content --study-id <uuid> [--interview-id <uuid>]
     Note:    include_simulation defaults to true (returns all interviews incl. synthetic). Pass --include-simulation false to exclude.
 
-study synthetic start — run synthetic user interviews
-    Usage:   cookiy.sh study synthetic start --study-id <uuid> [--persona-count <n>] [--plain-text <s>] [--wait] [--timeout-ms <n>]
+study run-synthetic-user start — run synthetic user interviews
+    Usage:   cookiy.sh study run-synthetic-user start --study-id <uuid> [--persona-count <n>] [--plain-text <s>] [--wait] [--timeout-ms <n>]
     Flags:   --study-id (required)
              --persona-count <integer>  Number of synthetic interviews to run
              --plain-text <string>  Participant persona / profile description (maps to MCP interviewee_persona)
@@ -657,13 +657,13 @@ study)
         *) die "Unknown study interview subcommand: ${isub:-}" ;;
       esac
       ;;
-    synthetic)
+    run-synthetic-user)
       ssub="${stail[0]:-}"
       srest=("${stail[@]:1}")
       case "$ssub" in
         start)
           build_json "study_id persona_count plain_text timeout_ms" "${srest[@]+"${srest[@]}"}"
-          require_key study_id "study synthetic start requires --study-id"
+          require_key study_id "study run-synthetic-user start requires --study-id"
           # Map --plain-text to MCP interviewee_persona
           if echo "$BUILT_JSON" | grep -q '"plain_text"'; then
             BUILT_JSON="$(echo "$BUILT_JSON" | jq -c '. + {interviewee_persona: .plain_text} | del(.plain_text)')"
@@ -674,7 +674,7 @@ study)
           fi
           invoke cookiy_simulated_interview_generate "$payload"
           ;;
-        *) die "study synthetic start" ;;
+        *) die "study run-synthetic-user start" ;;
       esac
       ;;
     report)
@@ -702,7 +702,7 @@ study)
       esac
       ;;
     *) die "Unknown study subcommand: ${sub:-(none)}
-Available: list, status, upload, guide, interview, synthetic, report" ;;
+Available: list, create, status, upload, guide, interview, run-synthetic-user, report" ;;
   esac
   ;;
 

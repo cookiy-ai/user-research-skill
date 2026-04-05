@@ -7,7 +7,7 @@ description: >
   transcripts, research reports, running studies with AI, or explicitly mentions Cookiy AI. Also
   trigger when users want to talk to customers, conduct discovery research, create a study, analyze
   interview data, or run AI-moderated interviews. Covers the full lifecycle: planning a study,
-  creating discussion guides, running AI-moderated interviews (real or synthetic) via Cookiy, and
+  creating discussion guides, running AI-moderated interviews (real participants or synthetic users) via Cookiy, and
   synthesizing raw transcripts into evidence-backed reports.
 ---
 
