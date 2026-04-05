@@ -49,8 +49,9 @@ Environment:
 Commands:
   save-token <token>          Save raw access token (validates against MCP first)
   help                        Offline CLI reference
-  study list|create|status|upload|..  Includes guide|interview|synthetic|recruit|report
-  quant list|create|get|update|report|recruit
+  study list|create|status|upload|..  Includes guide|interview|synthetic|report
+  recruit start                       Qualitative or quant recruitment (auto-detects mode)
+  quant list|create|get|update|report
   billing balance|checkout
 
 Examples:
@@ -463,8 +464,10 @@ study synthetic start — run synthetic user interviews
              --plain-text <string>  Participant persona / profile description (maps to MCP interviewee_persona)
              --wait (MCP wait)   --timeout-ms (optional)
 
-study recruit start
-    Usage:   cookiy.sh study recruit start --study-id <uuid> [--confirmation-token <s>] [--plain-text <s>] [--incremental-participants <n>] [--execution-duration <n>] [--max-price-per-interview <n>] [--channel-name <s>] [--auto-launch <bool>] [--recruit-mode <s>] [--survey-public-url <url>] [--json '<obj>']
+recruit start — launch participant recruitment
+    Usage:   cookiy.sh recruit start [--study-id <uuid>] [--survey-public-url <url>] [--confirmation-token <s>] [--plain-text <s>] [--incremental-participants <n>] [--execution-duration <n>] [--max-price-per-interview <n>] [--channel-name <s>] [--auto-launch <bool>] [--json '<obj>']
+    Flags:   --study-id (qualitative — required for interview studies)
+             --survey-public-url (quant — auto-sets recruit_mode=quant_survey; study-id optional)
     Output:  Preview (confirmation_required): {preview_only, confirmation_token, recruit_mode, source_language, derived_languages, sample_size, target_group, payment_quote, status_message} (null fields omitted). HTTP 402: adds checkout_url, quote, payment_summary, payment_breakdown, retry_*. HTTP 409 (sample size reached): {ok, status_code, code, sample_size, completed_participants}. Other successes/errors: full MCP envelope JSON.
     Note:    incremental_participants is auto-capped to remaining sample size capacity. If below current channel target, treated as incremental ("recruit N more").
 
@@ -492,12 +495,6 @@ quant update — patch survey
 quant report — survey report
     Usage:   cookiy.sh quant report --survey-id <n> [--json '<obj>']
     Flags:   --survey-id (required, numeric)   --json (optional: language, completion_status, etc.)
-
-quant recruit start — launch questionnaire recruitment (quant_survey mode)
-    Usage:   cookiy.sh quant recruit start --survey-public-url <url> [--study-id <uuid>] [--confirmation-token <s>] [--plain-text <s>] [--incremental-participants <n>] [--execution-duration <n>] [--max-price-per-interview <n>] [--channel-name <s>] [--auto-launch <bool>] [--json '<obj>']
-    Flags:   --survey-public-url (required)   --study-id (optional — omit to recruit without a study)
-    Note:    recruit_mode is automatically set to quant_survey. Same two-step preview/confirm flow as study recruit start.
-    Output:  Same structured output as study recruit start (preview, 402, 409, or full envelope).
 
 billing balance
     Usage:   cookiy.sh billing balance
@@ -680,66 +677,6 @@ study)
         *) die "study synthetic start" ;;
       esac
       ;;
-    recruit)
-      rsub="${stail[0]:-}"
-      rrest=("${stail[@]:1}")
-      case "$rsub" in
-        start)
-          build_json "study_id confirmation_token plain_text incremental_participants execution_duration max_price_per_interview channel_name auto_launch recruit_mode survey_public_url" "${rrest[@]+"${rrest[@]}"}"
-          merge_raw_json
-          require_key study_id "study recruit start requires --study-id"
-          _rc=0
-          result="$(invoke cookiy_recruit_create "$BUILT_JSON")" || _rc=$?
-          echo "$result" | jq '
-            if .ok == false and .status_code == 409 and (.data | type) == "object" then
-              {
-                ok: false,
-                status_code: 409,
-                code: .data.code,
-                sample_size: .data.data.sample_size,
-                completed_participants: .data.data.completed_participants
-              }
-            elif .ok == false and .status_code == 402 and (.data | type) == "object" then
-              {
-                ok: false,
-                status_code: 402,
-                workflow_state: .data.workflow_state,
-                preview_only: .data.preview_only,
-                confirmation_token: .data.confirmation_token,
-                status_message: .data.status_message,
-                checkout_url: .data.checkout_url,
-                checkout_url_short: .data.checkout_url_short,
-                checkout_id: .data.checkout_id,
-                quote: .data.quote,
-                payment_summary: .data.payment_summary,
-                payment_breakdown: .data.payment_breakdown,
-                retry_same_tool: .data.retry_same_tool,
-                retry_tool_name: .data.retry_tool_name,
-                retry_input_hint: .data.retry_input_hint
-              }
-            elif .ok == true and (.data | type) == "object" and ((.data.preview_only == true) or (.data.status == "confirmation_required")) then
-              {
-                preview_only: .data.preview_only,
-                confirmation_token: .data.confirmation_token,
-                recruit_mode: .data.recruit_mode,
-                survey_public_url: .data.survey_public_url,
-                source_language: .data.source_language,
-                derived_languages: .data.targeting_preview.derived_languages_canonical,
-                sample_size: .data.study_summary.sample_size,
-                interview_duration_minutes: .data.study_summary.interview_duration_minutes,
-                target_group: (.data.targeting_preview.target_persona_summary // .data.targeting_preview.target_group),
-                payment_quote: .data.targeting_preview.payment_quote,
-                status_message: .data.status_message
-              } | with_entries(select(.value != null))
-            else
-              .
-            end
-          '
-          exit $_rc
-          ;;
-        *) die "study recruit start" ;;
-      esac
-      ;;
     report)
       rsub="${stail[0]:-}"
       rrest=("${stail[@]:1}")
@@ -765,7 +702,7 @@ study)
       esac
       ;;
     *) die "Unknown study subcommand: ${sub:-(none)}
-Available: list, status, upload, guide, interview, synthetic, recruit, report" ;;
+Available: list, status, upload, guide, interview, synthetic, report" ;;
   esac
   ;;
 
@@ -802,70 +739,74 @@ quant)
       require_key survey_id "quant report requires --survey-id (numeric sid from quant list)"
       invoke cookiy_quant_survey_report "$BUILT_JSON"
       ;;
-    recruit)
-      rsub="${qtail[0]:-}"
-      rrest=("${qtail[@]:1}")
-      case "$rsub" in
-        start)
-          build_json "study_id confirmation_token plain_text incremental_participants execution_duration max_price_per_interview channel_name auto_launch survey_public_url" "${rrest[@]+"${rrest[@]}"}"
-          merge_raw_json
-          require_key survey_public_url "quant recruit start requires --survey-public-url"
-          BUILT_JSON="$(echo "$BUILT_JSON" | jq -c '. + {recruit_mode: "quant_survey"}')"
-          _rc=0
-          result="$(invoke cookiy_recruit_create "$BUILT_JSON")" || _rc=$?
-          echo "$result" | jq '
-            if .ok == false and .status_code == 409 and (.data | type) == "object" then
-              {
-                ok: false,
-                status_code: 409,
-                code: .data.code,
-                sample_size: .data.data.sample_size,
-                completed_participants: .data.data.completed_participants
-              }
-            elif .ok == false and .status_code == 402 and (.data | type) == "object" then
-              {
-                ok: false,
-                status_code: 402,
-                workflow_state: .data.workflow_state,
-                preview_only: .data.preview_only,
-                confirmation_token: .data.confirmation_token,
-                status_message: .data.status_message,
-                checkout_url: .data.checkout_url,
-                checkout_url_short: .data.checkout_url_short,
-                checkout_id: .data.checkout_id,
-                quote: .data.quote,
-                payment_summary: .data.payment_summary,
-                payment_breakdown: .data.payment_breakdown,
-                retry_same_tool: .data.retry_same_tool,
-                retry_tool_name: .data.retry_tool_name,
-                retry_input_hint: .data.retry_input_hint
-              }
-            elif .ok == true and (.data | type) == "object" and ((.data.preview_only == true) or (.data.status == "confirmation_required")) then
-              {
-                preview_only: .data.preview_only,
-                confirmation_token: .data.confirmation_token,
-                recruit_mode: .data.recruit_mode,
-                survey_public_url: .data.survey_public_url,
-                source_language: .data.source_language,
-                derived_languages: .data.targeting_preview.derived_languages_canonical,
-                sample_size: .data.study_summary.sample_size,
-                interview_duration_minutes: .data.study_summary.interview_duration_minutes,
-                target_group: (.data.targeting_preview.target_persona_summary // .data.targeting_preview.target_group),
-                payment_quote: .data.targeting_preview.payment_quote,
-                status_message: .data.status_message
-              } | with_entries(select(.value != null))
-            else
-              .
-            end
-          '
-          exit $_rc
-          ;;
-        *) die "quant recruit start" ;;
-      esac
-      ;;
     *)
-      die "quant list|create|get|update|report|recruit"
+      die "quant list|create|get|update|report"
       ;;
+  esac
+  ;;
+
+recruit)
+  sub="${TAIL[0]:-}"
+  rtail=("${TAIL[@]:1}")
+
+  case "$sub" in
+    start)
+      build_json "study_id confirmation_token plain_text incremental_participants execution_duration max_price_per_interview channel_name auto_launch survey_public_url" "${rtail[@]+"${rtail[@]}"}"
+      merge_raw_json
+      # Auto-detect quant mode when --survey-public-url is provided
+      if echo "$BUILT_JSON" | grep -q '"survey_public_url"'; then
+        BUILT_JSON="$(echo "$BUILT_JSON" | jq -c '. + {recruit_mode: "quant_survey"}')"
+      fi
+      _rc=0
+      result="$(invoke cookiy_recruit_create "$BUILT_JSON")" || _rc=$?
+      echo "$result" | jq '
+        if .ok == false and .status_code == 409 and (.data | type) == "object" then
+          {
+            ok: false,
+            status_code: 409,
+            code: .data.code,
+            sample_size: .data.data.sample_size,
+            completed_participants: .data.data.completed_participants
+          }
+        elif .ok == false and .status_code == 402 and (.data | type) == "object" then
+          {
+            ok: false,
+            status_code: 402,
+            workflow_state: .data.workflow_state,
+            preview_only: .data.preview_only,
+            confirmation_token: .data.confirmation_token,
+            status_message: .data.status_message,
+            checkout_url: .data.checkout_url,
+            checkout_url_short: .data.checkout_url_short,
+            checkout_id: .data.checkout_id,
+            quote: .data.quote,
+            payment_summary: .data.payment_summary,
+            payment_breakdown: .data.payment_breakdown,
+            retry_same_tool: .data.retry_same_tool,
+            retry_tool_name: .data.retry_tool_name,
+            retry_input_hint: .data.retry_input_hint
+          }
+        elif .ok == true and (.data | type) == "object" and ((.data.preview_only == true) or (.data.status == "confirmation_required")) then
+          {
+            preview_only: .data.preview_only,
+            confirmation_token: .data.confirmation_token,
+            recruit_mode: .data.recruit_mode,
+            survey_public_url: .data.survey_public_url,
+            source_language: .data.source_language,
+            derived_languages: .data.targeting_preview.derived_languages_canonical,
+            sample_size: .data.study_summary.sample_size,
+            interview_duration_minutes: .data.study_summary.interview_duration_minutes,
+            target_group: (.data.targeting_preview.target_persona_summary // .data.targeting_preview.target_group),
+            payment_quote: .data.targeting_preview.payment_quote,
+            status_message: .data.status_message
+          } | with_entries(select(.value != null))
+        else
+          .
+        end
+      '
+      exit $_rc
+      ;;
+    *) die "recruit start" ;;
   esac
   ;;
 
