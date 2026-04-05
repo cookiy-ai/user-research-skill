@@ -3,7 +3,7 @@
 # Requires: bash, curl, jq, grep, sed.
 set -euo pipefail
 
-VERSION="1.13.0"
+VERSION="1.14.0"
 DEFAULT_SERVER_URL="https://dev-api.cookiy.ai"
 DEFAULT_TOKEN_PATH="${COOKIY_CREDENTIALS:-$HOME/.cookiy/token.txt}"
 # Long-running MCP tools/call (server-side wait); override with COOKIY_MCP_RPC_TIMEOUT.
@@ -49,8 +49,8 @@ Environment:
 Commands:
   save-token <token>          Save raw access token (validates against MCP first)
   help                        Offline CLI reference
-  study list|create|status|upload|..  Includes guide|interview|recruit|report
-  quant list|create|get|update|report
+  study list|create|status|upload|..  Includes guide|interview|synthetic|recruit|report
+  quant list|create|get|update|report|recruit
   billing balance|checkout
 
 Examples:
@@ -259,9 +259,9 @@ invoke() {
 # Parses --key value pairs from "$@" and builds a JSON object.
 # Only includes keys listed in the allowed-keys spec.
 # Usage: build_json "key1 key2 key3" "$@"
-# Numeric keys: limit, amount_usd_cents, persona_count, target_participants
+# Numeric keys: limit, amount_usd_cents, persona_count, incremental_participants
 # survey_id: digits only → JSON number (LimeSurvey sid); otherwise string
-# Boolean keys: include_simulation, include_structure, auto_generate_personas
+# Boolean keys: include_simulation, include_structure
 # The rest are strings.
 # Sets global: BUILT_JSON, ARG_WAIT, ARG_JSON_RAW, ARG_POSITIONALS
 
@@ -307,7 +307,7 @@ build_json() {
       $first || json+=","
       first=false
       case "$key" in
-        limit|amount_usd_cents|persona_count|target_participants|timeout_ms|execution_duration)
+        limit|amount_usd_cents|persona_count|incremental_participants|timeout_ms|execution_duration)
           [[ "$val" =~ ^-?[0-9]+$ ]] || die "--${key//_/-} requires an integer, got: $val"
           # amount_usd_cents → MCP param name amount_cents
           local json_key="$key"
@@ -319,7 +319,7 @@ build_json() {
         survey_id)
           if [[ "$val" =~ ^[0-9]+$ ]]; then json+="\"$key\":$val"
           else json+="\"$key\":\"$(json_escape "$val")\""; fi ;;
-        include_simulation|include_structure|auto_generate_personas|auto_launch)
+        include_simulation|include_structure|auto_launch)
           json+="\"$key\":$(bool_json "$val")" ;;
         *)
           json+="\"$key\":\"$(json_escape "$val")\"" ;;
@@ -450,16 +450,23 @@ study upload — attach media (image upload)
     Usage:   cookiy.sh study upload --content-type <s> (--image-data <s> | --image-url <s>)
     Flags:   --content-type (required)   --image-data | --image-url (one required)
 
-study interview list | playback url|content | synthetic start
+study interview list | playback url|content
     Usage:   cookiy.sh study interview list --study-id <uuid> [--include-simulation <bool>] [--cursor <s>]
              cookiy.sh study interview playback url --study-id <uuid> [--interview-id <uuid>]
              cookiy.sh study interview playback content --study-id <uuid> [--interview-id <uuid>]
-             cookiy.sh study interview synthetic start --study-id <uuid> [--persona-count <n>] [--auto-generate-personas <bool>] [--interviewee-persona <s>] [--wait] [--timeout-ms <n>] [--json '<obj>']
+    Note:    include_simulation defaults to true (returns all interviews incl. synthetic). Pass --include-simulation false to exclude.
+
+study synthetic start — run synthetic user interviews
+    Usage:   cookiy.sh study synthetic start --study-id <uuid> [--persona-count <n>] [--plain-text <s>] [--wait] [--timeout-ms <n>]
+    Flags:   --study-id (required)
+             --persona-count <integer>  Number of synthetic interviews to run
+             --plain-text <string>  Participant persona / profile description (maps to MCP interviewee_persona)
+             --wait (MCP wait)   --timeout-ms (optional)
 
 study recruit start
-    Usage:   cookiy.sh study recruit start --study-id <uuid> [--confirmation-token <s>] [--plain-text <s>] [--target-participants <n>] [--execution-duration <n>] [--max-price-per-interview <n>] [--channel-name <s>] [--auto-launch <bool>] [--recruit-mode <s>] [--survey-public-url <url>] [--json '<obj>']
+    Usage:   cookiy.sh study recruit start --study-id <uuid> [--confirmation-token <s>] [--plain-text <s>] [--incremental-participants <n>] [--execution-duration <n>] [--max-price-per-interview <n>] [--channel-name <s>] [--auto-launch <bool>] [--recruit-mode <s>] [--survey-public-url <url>] [--json '<obj>']
     Output:  Preview (confirmation_required): {preview_only, confirmation_token, recruit_mode, source_language, derived_languages, sample_size, target_group, payment_quote, status_message} (null fields omitted). HTTP 402: adds checkout_url, quote, payment_summary, payment_breakdown, retry_*. HTTP 409 (sample size reached): {ok, status_code, code, sample_size, completed_participants}. Other successes/errors: full MCP envelope JSON.
-    Note:    target_participants is auto-capped to remaining sample size capacity. If below current channel target, treated as incremental ("recruit N more").
+    Note:    incremental_participants is auto-capped to remaining sample size capacity. If below current channel target, treated as incremental ("recruit N more").
 
 study report content | link
     Usage:   cookiy.sh study report content --study-id <uuid> [--wait] [--timeout-ms <n>]
@@ -486,6 +493,12 @@ quant report — survey report
     Usage:   cookiy.sh quant report --survey-id <n> [--json '<obj>']
     Flags:   --survey-id (required, numeric)   --json (optional: language, completion_status, etc.)
 
+quant recruit start — launch questionnaire recruitment (quant_survey mode)
+    Usage:   cookiy.sh quant recruit start --survey-public-url <url> [--study-id <uuid>] [--confirmation-token <s>] [--plain-text <s>] [--incremental-participants <n>] [--execution-duration <n>] [--max-price-per-interview <n>] [--channel-name <s>] [--auto-launch <bool>] [--json '<obj>']
+    Flags:   --survey-public-url (required)   --study-id (optional — omit to recruit without a study)
+    Note:    recruit_mode is automatically set to quant_survey. Same two-step preview/confirm flow as study recruit start.
+    Output:  Same structured output as study recruit start (preview, 402, 409, or full envelope).
+
 billing balance
     Usage:   cookiy.sh billing balance
     Output:  one plain-text line: MCP .data.balance_summary only (jq).
@@ -495,7 +508,7 @@ billing checkout
     Flags:   USD integer cents (min 100); internally mapped to MCP amount_cents.
 
 BOOLEAN FLAGS (values: true | false | 1 | 0 | yes | no | on | off)
-    --include-simulation   --include-structure   --auto-generate-personas
+    --include-simulation   --include-structure
     --auto-launch
 
 save-token — store raw access token from browser sign-in
@@ -617,6 +630,10 @@ study)
         list)
           build_json "study_id include_simulation cursor" "${itail[@]+"${itail[@]}"}"
           require_key study_id "study interview list requires --study-id"
+          # Default to including synthetic interviews; user can override with --include-simulation false
+          if ! echo "$BUILT_JSON" | grep -q '"include_simulation"'; then
+            BUILT_JSON="$(echo "$BUILT_JSON" | jq -c '. + {include_simulation: true}')"
+          fi
           invoke cookiy_interview_list "$BUILT_JSON"
           ;;
         playback)
@@ -640,25 +657,27 @@ study)
             *) die "study interview playback url|content --study-id <uuid> [--interview-id <uuid>]" ;;
           esac
           ;;
-        synthetic)
-          ssub="${itail[0]:-}"
-          srest=("${itail[@]:1}")
-          case "$ssub" in
-            start)
-              build_json "study_id auto_generate_personas persona_count interviewee_persona timeout_ms" "${srest[@]+"${srest[@]}"}"
-              merge_raw_json
-              require_key study_id "study interview synthetic start requires --study-id"
-              payload="$BUILT_JSON"
-              # --wait or --timeout-ms implies server-side wait
-              if [[ "$ARG_WAIT" == "true" ]] || echo "$payload" | grep -q '"timeout_ms"'; then
-                payload="$(echo "$payload" | jq -c '. + {wait: true}')"
-              fi
-              invoke cookiy_simulated_interview_generate "$payload"
-              ;;
-            *) die "study interview synthetic start" ;;
-          esac
-          ;;
         *) die "Unknown study interview subcommand: ${isub:-}" ;;
+      esac
+      ;;
+    synthetic)
+      ssub="${stail[0]:-}"
+      srest=("${stail[@]:1}")
+      case "$ssub" in
+        start)
+          build_json "study_id persona_count plain_text timeout_ms" "${srest[@]+"${srest[@]}"}"
+          require_key study_id "study synthetic start requires --study-id"
+          # Map --plain-text to MCP interviewee_persona
+          if echo "$BUILT_JSON" | grep -q '"plain_text"'; then
+            BUILT_JSON="$(echo "$BUILT_JSON" | jq -c '. + {interviewee_persona: .plain_text} | del(.plain_text)')"
+          fi
+          payload="$BUILT_JSON"
+          if [[ "$ARG_WAIT" == "true" ]] || echo "$payload" | grep -q '"timeout_ms"'; then
+            payload="$(echo "$payload" | jq -c '. + {wait: true}')"
+          fi
+          invoke cookiy_simulated_interview_generate "$payload"
+          ;;
+        *) die "study synthetic start" ;;
       esac
       ;;
     recruit)
@@ -666,7 +685,7 @@ study)
       rrest=("${stail[@]:1}")
       case "$rsub" in
         start)
-          build_json "study_id confirmation_token plain_text target_participants execution_duration max_price_per_interview channel_name auto_launch recruit_mode survey_public_url" "${rrest[@]+"${rrest[@]}"}"
+          build_json "study_id confirmation_token plain_text incremental_participants execution_duration max_price_per_interview channel_name auto_launch recruit_mode survey_public_url" "${rrest[@]+"${rrest[@]}"}"
           merge_raw_json
           require_key study_id "study recruit start requires --study-id"
           _rc=0
@@ -746,7 +765,7 @@ study)
       esac
       ;;
     *) die "Unknown study subcommand: ${sub:-(none)}
-Available: list, status, upload, guide, interview, recruit, report" ;;
+Available: list, status, upload, guide, interview, synthetic, recruit, report" ;;
   esac
   ;;
 
@@ -783,8 +802,69 @@ quant)
       require_key survey_id "quant report requires --survey-id (numeric sid from quant list)"
       invoke cookiy_quant_survey_report "$BUILT_JSON"
       ;;
+    recruit)
+      rsub="${qtail[0]:-}"
+      rrest=("${qtail[@]:1}")
+      case "$rsub" in
+        start)
+          build_json "study_id confirmation_token plain_text incremental_participants execution_duration max_price_per_interview channel_name auto_launch survey_public_url" "${rrest[@]+"${rrest[@]}"}"
+          merge_raw_json
+          require_key survey_public_url "quant recruit start requires --survey-public-url"
+          BUILT_JSON="$(echo "$BUILT_JSON" | jq -c '. + {recruit_mode: "quant_survey"}')"
+          _rc=0
+          result="$(invoke cookiy_recruit_create "$BUILT_JSON")" || _rc=$?
+          echo "$result" | jq '
+            if .ok == false and .status_code == 409 and (.data | type) == "object" then
+              {
+                ok: false,
+                status_code: 409,
+                code: .data.code,
+                sample_size: .data.data.sample_size,
+                completed_participants: .data.data.completed_participants
+              }
+            elif .ok == false and .status_code == 402 and (.data | type) == "object" then
+              {
+                ok: false,
+                status_code: 402,
+                workflow_state: .data.workflow_state,
+                preview_only: .data.preview_only,
+                confirmation_token: .data.confirmation_token,
+                status_message: .data.status_message,
+                checkout_url: .data.checkout_url,
+                checkout_url_short: .data.checkout_url_short,
+                checkout_id: .data.checkout_id,
+                quote: .data.quote,
+                payment_summary: .data.payment_summary,
+                payment_breakdown: .data.payment_breakdown,
+                retry_same_tool: .data.retry_same_tool,
+                retry_tool_name: .data.retry_tool_name,
+                retry_input_hint: .data.retry_input_hint
+              }
+            elif .ok == true and (.data | type) == "object" and ((.data.preview_only == true) or (.data.status == "confirmation_required")) then
+              {
+                preview_only: .data.preview_only,
+                confirmation_token: .data.confirmation_token,
+                recruit_mode: .data.recruit_mode,
+                survey_public_url: .data.survey_public_url,
+                source_language: .data.source_language,
+                derived_languages: .data.targeting_preview.derived_languages_canonical,
+                sample_size: .data.study_summary.sample_size,
+                interview_duration_minutes: .data.study_summary.interview_duration_minutes,
+                target_group: (.data.targeting_preview.target_persona_summary // .data.targeting_preview.target_group),
+                payment_quote: .data.targeting_preview.payment_quote,
+                status_message: .data.status_message
+              } | with_entries(select(.value != null))
+            else
+              .
+            end
+          '
+          exit $_rc
+          ;;
+        *) die "quant recruit start" ;;
+      esac
+      ;;
     *)
-      die "quant list|create|get|update|report"
+      die "quant list|create|get|update|report|recruit"
       ;;
   esac
   ;;
