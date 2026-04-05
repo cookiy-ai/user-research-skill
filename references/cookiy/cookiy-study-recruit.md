@@ -27,7 +27,6 @@ scripts/cookiy.sh study recruit start --study-id <uuid> [--confirmation-token <s
 | `--confirmation-token` | no | Token from the preview response — include this on the second call to actually launch |
 | `--plain-text` | no | Participant profile / requirements to recruit. Only provide this if the user explicitly specifies who they want to recruit. If omitted, Cookiy generates it from the screening questions and research plan. |
 | `--target-participants` | no | Number of participants to recruit. If omitted, the discussion guide's sample size is used. Automatically capped to remaining capacity. |
-| `--force-reconfigure` | no | No longer required — the system always applies new parameters. Kept for backward compatibility. |
 
 ---
 

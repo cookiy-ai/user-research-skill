@@ -319,7 +319,7 @@ build_json() {
         survey_id)
           if [[ "$val" =~ ^[0-9]+$ ]]; then json+="\"$key\":$val"
           else json+="\"$key\":\"$(json_escape "$val")\""; fi ;;
-        include_simulation|include_structure|auto_generate_personas|auto_launch|force_reconfigure)
+        include_simulation|include_structure|auto_generate_personas|auto_launch)
           json+="\"$key\":$(bool_json "$val")" ;;
         *)
           json+="\"$key\":\"$(json_escape "$val")\"" ;;
@@ -457,9 +457,9 @@ study interview list | playback url|content | simulate start
              cookiy.sh study interview simulate start --study-id <uuid> [--persona-count <n>] [--auto-generate-personas <bool>] [--interviewee-persona <s>] [--wait] [--timeout-ms <n>] [--json '<obj>']
 
 study recruit start
-    Usage:   cookiy.sh study recruit start --study-id <uuid> [--confirmation-token <s>] [--plain-text <s>] [--target-participants <n>] [--execution-duration <n>] [--max-price-per-interview <n>] [--channel-name <s>] [--auto-launch <bool>] [--force-reconfigure <bool>] [--recruit-mode <s>] [--survey-public-url <url>] [--json '<obj>']
+    Usage:   cookiy.sh study recruit start --study-id <uuid> [--confirmation-token <s>] [--plain-text <s>] [--target-participants <n>] [--execution-duration <n>] [--max-price-per-interview <n>] [--channel-name <s>] [--auto-launch <bool>] [--recruit-mode <s>] [--survey-public-url <url>] [--json '<obj>']
     Output:  Preview (confirmation_required): {preview_only, confirmation_token, status_message}. HTTP 402: adds checkout_url, quote, payment_summary, payment_breakdown, retry_*. HTTP 409 (sample size reached): {ok, status_code, code, sample_size, completed_participants}. Other successes/errors: full MCP envelope JSON.
-    Note:    --force-reconfigure is no longer required; the system always applies new parameters. target_participants is auto-capped to remaining sample size capacity.
+    Note:    target_participants is auto-capped to remaining sample size capacity.
 
 study report content | link
     Usage:   cookiy.sh study report content --study-id <uuid> [--wait] [--timeout-ms <n>]
@@ -496,7 +496,7 @@ billing checkout
 
 BOOLEAN FLAGS (values: true | false | 1 | 0 | yes | no | on | off)
     --include-simulation   --include-structure   --auto-generate-personas
-    --auto-launch   --force-reconfigure
+    --auto-launch
 
 save-token — store raw access token from browser sign-in
     Usage:   cookiy.sh save-token <access_token>
@@ -666,7 +666,7 @@ study)
       rrest=("${stail[@]:1}")
       case "$rsub" in
         start)
-          build_json "study_id confirmation_token plain_text target_participants execution_duration max_price_per_interview channel_name auto_launch force_reconfigure recruit_mode survey_public_url" "${rrest[@]+"${rrest[@]}"}"
+          build_json "study_id confirmation_token plain_text target_participants execution_duration max_price_per_interview channel_name auto_launch recruit_mode survey_public_url" "${rrest[@]+"${rrest[@]}"}"
           merge_raw_json
           require_key study_id "study recruit start requires --study-id"
           _rc=0
