@@ -450,11 +450,11 @@ study upload — attach media (image upload)
     Usage:   cookiy.sh study upload --content-type <s> (--image-data <s> | --image-url <s>)
     Flags:   --content-type (required)   --image-data | --image-url (one required)
 
-study interview list | playback url|content | simulate start
+study interview list | playback url|content | synthetic start
     Usage:   cookiy.sh study interview list --study-id <uuid> [--include-simulation <bool>] [--cursor <s>]
              cookiy.sh study interview playback url --study-id <uuid> [--interview-id <uuid>]
              cookiy.sh study interview playback content --study-id <uuid> [--interview-id <uuid>]
-             cookiy.sh study interview simulate start --study-id <uuid> [--persona-count <n>] [--auto-generate-personas <bool>] [--interviewee-persona <s>] [--wait] [--timeout-ms <n>] [--json '<obj>']
+             cookiy.sh study interview synthetic start --study-id <uuid> [--persona-count <n>] [--auto-generate-personas <bool>] [--interviewee-persona <s>] [--wait] [--timeout-ms <n>] [--json '<obj>']
 
 study recruit start
     Usage:   cookiy.sh study recruit start --study-id <uuid> [--confirmation-token <s>] [--plain-text <s>] [--target-participants <n>] [--execution-duration <n>] [--max-price-per-interview <n>] [--channel-name <s>] [--auto-launch <bool>] [--recruit-mode <s>] [--survey-public-url <url>] [--json '<obj>']
@@ -640,14 +640,14 @@ study)
             *) die "study interview playback url|content --study-id <uuid> [--interview-id <uuid>]" ;;
           esac
           ;;
-        simulate)
+        synthetic|simulate)
           ssub="${itail[0]:-}"
           srest=("${itail[@]:1}")
           case "$ssub" in
             start)
               build_json "study_id auto_generate_personas persona_count interviewee_persona timeout_ms" "${srest[@]+"${srest[@]}"}"
               merge_raw_json
-              require_key study_id "study interview simulate start requires --study-id"
+              require_key study_id "study interview synthetic start requires --study-id"
               payload="$BUILT_JSON"
               # --wait or --timeout-ms implies server-side wait
               if [[ "$ARG_WAIT" == "true" ]] || echo "$payload" | grep -q '"timeout_ms"'; then
@@ -655,7 +655,7 @@ study)
               fi
               invoke cookiy_simulated_interview_generate "$payload"
               ;;
-            *) die "study interview simulate start" ;;
+            *) die "study interview synthetic start" ;;
           esac
           ;;
         *) die "Unknown study interview subcommand: ${isub:-}" ;;
