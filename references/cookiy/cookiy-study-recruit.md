@@ -11,9 +11,11 @@ Commands for launching participant recruitment for interviews.
 Launch recruitment to find participants for a study's interviews. This is a two-step process:
 preview first, then confirm to launch.
 
-**Important:** Each study has only one recruit. Calling this command multiple times replaces the
-previous recruit (e.g. first call with `--target-participants 10`, second call with
-`--target-participants 12` — the study ends up with 12).
+**Behavior:** Recruitment is bounded by the study's sample size. The system automatically caps
+`--target-participants` to the remaining capacity (`sample_size - completed_participants`).
+If the study has already reached its sample size, the command returns a 409 error.
+You can call this command multiple times to recruit incrementally (e.g. first recruit 3,
+then recruit 5 more after they complete), as long as the total stays within the sample size.
 
 ```
 scripts/cookiy.sh study recruit start --study-id <uuid> [--confirmation-token <s>] [--plain-text <s>] [--target-participants <n>]
@@ -24,7 +26,8 @@ scripts/cookiy.sh study recruit start --study-id <uuid> [--confirmation-token <s
 | `--study-id` | yes | Target study |
 | `--confirmation-token` | no | Token from the preview response — include this on the second call to actually launch |
 | `--plain-text` | no | Participant profile / requirements to recruit. Only provide this if the user explicitly specifies who they want to recruit. If omitted, Cookiy generates it from the screening questions and research plan. |
-| `--target-participants` | no | Number of participants to recruit. If omitted, the discussion guide's sample size is used. Don't provide unless the user specifically requests a number. |
+| `--target-participants` | no | Number of participants to recruit. If omitted, the discussion guide's sample size is used. Automatically capped to remaining capacity. |
+| `--force-reconfigure` | no | No longer required — the system always applies new parameters. Kept for backward compatibility. |
 
 ---
 
@@ -58,3 +61,19 @@ scripts/cookiy.sh study recruit start --study-id <uuid> --confirmation-token <to
 
 This launches the actual recruitment. The process takes time (hours to days depending on audience
 criteria). Use `study status` from the main cookiy commands to check progress.
+
+### Error: Study Sample Size Reached (409)
+
+If the study has already completed enough participants to fill the sample size, the command returns:
+
+```json
+{
+  "ok": false,
+  "status_code": 409,
+  "code": "STUDY_SAMPLE_SIZE_REACHED",
+  "sample_size": 12,
+  "completed_participants": 12
+}
+```
+
+No further recruitment is needed. Proceed to report generation instead.

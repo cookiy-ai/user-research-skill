@@ -3,7 +3,7 @@
 # Requires: bash, curl, jq, grep, sed.
 set -euo pipefail
 
-VERSION="1.12.0"
+VERSION="1.13.0"
 DEFAULT_SERVER_URL="https://dev-api.cookiy.ai"
 DEFAULT_TOKEN_PATH="${COOKIY_CREDENTIALS:-$HOME/.cookiy/token.txt}"
 # Long-running MCP tools/call (server-side wait); override with COOKIY_MCP_RPC_TIMEOUT.
@@ -307,16 +307,19 @@ build_json() {
       $first || json+=","
       first=false
       case "$key" in
-        limit|amount_usd_cents|persona_count|target_participants|timeout_ms)
+        limit|amount_usd_cents|persona_count|target_participants|timeout_ms|execution_duration)
           [[ "$val" =~ ^-?[0-9]+$ ]] || die "--${key//_/-} requires an integer, got: $val"
           # amount_usd_cents → MCP param name amount_cents
           local json_key="$key"
           [[ "$key" == "amount_usd_cents" ]] && json_key="amount_cents"
           json+="\"$json_key\":$val" ;;
+        max_price_per_interview)
+          [[ "$val" =~ ^-?[0-9]+(\.[0-9]+)?$ ]] || die "--max-price-per-interview requires a number, got: $val"
+          json+="\"$key\":$val" ;;
         survey_id)
           if [[ "$val" =~ ^[0-9]+$ ]]; then json+="\"$key\":$val"
           else json+="\"$key\":\"$(json_escape "$val")\""; fi ;;
-        include_simulation|include_structure|auto_generate_personas)
+        include_simulation|include_structure|auto_generate_personas|auto_launch|force_reconfigure)
           json+="\"$key\":$(bool_json "$val")" ;;
         *)
           json+="\"$key\":\"$(json_escape "$val")\"" ;;
@@ -454,7 +457,9 @@ study interview list | playback url|content | simulate start
              cookiy.sh study interview simulate start --study-id <uuid> [--persona-count <n>] [--auto-generate-personas <bool>] [--interviewee-persona <s>] [--wait] [--timeout-ms <n>] [--json '<obj>']
 
 study recruit start
-    Usage:   cookiy.sh study recruit start --study-id <uuid> [--confirmation-token <s>] [--plain-text <s>] [--target-participants <n>]
+    Usage:   cookiy.sh study recruit start --study-id <uuid> [--confirmation-token <s>] [--plain-text <s>] [--target-participants <n>] [--execution-duration <n>] [--max-price-per-interview <n>] [--channel-name <s>] [--auto-launch <bool>] [--force-reconfigure <bool>] [--recruit-mode <s>] [--survey-public-url <url>] [--json '<obj>']
+    Output:  Preview (confirmation_required): {preview_only, confirmation_token, status_message}. HTTP 402: adds checkout_url, quote, payment_summary, payment_breakdown, retry_*. HTTP 409 (sample size reached): {ok, status_code, code, sample_size, completed_participants}. Other successes/errors: full MCP envelope JSON.
+    Note:    --force-reconfigure is no longer required; the system always applies new parameters. target_participants is auto-capped to remaining sample size capacity.
 
 study report content | link
     Usage:   cookiy.sh study report content --study-id <uuid> [--wait] [--timeout-ms <n>]
@@ -491,6 +496,7 @@ billing checkout
 
 BOOLEAN FLAGS (values: true | false | 1 | 0 | yes | no | on | off)
     --include-simulation   --include-structure   --auto-generate-personas
+    --auto-launch   --force-reconfigure
 
 save-token — store raw access token from browser sign-in
     Usage:   cookiy.sh save-token <access_token>
@@ -660,9 +666,49 @@ study)
       rrest=("${stail[@]:1}")
       case "$rsub" in
         start)
-          build_json "study_id confirmation_token plain_text target_participants" "${rrest[@]+"${rrest[@]}"}"
+          build_json "study_id confirmation_token plain_text target_participants execution_duration max_price_per_interview channel_name auto_launch force_reconfigure recruit_mode survey_public_url" "${rrest[@]+"${rrest[@]}"}"
+          merge_raw_json
           require_key study_id "study recruit start requires --study-id"
-          invoke cookiy_recruit_create "$BUILT_JSON"
+          _rc=0
+          result="$(invoke cookiy_recruit_create "$BUILT_JSON")" || _rc=$?
+          echo "$result" | jq '
+            if .ok == false and .status_code == 409 and (.data | type) == "object" then
+              {
+                ok: false,
+                status_code: 409,
+                code: .data.code,
+                sample_size: .data.data.sample_size,
+                completed_participants: .data.data.completed_participants
+              }
+            elif .ok == false and .status_code == 402 and (.data | type) == "object" then
+              {
+                ok: false,
+                status_code: 402,
+                workflow_state: .data.workflow_state,
+                preview_only: .data.preview_only,
+                confirmation_token: .data.confirmation_token,
+                status_message: .data.status_message,
+                checkout_url: .data.checkout_url,
+                checkout_url_short: .data.checkout_url_short,
+                checkout_id: .data.checkout_id,
+                quote: .data.quote,
+                payment_summary: .data.payment_summary,
+                payment_breakdown: .data.payment_breakdown,
+                retry_same_tool: .data.retry_same_tool,
+                retry_tool_name: .data.retry_tool_name,
+                retry_input_hint: .data.retry_input_hint
+              }
+            elif .ok == true and (.data | type) == "object" and ((.data.preview_only == true) or (.data.status == "confirmation_required")) then
+              {
+                preview_only: .data.preview_only,
+                confirmation_token: .data.confirmation_token,
+                status_message: .data.status_message
+              }
+            else
+              .
+            end
+          '
+          exit $_rc
           ;;
         *) die "study recruit start" ;;
       esac
