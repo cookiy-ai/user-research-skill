@@ -458,7 +458,7 @@ study interview list | playback url|content | synthetic start
 
 study recruit start
     Usage:   cookiy.sh study recruit start --study-id <uuid> [--confirmation-token <s>] [--plain-text <s>] [--target-participants <n>] [--execution-duration <n>] [--max-price-per-interview <n>] [--channel-name <s>] [--auto-launch <bool>] [--recruit-mode <s>] [--survey-public-url <url>] [--json '<obj>']
-    Output:  Preview (confirmation_required): {preview_only, confirmation_token, status_message}. HTTP 402: adds checkout_url, quote, payment_summary, payment_breakdown, retry_*. HTTP 409 (sample size reached): {ok, status_code, code, sample_size, completed_participants}. Other successes/errors: full MCP envelope JSON.
+    Output:  Preview (confirmation_required): {preview_only, confirmation_token, recruit_mode, source_language, derived_languages, sample_size, target_group, payment_quote, status_message} (null fields omitted). HTTP 402: adds checkout_url, quote, payment_summary, payment_breakdown, retry_*. HTTP 409 (sample size reached): {ok, status_code, code, sample_size, completed_participants}. Other successes/errors: full MCP envelope JSON.
     Note:    target_participants is auto-capped to remaining sample size capacity. If below current channel target, treated as incremental ("recruit N more").
 
 study report content | link
@@ -702,8 +702,16 @@ study)
               {
                 preview_only: .data.preview_only,
                 confirmation_token: .data.confirmation_token,
+                recruit_mode: .data.recruit_mode,
+                survey_public_url: .data.survey_public_url,
+                source_language: .data.source_language,
+                derived_languages: .data.targeting_preview.derived_languages_canonical,
+                sample_size: .data.study_summary.sample_size,
+                interview_duration_minutes: .data.study_summary.interview_duration_minutes,
+                target_group: (.data.targeting_preview.target_persona_summary // .data.targeting_preview.target_group),
+                payment_quote: .data.targeting_preview.payment_quote,
                 status_message: .data.status_message
-              }
+              } | with_entries(select(.value != null))
             else
               .
             end

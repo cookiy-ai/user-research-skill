@@ -45,8 +45,14 @@ scripts/cookiy.sh study recruit start --study-id <uuid> [--plain-text <s>] [--ta
 
 The response contains:
 - `confirmation_token` — needed for step 2
-- `study_summary` — overview of the study
-- `targeting_preview` — who will be recruited and how
+- `recruit_mode` — `qualitative_panel` or `quant_survey`
+- `source_language` / `derived_languages` — detected languages (indicates discussion guide translation)
+- `sample_size` / `interview_duration_minutes` — study parameters
+- `target_group` — who will be recruited
+- `payment_quote` — pricing details including `price_per_participant_cents`, `required_participants`, `purchased_participants`, `deficit_participants`, `amount_due_cents`, and `recruit_mode`
+- `survey_public_url` — (quant only) the questionnaire URL
+
+Null fields are omitted from the output.
 
 **Show the preview to the user** and ask them to confirm whether to proceed. This step involves
 payment, so always wait for explicit confirmation.
