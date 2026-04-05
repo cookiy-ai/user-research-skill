@@ -459,7 +459,7 @@ study interview list | playback url|content | simulate start
 study recruit start
     Usage:   cookiy.sh study recruit start --study-id <uuid> [--confirmation-token <s>] [--plain-text <s>] [--target-participants <n>] [--execution-duration <n>] [--max-price-per-interview <n>] [--channel-name <s>] [--auto-launch <bool>] [--recruit-mode <s>] [--survey-public-url <url>] [--json '<obj>']
     Output:  Preview (confirmation_required): {preview_only, confirmation_token, status_message}. HTTP 402: adds checkout_url, quote, payment_summary, payment_breakdown, retry_*. HTTP 409 (sample size reached): {ok, status_code, code, sample_size, completed_participants}. Other successes/errors: full MCP envelope JSON.
-    Note:    target_participants is auto-capped to remaining sample size capacity.
+    Note:    target_participants is auto-capped to remaining sample size capacity. If below current channel target, treated as incremental ("recruit N more").
 
 study report content | link
     Usage:   cookiy.sh study report content --study-id <uuid> [--wait] [--timeout-ms <n>]

@@ -14,8 +14,9 @@ preview first, then confirm to launch.
 **Behavior:** Recruitment is bounded by the study's sample size. The system automatically caps
 `--target-participants` to the remaining capacity (`sample_size - completed_participants`).
 If the study has already reached its sample size, the command returns a 409 error.
-You can call this command multiple times to recruit incrementally (e.g. first recruit 3,
-then recruit 5 more after they complete), as long as the total stays within the sample size.
+You can call this command multiple times to recruit incrementally — if you pass a number smaller
+than the current channel target, the system treats it as "recruit N more" (e.g. channel at 5,
+pass 3 → total becomes 8). Values equal to or above the current target are used as-is.
 
 ```
 scripts/cookiy.sh study recruit start --study-id <uuid> [--confirmation-token <s>] [--plain-text <s>] [--target-participants <n>]
@@ -26,7 +27,7 @@ scripts/cookiy.sh study recruit start --study-id <uuid> [--confirmation-token <s
 | `--study-id` | yes | Target study |
 | `--confirmation-token` | no | Token from the preview response — include this on the second call to actually launch |
 | `--plain-text` | no | Participant profile / requirements to recruit. Only provide this if the user explicitly specifies who they want to recruit. If omitted, Cookiy generates it from the screening questions and research plan. |
-| `--target-participants` | no | Number of participants to recruit. If omitted, the discussion guide's sample size is used. Automatically capped to remaining capacity. |
+| `--target-participants` | no | Number of participants to recruit. If the channel already has an active recruitment with a higher target, this value is treated as **incremental** ("recruit N more"). If omitted, the discussion guide's sample size is used. Always capped to remaining capacity. |
 
 ---
 
