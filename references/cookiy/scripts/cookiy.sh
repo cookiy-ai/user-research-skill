@@ -640,7 +640,7 @@ study)
             *) die "study interview playback url|content --study-id <uuid> [--interview-id <uuid>]" ;;
           esac
           ;;
-        synthetic|simulate)
+        synthetic)
           ssub="${itail[0]:-}"
           srest=("${itail[@]:1}")
           case "$ssub" in
