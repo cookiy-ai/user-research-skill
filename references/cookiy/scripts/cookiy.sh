@@ -51,7 +51,7 @@ Commands:
   help                        Offline CLI reference
   study list|create|status|upload|..  Includes guide|interview|run-synthetic-user|report
   recruit start                       Qualitative or quant recruitment (auto-detects mode)
-  quant list|create|get|update|report
+  quant list|create|get|update|report  Quantitative survey management (keyed by survey-id)
   billing balance|checkout
 
 Examples:
@@ -260,9 +260,10 @@ invoke() {
 # Parses --key value pairs from "$@" and builds a JSON object.
 # Only includes keys listed in the allowed-keys spec.
 # Usage: build_json "key1 key2 key3" "$@"
-# Numeric keys: limit, amount_usd_cents, persona_count, incremental_participants
+# Numeric keys: limit, amount_usd_cents, persona_count, incremental_participants,
+#   max_chars, top_values_per_question, sample_open_text_values
 # survey_id: digits only → JSON number (LimeSurvey sid); otherwise string
-# Boolean keys: include_simulation, include_structure
+# Boolean keys: include_simulation, include_structure, auto_launch, include_raw
 # The rest are strings.
 # Sets global: BUILT_JSON, ARG_WAIT, ARG_JSON_RAW, ARG_POSITIONALS
 
@@ -308,7 +309,7 @@ build_json() {
       $first || json+=","
       first=false
       case "$key" in
-        limit|amount_usd_cents|persona_count|incremental_participants|timeout_ms|execution_duration)
+        limit|amount_usd_cents|persona_count|incremental_participants|timeout_ms|execution_duration|max_chars|top_values_per_question|sample_open_text_values)
           [[ "$val" =~ ^-?[0-9]+$ ]] || die "--${key//_/-} requires an integer, got: $val"
           # amount_usd_cents → MCP param name amount_cents
           local json_key="$key"
@@ -320,7 +321,7 @@ build_json() {
         survey_id)
           if [[ "$val" =~ ^[0-9]+$ ]]; then json+="\"$key\":$val"
           else json+="\"$key\":\"$(json_escape "$val")\""; fi ;;
-        include_simulation|include_structure|auto_launch)
+        include_simulation|include_structure|auto_launch|include_raw)
           json+="\"$key\":$(bool_json "$val")" ;;
         *)
           json+="\"$key\":\"$(json_escape "$val")\"" ;;
@@ -477,24 +478,31 @@ study report content | link
     report content with --wait or --timeout-ms polls server-side until PREVIEW/READY or timeout.
 
 quant list — list surveys
-    Usage:   cookiy.sh quant list [--study-id <uuid>] [--json '<obj>']
-    Flags:   --study-id (optional)
+    Usage:   cookiy.sh quant list
+    Note:    Lists all surveys visible to the operator (sid, title, active, language).
 
 quant create — create survey
-    Usage:   cookiy.sh quant create [--study-id <uuid>] --json '<obj>'
-    Flags:   --study-id (optional)   --json (required: survey_title, groups[], etc.)
+    Usage:   cookiy.sh quant create [--language <s>] --json '<obj>'
+    Flags:   --language <string>   Base language code (default: en)
+             --json (required: survey_title, groups[], quotas[] etc.)
 
 quant get — survey detail with structure
-    Usage:   cookiy.sh quant get --survey-id <n> [--study-id <uuid>] [--language <s>] [--include-structure <bool>] [--structure-presentation <s>] [--json '<obj>']
-    Flags:   --survey-id (required, numeric)   --study-id   --language   --include-structure   --structure-presentation
+    Usage:   cookiy.sh quant get --survey-id <n> [--language <s>] [--include-structure <bool>] [--structure-presentation <s>]
+    Flags:   --survey-id (required, numeric)
+             --language <string>
+             --include-structure <bool>            Load group/question structure (default: true)
+             --structure-presentation <markdown|json|both>  Structure format (default: both)
 
 quant update — patch survey
     Usage:   cookiy.sh quant update --survey-id <n> --json '<obj>'
-    Flags:   --survey-id (required, numeric)   --json (required: survey, groups, questions, etc.)
+    Flags:   --survey-id (required, numeric)
+             --json (required: survey, groups, questions, quotas_create, quotas_update etc.)
 
 quant report — survey report
-    Usage:   cookiy.sh quant report --survey-id <n> [--json '<obj>']
-    Flags:   --survey-id (required, numeric)   --json (optional: language, completion_status, etc.)
+    Usage:   cookiy.sh quant report --survey-id <n> [--language <s>] [--include-raw <bool>]
+    Flags:   --survey-id (required, numeric)
+             --language <string>
+             --include-raw <bool>   Also return raw response rows as JSON preview (default: false)
 
 billing balance
     Usage:   cookiy.sh billing balance
@@ -505,8 +513,7 @@ billing checkout
     Flags:   USD integer cents (min 100); internally mapped to MCP amount_cents.
 
 BOOLEAN FLAGS (values: true | false | 1 | 0 | yes | no | on | off)
-    --include-simulation   --include-structure
-    --auto-launch
+    --include-simulation   --include-structure   --auto-launch   --include-raw
 
 save-token — store raw access token from browser sign-in
     Usage:   cookiy.sh save-token <access_token>
@@ -712,18 +719,17 @@ quant)
 
   case "$sub" in
     list)
-      build_json "study_id" "${qtail[@]+"${qtail[@]}"}"
+      build_json "" "${qtail[@]+"${qtail[@]}"}"
       merge_raw_json
       invoke cookiy_quant_survey_list "$BUILT_JSON"
       ;;
     create)
-      build_json "study_id" "${qtail[@]+"${qtail[@]}"}"
+      build_json "language" "${qtail[@]+"${qtail[@]}"}"
       merge_raw_json
       invoke cookiy_quant_survey_create "$BUILT_JSON"
       ;;
     get)
-      build_json "survey_id study_id language include_structure structure_presentation" "${qtail[@]+"${qtail[@]}"}"
-      merge_raw_json
+      build_json "survey_id language include_structure structure_presentation" "${qtail[@]+"${qtail[@]}"}"
       require_key survey_id "quant get requires --survey-id (numeric sid from quant list)"
       invoke cookiy_quant_survey_detail "$BUILT_JSON"
       ;;
@@ -734,7 +740,7 @@ quant)
       invoke cookiy_quant_survey_patch "$BUILT_JSON"
       ;;
     report)
-      build_json "survey_id" "${qtail[@]+"${qtail[@]}"}"
+      build_json "survey_id language include_raw" "${qtail[@]+"${qtail[@]}"}"
       merge_raw_json
       require_key survey_id "quant report requires --survey-id (numeric sid from quant list)"
       invoke cookiy_quant_survey_report "$BUILT_JSON"
