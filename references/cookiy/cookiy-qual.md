@@ -87,7 +87,7 @@ Only read these when you need to perform the specific operation:
 | File | Covers |
 |------|--------|
 | [`cookiy-study-guide.md`](cookiy-study-guide.md) | Viewing and editing discussion guides |
-| [`cookiy-study-recruit.md`](cookiy-study-recruit.md) | Launching and managing real participant recruitment |
+| [`cookiy-recruit.md`](cookiy-recruit.md) | Launching and managing real participant recruitment |
 | [`cookiy-study-synthetic-user.md`](cookiy-study-synthetic-user.md) | Running synthetic user interviews with AI personas |
 | [`cookiy-study-interview.md`](cookiy-study-interview.md) | Interview retrieval for both real and synthetic interviews (playback link and transcript) |
 | [`cookiy-study-report.md`](cookiy-study-report.md) | Report retrieval (link and content) |
