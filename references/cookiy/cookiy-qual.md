@@ -53,8 +53,6 @@ scripts/cookiy.sh study create --query <s> [--thinking <s>] [--attachments <s>] 
 | `--attachments` | no | JSON array of `{s3_key, description}`, max 10 items. `s3_key` comes from the `study upload` command response. `description` is required. |
 | `--wait` | no | Wait until the discussion guide finishes generating before returning. Include this by default. |
 
-The response includes a **study ID** — save it; every subsequent command needs it.
-
 ### study upload
 
 Upload an image and get an s3 key back. The key can be used in `study create --attachments` or in
