@@ -3,7 +3,7 @@
 # Requires: bash, curl, jq, grep, sed.
 set -euo pipefail
 
-VERSION="1.14.0"
+VERSION="1.18.0"
 DEFAULT_SERVER_URL="https://preview-api.cookiy.ai"
 DEFAULT_TOKEN_PATH="${COOKIY_CREDENTIALS:-$HOME/.cookiy/token.txt}"
 # Long-running MCP tools/call (server-side wait); override with COOKIY_MCP_RPC_TIMEOUT.
@@ -78,6 +78,19 @@ die_no_access() {
   url="$(resolve_login_url)"
   die "Access denied — token is missing or expired.
 Sign in:  $url"
+}
+
+# Inspect any JSON body for auth-error indicators (status_code 401/403 or
+# error.code UNAUTHORIZED/FORBIDDEN).  If detected, call die_no_access so
+# the user always sees the sign-in URL regardless of which layer returned
+# the auth failure (HTTP, JSON-RPC, or MCP tool result).
+check_auth_error() {
+  local body="$1"
+  local sc code
+  sc="$(echo "$body" | jq -r 'if type == "object" then (.status_code // empty) else empty end' 2>/dev/null)" || return 0
+  case "$sc" in 401|403) die_no_access ;; esac
+  code="$(echo "$body" | jq -r 'if type == "object" then (.error.code // empty) else empty end' 2>/dev/null)" || return 0
+  case "$code" in UNAUTHORIZED|FORBIDDEN|AUTH_REQUIRED) die_no_access ;; esac
 }
 
 # --- save-token command ----------------------------------------------------
@@ -167,13 +180,13 @@ post_jsonrpc() {
   http="$(printf '%s' "$resp" | tail -n1)"
   body="$(printf '%s' "$resp" | sed '$d')"
   if [[ "$http" != "200" ]]; then
+    if [[ "$http" == "401" || "$http" == "403" ]]; then
+      die_no_access
+    fi
     echo "MCP HTTP $http — POST $MCP_ENDPOINT" >&2
     if [[ -n "${body// /}" ]]; then
       echo "$body" | head -c 4000 >&2
       echo >>/dev/stderr
-    fi
-    if [[ "$http" == "401" || "$http" == "403" ]]; then
-      die_no_access
     fi
     return 1
   fi
@@ -236,6 +249,7 @@ invoke() {
   local init_resp
   init_resp="$(post_jsonrpc "{\"jsonrpc\":\"2.0\",\"id\":$(next_id),\"method\":\"initialize\",\"params\":{\"protocolVersion\":\"2025-03-26\",\"capabilities\":{},\"clientInfo\":{\"name\":\"cookiy-cli-sh\",\"version\":\"1.0.0\"}}}")" \
     || die "MCP initialize request failed"
+  check_auth_error "$init_resp"
   check_rpc_error "$init_resp" || die "MCP initialize error"
 
   # 2) notifications/initialized
@@ -245,10 +259,12 @@ invoke() {
   local call_resp
   call_resp="$(post_jsonrpc "{\"jsonrpc\":\"2.0\",\"id\":$(next_id),\"method\":\"tools/call\",\"params\":{\"name\":\"${tool_name}\",\"arguments\":${args_json}}}")" \
     || die "MCP tools/call request failed"
+  check_auth_error "$call_resp"
   check_rpc_error "$call_resp" || exit 1
 
   local printable
   printable="$(echo "$call_resp" | emit_mcp_tool_printable)"
+  check_auth_error "$printable"
   echo "$printable"
   # Exit non-zero if MCP tool returned ok:false
   if echo "$printable" | jq -e '.ok == false' >/dev/null 2>&1; then
@@ -263,7 +279,7 @@ invoke() {
 # Numeric keys: limit, amount_usd_cents, persona_count, incremental_participants,
 #   max_chars, top_values_per_question, sample_open_text_values
 # survey_id: digits only → JSON number (LimeSurvey sid); otherwise string
-# Boolean keys: include_simulation, include_structure, auto_launch, include_raw
+# Boolean keys: include_structure, include_raw (interview list always sends include_simulation=true)
 # The rest are strings.
 # Sets global: BUILT_JSON, ARG_WAIT, ARG_JSON_RAW, ARG_POSITIONALS
 
@@ -298,7 +314,7 @@ build_json() {
       else
         local val="true"; shift
       fi
-      # Special: --wait and --json are never part of the tool args
+      # Special flags: never forwarded as tool JSON fields
       if [[ "$key" == "wait" ]]; then ARG_WAIT="$val"; continue; fi
       if [[ "$key" == "json" ]]; then ARG_JSON_RAW="$val"; continue; fi
       # Skip if not in allowed list
@@ -309,19 +325,16 @@ build_json() {
       $first || json+=","
       first=false
       case "$key" in
-        limit|amount_usd_cents|persona_count|incremental_participants|timeout_ms|execution_duration|max_chars|top_values_per_question|sample_open_text_values)
+        limit|amount_usd_cents|persona_count|incremental_participants|timeout_ms|max_chars|top_values_per_question|sample_open_text_values)
           [[ "$val" =~ ^-?[0-9]+$ ]] || die "--${key//_/-} requires an integer, got: $val"
           # amount_usd_cents → MCP param name amount_cents
           local json_key="$key"
           [[ "$key" == "amount_usd_cents" ]] && json_key="amount_cents"
           json+="\"$json_key\":$val" ;;
-        max_price_per_interview)
-          [[ "$val" =~ ^-?[0-9]+(\.[0-9]+)?$ ]] || die "--max-price-per-interview requires a number, got: $val"
-          json+="\"$key\":$val" ;;
         survey_id)
           if [[ "$val" =~ ^[0-9]+$ ]]; then json+="\"$key\":$val"
           else json+="\"$key\":\"$(json_escape "$val")\""; fi ;;
-        include_simulation|include_structure|auto_launch|include_raw)
+        include_structure|include_raw)
           json+="\"$key\":$(bool_json "$val")" ;;
         *)
           json+="\"$key\":\"$(json_escape "$val")\"" ;;
@@ -403,7 +416,8 @@ VERSION
 
 DESCRIPTION
     Long options use kebab-case; they are sent as snake_case JSON fields (e.g. --study-id → study_id).
-    --wait passes server-side wait flags to MCP tools (no bash polling). --json merges extra fields.
+    --wait passes server-side wait flags to MCP tools (no bash polling).
+    --json merges extra JSON fields into the tool request, or provides the guide patch payload.
     Numeric sid for quant: --survey-id 12345 becomes JSON number when value is all digits.
 
 GLOBAL OPTIONS
@@ -444,7 +458,7 @@ study guide get
     Flags:   --study-id (required)
 
 study guide update — apply patch to discussion guide
-    Usage:   cookiy.sh study guide update --study-id <uuid> --base-revision <s> --idempotency-key <s> --json '<patch>' [--change-message <s>]
+    Usage:   cookiy.sh study guide update --study-id <uuid> --base-revision <s> --idempotency-key <s> [--change-message <s>] --json '<patch>'
     Flags:   --study-id (required)   --base-revision (required)   --idempotency-key (required)   --json (required)
              --change-message
 
@@ -453,10 +467,10 @@ study upload — attach media (image upload)
     Flags:   --content-type (required)   --image-data | --image-url (one required)
 
 study interview list | playback url|content
-    Usage:   cookiy.sh study interview list --study-id <uuid> [--include-simulation <bool>] [--cursor <s>]
+    Usage:   cookiy.sh study interview list --study-id <uuid> [--cursor <s>]
              cookiy.sh study interview playback url --study-id <uuid> [--interview-id <uuid>]
              cookiy.sh study interview playback content --study-id <uuid> [--interview-id <uuid>]
-    Note:    include_simulation defaults to true (returns all interviews incl. synthetic). Pass --include-simulation false to exclude.
+    Note:    list always includes synthetic interviews in results (not configurable via CLI).
 
 study run-synthetic-user start — run synthetic user interviews
     Usage:   cookiy.sh study run-synthetic-user start --study-id <uuid> [--persona-count <n>] [--plain-text <s>] [--wait] [--timeout-ms <n>]
@@ -466,7 +480,7 @@ study run-synthetic-user start — run synthetic user interviews
              --wait (MCP wait)   --timeout-ms (optional)
 
 recruit start — launch participant recruitment
-    Usage:   cookiy.sh recruit start [--study-id <uuid>] [--survey-public-url <url>] [--confirmation-token <s>] [--plain-text <s>] [--incremental-participants <n>] [--execution-duration <n>] [--max-price-per-interview <n>] [--channel-name <s>] [--auto-launch <bool>] [--json '<obj>']
+    Usage:   cookiy.sh recruit start [--study-id <uuid>] [--survey-public-url <url>] [--confirmation-token <s>] [--plain-text <s>] [--incremental-participants <n>]
     Flags:   --study-id (qualitative — required for interview studies)
              --survey-public-url (quant — auto-sets recruit_mode=quant_survey; study-id optional)
     Output:  Preview (confirmation_required): {preview_only, confirmation_token, recruit_mode, source_language, derived_languages, sample_size, target_group, payment_quote, status_message} (null fields omitted). HTTP 402: adds checkout_url, quote, payment_summary, payment_breakdown, retry_*. HTTP 409 (sample size reached): {ok, status_code, code, sample_size, completed_participants}. Other successes/errors: full MCP envelope JSON.
@@ -481,39 +495,39 @@ quant list — list surveys
     Usage:   cookiy.sh quant list
     Note:    Lists all surveys visible to the operator (sid, title, active, language).
 
-quant create — create survey
-    Usage:   cookiy.sh quant create [--language <s>] --json '<obj>'
-    Flags:   --language <string>   Base language code (default: en)
-             --json (required: survey_title, groups[], quotas[] etc.)
+quant create — create survey (multi-language)
+    Usage:   cookiy.sh quant create --json '<obj>'
+    Flags:   --json (required): JSON with survey_title, languages[], groups[], quotas[], etc.
+    Multi-lang: Set "languages":["en","zh","ja"] and use per-language maps for text fields.
+                Respondents can switch language on the survey page.
+    Schema:  See cookiy-quant-create-schema.md for full field reference.
 
 quant get — survey detail with structure
-    Usage:   cookiy.sh quant get --survey-id <n> [--language <s>] [--include-structure <bool>] [--structure-presentation <s>]
+    Usage:   cookiy.sh quant get --survey-id <n> [--include-structure <bool>]
     Flags:   --survey-id (required, numeric)
-             --language <string>
              --include-structure <bool>            Load group/question structure (default: true)
-             --structure-presentation <markdown|json|both>  Structure format (default: both)
+    Note:    structure_presentation defaults to json for CLI.
 
 quant update — patch survey
     Usage:   cookiy.sh quant update --survey-id <n> --json '<obj>'
     Flags:   --survey-id (required, numeric)
-             --json (required: survey, groups, questions, quotas_create, quotas_update etc.)
+             --json (required): JSON with survey, groups, questions, quotas_create, quotas_update, etc.
 
 quant report — survey report
-    Usage:   cookiy.sh quant report --survey-id <n> [--language <s>] [--include-raw <bool>]
+    Usage:   cookiy.sh quant report --survey-id <n> [--include-raw <bool>]
     Flags:   --survey-id (required, numeric)
-             --language <string>
-             --include-raw <bool>   Also return raw response rows as JSON preview (default: false)
+             --include-raw <bool>   Include raw response rows (default: false)
 
 billing balance
     Usage:   cookiy.sh billing balance
     Output:  one plain-text line: MCP .data.balance_summary only (jq).
 
 billing checkout
-    Usage:   cookiy.sh billing checkout --amount-usd-cents <n> [--json '<obj>']
+    Usage:   cookiy.sh billing checkout --amount-usd-cents <n>
     Flags:   USD integer cents (min 100); internally mapped to MCP amount_cents.
 
 BOOLEAN FLAGS (values: true | false | 1 | 0 | yes | no | on | off)
-    --include-simulation   --include-structure   --auto-launch   --include-raw
+    --include-structure   --include-raw
 
 save-token — store raw access token from browser sign-in
     Usage:   cookiy.sh save-token <access_token>
@@ -619,7 +633,7 @@ study)
           require_key study_id "study guide update requires --study-id"
           require_key base_revision "study guide update requires --base-revision"
           require_key idempotency_key "study guide update requires --idempotency-key"
-          [[ -n "$ARG_JSON_RAW" ]] || die "study guide update requires --json"
+          [[ -n "$ARG_JSON_RAW" ]] || die "study guide update requires --json '<patch>'"
           # Inject patch key: strip trailing }, append ,"patch":...}
           BUILT_JSON="${BUILT_JSON%\}},\"patch\":$ARG_JSON_RAW}"
           invoke cookiy_guide_patch "$BUILT_JSON"
@@ -632,12 +646,9 @@ study)
       itail=("${stail[@]:1}")
       case "$isub" in
         list)
-          build_json "study_id include_simulation cursor" "${itail[@]+"${itail[@]}"}"
+          build_json "study_id cursor" "${itail[@]+"${itail[@]}"}"
           require_key study_id "study interview list requires --study-id"
-          # Default to including synthetic interviews; user can override with --include-simulation false
-          if ! echo "$BUILT_JSON" | grep -q '"include_simulation"'; then
-            BUILT_JSON="$(echo "$BUILT_JSON" | jq -c '. + {include_simulation: true}')"
-          fi
+          BUILT_JSON="$(echo "$BUILT_JSON" | jq -c '. + {include_simulation: true}')"
           invoke cookiy_interview_list "$BUILT_JSON"
           ;;
         playback)
@@ -720,28 +731,29 @@ quant)
   case "$sub" in
     list)
       build_json "" "${qtail[@]+"${qtail[@]}"}"
-      merge_raw_json
       invoke cookiy_quant_survey_list "$BUILT_JSON"
       ;;
     create)
-      build_json "language" "${qtail[@]+"${qtail[@]}"}"
+      build_json "" "${qtail[@]+"${qtail[@]}"}"
       merge_raw_json
+      [[ -n "$ARG_JSON_RAW" ]] || die "quant create requires --json '<obj>'"
       invoke cookiy_quant_survey_create "$BUILT_JSON"
       ;;
     get)
-      build_json "survey_id language include_structure structure_presentation" "${qtail[@]+"${qtail[@]}"}"
+      build_json "survey_id include_structure" "${qtail[@]+"${qtail[@]}"}"
       require_key survey_id "quant get requires --survey-id (numeric sid from quant list)"
+      BUILT_JSON="$(echo "$BUILT_JSON" | jq -c '.structure_presentation |= (. // "json")')"
       invoke cookiy_quant_survey_detail "$BUILT_JSON"
       ;;
     update)
       build_json "survey_id" "${qtail[@]+"${qtail[@]}"}"
       merge_raw_json
       require_key survey_id "quant update requires --survey-id (numeric sid from quant list)"
+      [[ -n "$ARG_JSON_RAW" ]] || die "quant update requires --json '<obj>'"
       invoke cookiy_quant_survey_patch "$BUILT_JSON"
       ;;
     report)
-      build_json "survey_id language include_raw" "${qtail[@]+"${qtail[@]}"}"
-      merge_raw_json
+      build_json "survey_id include_raw" "${qtail[@]+"${qtail[@]}"}"
       require_key survey_id "quant report requires --survey-id (numeric sid from quant list)"
       invoke cookiy_quant_survey_report "$BUILT_JSON"
       ;;
@@ -757,12 +769,13 @@ recruit)
 
   case "$sub" in
     start)
-      build_json "study_id confirmation_token plain_text incremental_participants execution_duration max_price_per_interview channel_name auto_launch survey_public_url" "${rtail[@]+"${rtail[@]}"}"
-      merge_raw_json
+      build_json "study_id confirmation_token plain_text incremental_participants survey_public_url" "${rtail[@]+"${rtail[@]}"}"
       # Auto-detect quant mode when --survey-public-url is provided
       if echo "$BUILT_JSON" | grep -q '"survey_public_url"'; then
         BUILT_JSON="$(echo "$BUILT_JSON" | jq -c '. + {recruit_mode: "quant_survey"}')"
       fi
+      # CLI policy: explicit reconfigure semantics (matches console UX). Live launch is enforced by MCP/V1 on confirm.
+      BUILT_JSON="$(echo "$BUILT_JSON" | jq -c '. + {force_reconfigure: true}')"
       _rc=0
       result="$(invoke cookiy_recruit_create "$BUILT_JSON")" || _rc=$?
       echo "$result" | jq '
@@ -830,8 +843,7 @@ billing)
       ;;
     checkout)
       build_json "amount_usd_cents" "${btail[@]+"${btail[@]}"}"
-      merge_raw_json
-      require_key amount_cents "billing checkout requires --amount-usd-cents <integer> (or --json with amount_cents)"
+      require_key amount_cents "billing checkout requires --amount-usd-cents <integer>"
       invoke cookiy_billing_cash_checkout "$BUILT_JSON"
       ;;
     *) die "billing balance|checkout" ;;
