@@ -48,7 +48,7 @@ scripts/cookiy.sh study create --query <s> [--thinking <s>] [--attachments <s>] 
 
 | Flag | Required | Purpose |
 |------|----------|---------|
-| `--query` | yes | Natural language — can be a one-sentence goal or a complete research plan / interview guide |
+| `--query` | yes | Research goal for the AI moderator. Can be a brief goal or full plan/interview guide. Include any non-public background knowledge the AI moderator needs (product context, internal knowledge, recent events, etc.). |
 | `--thinking` | no | `medium` or `high`. Use when the query is rough or vague so the backend reasons more carefully. Omit for well-defined queries. |
 | `--attachments` | no | JSON array of `{s3_key, description}`, max 10 items. `s3_key` comes from the `study upload` command response. `description` is required. |
 | `--wait` | no | Wait until the discussion guide finishes generating before returning. Include this by default. |
