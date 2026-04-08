@@ -50,6 +50,7 @@ Commands:
   save-token <token>          Save raw access token (validates against MCP first)
   help                        Offline CLI reference
   study list|create|status|upload|..  Includes guide|interview|run-synthetic-user|report
+  report generate|content|link  Manual report generation and retrieval
   recruit start                       Qualitative or quant recruitment (auto-detects mode)
   quant list|create|get|update|report  Quantitative survey management (keyed by survey-id)
   billing balance|checkout
@@ -59,6 +60,7 @@ Examples:
   cookiy.sh help commands
   cookiy.sh study list --limit 10
   cookiy.sh study create --query "..."  --wait
+  cookiy.sh report generate --study-id 123 --skip-synthetic-interview --wait
 EOF
 }
 
@@ -272,6 +274,41 @@ invoke() {
   fi
 }
 
+wait_for_report_completion_via_link() {
+  local study_id="$1"
+  local timeout_ms="${2:-}"
+  local started_ms now_ms elapsed_ms
+  started_ms="$(date +%s000)"
+
+  while true; do
+    local result status
+    result="$(invoke cookiy_report_share_link_get "{\"study_id\":\"$(json_escape "$study_id")\"}")" || return 1
+    status="$(echo "$result" | jq -r '.data.status // .data.report_status // empty')"
+
+    case "$status" in
+      completed)
+        echo "$result"
+        return 0
+        ;;
+      failed)
+        echo "$result"
+        return 1
+        ;;
+    esac
+
+    if [[ -n "$timeout_ms" ]]; then
+      now_ms="$(date +%s000)"
+      elapsed_ms=$((now_ms - started_ms))
+      if (( elapsed_ms >= timeout_ms )); then
+        echo "$result"
+        return 1
+      fi
+    fi
+
+    sleep 10
+  done
+}
+
 # --- arg builder -----------------------------------------------------------
 # Parses --key value pairs from "$@" and builds a JSON object.
 # Only includes keys listed in the allowed-keys spec.
@@ -334,7 +371,7 @@ build_json() {
         survey_id)
           if [[ "$val" =~ ^[0-9]+$ ]]; then json+="\"$key\":$val"
           else json+="\"$key\":\"$(json_escape "$val")\""; fi ;;
-        include_structure|include_raw)
+        include_structure|include_raw|skip_synthetic_interview)
           json+="\"$key\":$(bool_json "$val")" ;;
         *)
           json+="\"$key\":\"$(json_escape "$val")\"" ;;
@@ -486,10 +523,17 @@ recruit start — launch participant recruitment
     Output:  Preview (confirmation_required): {preview_only, confirmation_token, recruit_mode, source_language, derived_languages, sample_size, target_group, payment_quote, status_message} (null fields omitted). HTTP 402: adds checkout_url, quote, payment_summary, payment_breakdown, retry_*. HTTP 409 (sample size reached): {ok, status_code, code, sample_size, completed_participants}. Other successes/errors: full MCP envelope JSON.
     Note:    incremental_participants is auto-capped to remaining sample size capacity. If below current channel target, treated as incremental ("recruit N more").
 
-study report content | link
-    Usage:   cookiy.sh study report content --study-id <uuid> [--wait] [--timeout-ms <n>]
+study report generate | content | link
+    Usage:   cookiy.sh study report generate --study-id <uuid> [--skip-synthetic-interview] [--wait] [--timeout-ms <n>]
+             cookiy.sh study report content --study-id <uuid> [--wait] [--timeout-ms <n>]
              cookiy.sh study report link --study-id <uuid>
-    report content with --wait or --timeout-ms polls server-side until PREVIEW/READY or timeout.
+    generate with --wait polls report link every 10s until status=completed (or failed/timeout).
+
+report generate | content | link
+    Usage:   cookiy.sh report generate --study-id <uuid> [--skip-synthetic-interview] [--wait] [--timeout-ms <n>]
+             cookiy.sh report content --study-id <uuid> [--wait] [--timeout-ms <n>]
+             cookiy.sh report link --study-id <uuid>
+    Same as study report ..., but available as a top-level shortcut.
 
 quant list — list surveys
     Usage:   cookiy.sh quant list
@@ -527,7 +571,7 @@ billing checkout
     Flags:   USD integer cents (min 100); internally mapped to MCP amount_cents.
 
 BOOLEAN FLAGS (values: true | false | 1 | 0 | yes | no | on | off)
-    --include-structure   --include-raw
+    --include-structure   --include-raw   --skip-synthetic-interview
 
 save-token — store raw access token from browser sign-in
     Usage:   cookiy.sh save-token <access_token>
@@ -699,6 +743,21 @@ study)
       rsub="${stail[0]:-}"
       rrest=("${stail[@]:1}")
       case "$rsub" in
+        generate)
+          build_json "study_id skip_synthetic_interview reason timeout_ms" "${rrest[@]+"${rrest[@]}"}"
+          require_key study_id "study report generate requires --study-id"
+          generate_payload="$(echo "$BUILT_JSON" | jq -c 'del(.timeout_ms)')"
+          if [[ "$ARG_WAIT" == "true" ]] || echo "$BUILT_JSON" | grep -q '"timeout_ms"'; then
+            _grc=0
+            invoke cookiy_report_generate "$generate_payload" > /dev/null || _grc=$?
+            [[ $_grc -eq 0 ]] || exit 1
+            study_id_value="$(echo "$generate_payload" | jq -r '.study_id')"
+            timeout_value="$(echo "$BUILT_JSON" | jq -r '.timeout_ms // empty')"
+            wait_for_report_completion_via_link "$study_id_value" "$timeout_value"
+          else
+            invoke cookiy_report_generate "$generate_payload"
+          fi
+          ;;
         content)
           build_json "study_id timeout_ms" "${rrest[@]+"${rrest[@]}"}"
           require_key study_id "study report content requires --study-id"
@@ -716,11 +775,53 @@ study)
           require_key study_id "study report link requires --study-id"
           invoke cookiy_report_share_link_get "$BUILT_JSON"
           ;;
-        *) die "study report content|link" ;;
+        *) die "study report generate|content|link" ;;
       esac
       ;;
     *) die "Unknown study subcommand: ${sub:-(none)}
 Available: list, create, status, upload, guide, interview, run-synthetic-user, report" ;;
+  esac
+  ;;
+
+report)
+  sub="${TAIL[0]:-}"
+  rtail=("${TAIL[@]:1}")
+
+  case "$sub" in
+    generate)
+      build_json "study_id skip_synthetic_interview reason timeout_ms" "${rtail[@]+"${rtail[@]}"}"
+      require_key study_id "report generate requires --study-id"
+      generate_payload="$(echo "$BUILT_JSON" | jq -c 'del(.timeout_ms)')"
+      if [[ "$ARG_WAIT" == "true" ]] || echo "$BUILT_JSON" | grep -q '"timeout_ms"'; then
+        _grc=0
+        invoke cookiy_report_generate "$generate_payload" > /dev/null || _grc=$?
+        [[ $_grc -eq 0 ]] || exit 1
+        study_id_value="$(echo "$generate_payload" | jq -r '.study_id')"
+        timeout_value="$(echo "$BUILT_JSON" | jq -r '.timeout_ms // empty')"
+        wait_for_report_completion_via_link "$study_id_value" "$timeout_value"
+      else
+        invoke cookiy_report_generate "$generate_payload"
+      fi
+      ;;
+    content)
+      build_json "study_id timeout_ms" "${rtail[@]+"${rtail[@]}"}"
+      require_key study_id "report content requires --study-id"
+      if [[ "$ARG_WAIT" == "true" ]] || echo "$BUILT_JSON" | grep -q '"timeout_ms"'; then
+        wait_payload="$(echo "$BUILT_JSON" | jq -c '. + {wait: true}')"
+        _rrc=0
+        invoke cookiy_report_status "$wait_payload" > /dev/null || _rrc=$?
+        [[ $_rrc -eq 0 ]] || exit 1
+      fi
+      invoke cookiy_report_content_get "$(echo "$BUILT_JSON" | jq -c 'del(.timeout_ms)')"
+      ;;
+    link)
+      build_json "study_id" "${rtail[@]+"${rtail[@]}"}"
+      require_key study_id "report link requires --study-id"
+      invoke cookiy_report_share_link_get "$BUILT_JSON"
+      ;;
+    *)
+      die "report generate|content|link"
+      ;;
   esac
   ;;
 
