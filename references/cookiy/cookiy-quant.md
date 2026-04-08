@@ -20,7 +20,7 @@ scripts/cookiy.sh quant list
 
 ### quant create
 
-Create a survey. The `--json` follows LimeSurvey's schema (fields like `survey_title`, `survey_format`, `groups`, `groups.questions`, etc.).
+Create a survey.
 
 ```
 scripts/cookiy.sh quant create --json '<obj>'

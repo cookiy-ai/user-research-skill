@@ -23,6 +23,6 @@ Show the preview (including payment quote) to the user. Always wait for explicit
 
 **Quant:** `recruit start --confirmation-token <token>`
 
-Recruitment takes hours to days. Use `study status` to check progress.
+Recruitment takes hours to days. Use `study status` for qual studies or `quant report` for quant surveys to check progress.
 
 ### Error: 409 — sample size already reached. Proceed to report instead.
