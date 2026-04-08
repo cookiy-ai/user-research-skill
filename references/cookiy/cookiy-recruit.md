@@ -12,7 +12,7 @@ Recruit real participants for qual studies (interviews) or quant surveys.
 
 **Quant survey:** `recruit start --survey-public-url <url> [--plain-text <s>] [--target-participants <n>]`
 
-- `--plain-text`: participant profile/requirements. Provide if the user explicitly specifies who they want to recruit. Omit to let Cookiy generate it.
+- `--plain-text`: real participant profile/requirements (e.g. country, language, age/sex, job). Provide if any such context is available.
 - `--target-participants`: defaults to target sample size. Can call multiple times to recruit incrementally.
 
 Show the preview (including payment quote) to the user. Always wait for explicit confirmation.

@@ -17,5 +17,5 @@ scripts/cookiy.sh study run-synthetic-user start --study-id <uuid> [--persona-co
 | Flag | Required | Purpose |
 |------|----------|---------|
 | `--persona-count` | no | Number of new synthetic interviews to run. |
-| `--plain-text` | no | Participant profile / requirements. Only provide this if the user explicitly specifies who they want. If omitted, Cookiy generates it from the screening questions and research plan. |
+| `--plain-text` | no | Synthetic user profile/requirements (e.g. country, languages, age/sex, job). Provide if any such context is available. |
 | `--wait` | no | Wait until all synthetic interviews complete. Include this by default. |

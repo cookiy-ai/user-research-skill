@@ -98,6 +98,4 @@ When guiding a user through the workflow, there are two key moments to ask:
 
 1. **After guide generation** — offer to show the discussion guide. If they want changes, use the
    guide editing commands.
-2. **Before interviews** — ask whether they want real participants or synthetic user interviews:
-   *"Would you like to recruit real participants (takes longer, costs more, gives real human
-   responses) or run synthetic user interviews with AI personas (faster and cheaper, good for piloting)?"*
+2. **Before interviews** — confirm the participant profile/requirements (at minimum: target countries and languages). Then ask: real participants (costs money, takes time, human responses) or synthetic user interviews (faster, cheaper, good for piloting)?
