@@ -1,9 +1,5 @@
 # Cookiy — Qualitative User Research (Interview Study)
 
-Workflow and commands for running end-to-end qualitative user research via Cookiy AI.
-
----
-
 ## Workflow Overview
 
 ```

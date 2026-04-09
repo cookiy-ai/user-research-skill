@@ -1,9 +1,5 @@
 # Cookiy — Study Report Operations
 
-Commands for retrieving study reports.
-
----
-
 ## CLI Commands
 
 ### report wait

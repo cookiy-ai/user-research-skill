@@ -19,7 +19,6 @@ Any field marked **I18nText** accepts a plain string (base language) or a per-la
 | `groups` | `Group[]` | yes | — | |
 | `languages` | `string[]` | no | `["en"]` | First = base. LimeSurvey locale codes, e.g. `en`, `zh-Hans`, `zh-Hant-HK`, `ja`. |
 | `survey_format` | enum | no | `"G"` | Presentation mode: `"G"` group-by-group, `"A"` all on one page, `"S"` one question per page |
-| `activate` | boolean | no | `false` | `true` = activate immediately, `survey_public_url` ready. |
 
 ---
 
@@ -142,7 +141,3 @@ Any field marked **I18nText** accepts a plain string (base language) or a per-la
   ]
 }
 ```
-
----
-
-## Response

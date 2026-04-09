@@ -1,14 +1,10 @@
 # Cookiy — Quantitative Research (User Survey)
 
-End-to-end quantitative user survey via Cookiy AI.
-
 **Workflow:**
 1. Read [`cookiy-quant-schema.md`](cookiy-quant-schema.md), then co-design the survey questions with the user
-2. Once confirmed, create with `activate: false` to create a draft survey
-3. Preview survey (show it to the user) in readable format
-4. (Optional) `quant update` to edit, then re-preview
-5. Once satisfied, `quant update` with `activate: true` to activate — **survey content cannot be modified after activation**
-6. Recruit participants → get report
+2. Confirm the supported survey languages with the user
+3. `quant create` — creates and activates the survey immediately. **Groups/questions cannot be modified after creation.** Make sure the design is finalised before this step
+4. Recruit participants → get report
 
 ---
 
@@ -32,10 +28,10 @@ scripts/cookiy.sh quant create --json '<obj>'
 
 ### quant get
 
-Get survey detail. `--include-structure` defaults to yes (returns full survey questions); set to no for basic info only.
+Get survey detail.
 
 ```
-scripts/cookiy.sh quant get --survey-id <n> [--include-structure <bool>]
+scripts/cookiy.sh quant get --survey-id <n>
 ```
 
 ### quant update
