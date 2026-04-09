@@ -2,9 +2,13 @@
 
 End-to-end quantitative user survey via Cookiy AI.
 
-```
-Goal → quant create → review/edit survey → recruit → get report
-```
+**Workflow:**
+1. Read [`cookiy-quant-schema.md`](cookiy-quant-schema.md), then co-design the survey questions with the user
+2. Once confirmed, create with `activate: false` to create a draft survey
+3. Preview survey (show it to the user) in readable format
+4. (Optional) `quant update` to edit, then re-preview
+5. Once satisfied, `quant update` with `activate: true` to activate — **survey content cannot be modified after activation**
+6. Recruit participants → get report
 
 ---
 
@@ -49,3 +53,7 @@ Get survey report.
 ```
 scripts/cookiy.sh quant report --survey-id <n>
 ```
+
+---
+
+For the JSON schema used in `create` and `update`, refer to [`cookiy-quant-schema.md`](cookiy-quant-schema.md).
