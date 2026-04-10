@@ -52,7 +52,7 @@ Commands:
   study list|create|status|upload|..  Includes guide|interview|run-synthetic-user|report
   recruit start                       Qualitative or quant recruitment (auto-detects mode)
   quant list|create|get|update|report|admin-link  Quantitative survey management (keyed by survey-id)
-  billing balance|checkout
+  billing balance|checkout|price-table
 
 Examples:
   cookiy.sh save-token eyJhbGciOi...
@@ -244,6 +244,7 @@ print_balance_summary_only() {
     else empty
     end'
 }
+
 
 # invoke <tool_name> <arguments_json>
 # Performs the 3-step MCP handshake: initialize, notify, tools/call
@@ -583,6 +584,10 @@ billing balance
 billing checkout
     Usage:   cookiy.sh billing checkout --amount-usd-cents <n>
     Flags:   USD integer cents (min 100); internally mapped to MCP amount_cents.
+
+billing price-table
+    Usage:   cookiy.sh billing price-table
+    Output:  Current pricing table for all Cookiy operations (fetched from server).
 
 BOOLEAN FLAGS (values: true | false | 1 | 0 | yes | no | on | off)
     --include-structure   --include-raw   --skip-synthetic-interview
@@ -931,7 +936,11 @@ billing)
       require_key amount_cents "billing checkout requires --amount-usd-cents <integer>"
       invoke cookiy_billing_cash_checkout "$BUILT_JSON"
       ;;
-    *) die "billing balance|checkout" ;;
+    price-table)
+      [[ ${#btail[@]} -eq 0 ]] || die "billing price-table takes no arguments"
+      invoke cookiy_billing_price_table '{}'
+      ;;
+    *) die "billing balance|checkout|price-table" ;;
   esac
   ;;
 
