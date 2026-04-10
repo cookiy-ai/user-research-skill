@@ -228,7 +228,8 @@ emit_mcp_tool_printable() {
   '
 }
 
-# Read cookiy_balance_get printable envelope JSON on stdin; print only .data.balance_summary (plain text, no quotes).
+# Read cookiy_balance_get printable envelope JSON on stdin; print balance.
+# Supports both old format (.data.balance_summary) and new wallet format (.data.balance + .data.formatted).
 # On failure (ok != true), print error message to stderr and return 1. Uses jq only.
 print_balance_summary_only() {
   local raw
@@ -237,7 +238,11 @@ print_balance_summary_only() {
     echo "$raw" | jq -r '.error.message // .error.code // "MCP request failed"' >&2
     return 1
   fi
-  echo "$raw" | jq -r '.data.balance_summary // empty'
+  echo "$raw" | jq -r '
+    if .data.balance_summary then .data.balance_summary
+    elif .data.formatted then "Wallet balance: \(.data.formatted) (\(.data.balance // 0) cents)"
+    else empty
+    end'
 }
 
 # invoke <tool_name> <arguments_json>
