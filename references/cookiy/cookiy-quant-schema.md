@@ -15,10 +15,10 @@ Any field marked **I18nText** accepts a plain string (base language) or a per-la
 
 | Field | Type | Req | Default | Notes |
 |-------|------|-----|---------|-------|
-| `survey_title` | I18nText | yes | — | |
+| `survey_title` | I18nText | yes | — | Updatable |
 | `groups` | `Group[]` | yes | — | |
 | `languages` | `string[]` | no | `["en"]` | First = base. LimeSurvey locale codes, e.g. `en`, `zh-Hans`, `zh-Hant-HK`, `ja`. |
-| `survey_format` | enum | no | `"G"` | Presentation mode: `"G"` group-by-group, `"A"` all on one page, `"S"` one question per page |
+| `survey_format` | enum | no | `"G"` | Presentation mode: `"G"` group-by-group, `"A"` all on one page, `"S"` one question per page. Updatable. |
 
 ---
 
