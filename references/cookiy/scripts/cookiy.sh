@@ -50,7 +50,6 @@ Commands:
   save-token <token>          Save raw access token (validates against MCP first)
   help                        Offline CLI reference
   study list|create|status|upload|..  Includes guide|interview|run-synthetic-user|report
-  report generate|content|link  Manual report generation and retrieval
   recruit start                       Qualitative or quant recruitment (auto-detects mode)
   quant list|create|get|update|report|admin-link  Quantitative survey management (keyed by survey-id)
   billing balance|checkout
@@ -60,7 +59,8 @@ Examples:
   cookiy.sh help commands
   cookiy.sh study list --limit 10
   cookiy.sh study create --query "..."  --wait
-  cookiy.sh report generate --study-id 123 --skip-synthetic-interview --wait
+  cookiy.sh study report generate --study-id 123 --skip-synthetic-interview --wait
+  cookiy.sh study report wait --study-id 123 --timeout-ms 300000
 EOF
 }
 
@@ -281,7 +281,7 @@ invoke() {
 
 wait_for_report_completion_via_link() {
   local study_id="$1"
-  local timeout_ms="${2:-}"
+  local timeout_ms="${2:-300000}"  # default 5 min to prevent infinite loop
   local started_ms now_ms elapsed_ms
   started_ms="$(date +%s000)"
 
@@ -529,16 +529,10 @@ recruit start — launch participant recruitment
     Note:    incremental_participants is auto-capped to remaining sample size capacity. If below current channel target, treated as incremental ("recruit N more").
 
 study report generate | content | link
-    Usage:   cookiy.sh study report generate --study-id <uuid> [--skip-synthetic-interview] [--wait] [--timeout-ms <n>]
+    Usage:   cookiy.sh study report generate --study-id <uuid> [--skip-synthetic-interview] [--wait]
              cookiy.sh study report content --study-id <uuid> [--wait] [--timeout-ms <n>]
              cookiy.sh study report link --study-id <uuid>
     generate with --wait polls report link every 10s until status=completed (or failed/timeout).
-
-report generate | content | link
-    Usage:   cookiy.sh report generate --study-id <uuid> [--skip-synthetic-interview] [--wait] [--timeout-ms <n>]
-             cookiy.sh report content --study-id <uuid> [--wait] [--timeout-ms <n>]
-             cookiy.sh report link --study-id <uuid>
-    Same as study report ..., but available as a top-level shortcut.
 
 quant list — list surveys
     Usage:   cookiy.sh quant list
@@ -764,18 +758,16 @@ study)
       rrest=("${stail[@]:1}")
       case "$rsub" in
         generate)
-          build_json "study_id skip_synthetic_interview reason timeout_ms" "${rrest[@]+"${rrest[@]}"}"
+          build_json "study_id skip_synthetic_interview" "${rrest[@]+"${rrest[@]}"}"
           require_key study_id "study report generate requires --study-id"
-          generate_payload="$(echo "$BUILT_JSON" | jq -c 'del(.timeout_ms)')"
-          if [[ "$ARG_WAIT" == "true" ]] || echo "$BUILT_JSON" | grep -q '"timeout_ms"'; then
+          if [[ "$ARG_WAIT" == "true" ]]; then
             _grc=0
-            invoke cookiy_report_generate "$generate_payload" > /dev/null || _grc=$?
+            invoke cookiy_report_generate "$BUILT_JSON" >&2 || _grc=$?
             [[ $_grc -eq 0 ]] || exit 1
-            study_id_value="$(echo "$generate_payload" | jq -r '.study_id')"
-            timeout_value="$(echo "$BUILT_JSON" | jq -r '.timeout_ms // empty')"
-            wait_for_report_completion_via_link "$study_id_value" "$timeout_value"
+            study_id_value="$(echo "$BUILT_JSON" | jq -r '.study_id')"
+            wait_for_report_completion_via_link "$study_id_value"
           else
-            invoke cookiy_report_generate "$generate_payload"
+            invoke cookiy_report_generate "$BUILT_JSON"
           fi
           ;;
         content)
@@ -795,53 +787,18 @@ study)
           require_key study_id "study report link requires --study-id"
           invoke cookiy_report_share_link_get "$BUILT_JSON"
           ;;
-        *) die "study report generate|content|link" ;;
+        wait)
+          build_json "study_id timeout_ms" "${rrest[@]+"${rrest[@]}"}"
+          require_key study_id "study report wait requires --study-id"
+          study_id_value="$(echo "$BUILT_JSON" | jq -r '.study_id')"
+          timeout_ms_value="$(echo "$BUILT_JSON" | jq -r '.timeout_ms // 300000')"
+          wait_for_report_completion_via_link "$study_id_value" "$timeout_ms_value"
+          ;;
+        *) die "study report generate|content|link|wait" ;;
       esac
       ;;
     *) die "Unknown study subcommand: ${sub:-(none)}
 Available: list, create, status, upload, guide, interview, run-synthetic-user, report" ;;
-  esac
-  ;;
-
-report)
-  sub="${TAIL[0]:-}"
-  rtail=("${TAIL[@]:1}")
-
-  case "$sub" in
-    generate)
-      build_json "study_id skip_synthetic_interview reason timeout_ms" "${rtail[@]+"${rtail[@]}"}"
-      require_key study_id "report generate requires --study-id"
-      generate_payload="$(echo "$BUILT_JSON" | jq -c 'del(.timeout_ms)')"
-      if [[ "$ARG_WAIT" == "true" ]] || echo "$BUILT_JSON" | grep -q '"timeout_ms"'; then
-        _grc=0
-        invoke cookiy_report_generate "$generate_payload" > /dev/null || _grc=$?
-        [[ $_grc -eq 0 ]] || exit 1
-        study_id_value="$(echo "$generate_payload" | jq -r '.study_id')"
-        timeout_value="$(echo "$BUILT_JSON" | jq -r '.timeout_ms // empty')"
-        wait_for_report_completion_via_link "$study_id_value" "$timeout_value"
-      else
-        invoke cookiy_report_generate "$generate_payload"
-      fi
-      ;;
-    content)
-      build_json "study_id timeout_ms" "${rtail[@]+"${rtail[@]}"}"
-      require_key study_id "report content requires --study-id"
-      if [[ "$ARG_WAIT" == "true" ]] || echo "$BUILT_JSON" | grep -q '"timeout_ms"'; then
-        wait_payload="$(echo "$BUILT_JSON" | jq -c '. + {wait: true}')"
-        _rrc=0
-        invoke cookiy_report_status "$wait_payload" > /dev/null || _rrc=$?
-        [[ $_rrc -eq 0 ]] || exit 1
-      fi
-      invoke cookiy_report_content_get "$(echo "$BUILT_JSON" | jq -c 'del(.timeout_ms)')"
-      ;;
-    link)
-      build_json "study_id" "${rtail[@]+"${rtail[@]}"}"
-      require_key study_id "report link requires --study-id"
-      invoke cookiy_report_share_link_get "$BUILT_JSON"
-      ;;
-    *)
-      die "report generate|content|link"
-      ;;
   esac
   ;;
 
