@@ -26,7 +26,7 @@ or a response containing a login URL — handle it like this:
 |--------|-----------|--------|
 | Qualitative Research | [`cookiy-qual.md`](cookiy-qual.md) | Study creation, discussion guides, real participant recruitment, synthetic user interviews, reports — the full interview study workflow |
 | Quantitative Research | [`cookiy-quant.md`](cookiy-quant.md) | Survey form creation, real participant recruitment, report — the full survey workflow |
-| Billing | [`cookiy-billing.md`](cookiy-billing.md) | Payment and billing related guidance and operations |
+| Billing | [`cookiy-billing.md`](cookiy-billing.md) | Payment (costs) and billing related guidance and operations |
 
 ---
 
