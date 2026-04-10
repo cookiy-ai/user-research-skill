@@ -1,5 +1,5 @@
 ---
-name: cookiy-skill
+name: user-research-cookiy
 description: >
   End-to-end user research assistant — qualitative and quantitative. Use this skill whenever the
   user mentions user research, user interviews, discussion guides, interview guides, research plans,
@@ -12,7 +12,7 @@ description: >
   designing and distributing surveys, and synthesizing results into reports.
 ---
 
-# Cookiy Skill — User Research, End to End
+# User Research, End to End
 
 Route to the right workflow based on user intent.
 
