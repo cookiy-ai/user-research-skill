@@ -4,10 +4,10 @@
 
 ### report generate
 
-Trigger report generation. Re-generates if a report already exists. Include `--wait` by default. Synthetic interviews are included by default; only pass `--skip-synthetic-interview` if the user explicitly asks to exclude them.
+Trigger report generation. Re-generates if a report already exists. Synthetic interviews are included by default; only pass `--skip-synthetic-interview` if the user explicitly asks to exclude them.
 
 ```
-scripts/cookiy.sh study report generate --study-id <uuid> [--skip-synthetic-interview] [--wait]
+scripts/cookiy.sh study report generate --study-id <uuid> [--skip-synthetic-interview]
 ```
 
 ### report wait
