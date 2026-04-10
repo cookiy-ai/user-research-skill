@@ -1,0 +1,82 @@
+name: Validate
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Validate JSON manifests
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          for path in [
+              Path(".mcp.json"),
+              Path(".claude-plugin/plugin.json"),
+              Path(".cursor-plugin/plugin.json"),
+          ]:
+              with path.open() as handle:
+                  json.load(handle)
+              print(f"json ok: {path}")
+          PY
+
+      - name: Check shell syntax
+        run: |
+          bash -n scripts/install-mcp.sh
+          bash -n scripts/check-readme-commands.sh
+
+      - name: Check Python script syntax
+        run: |
+          python3 -m py_compile scripts/transcript_to_codes.py scripts/survey_sampler.py
+
+      - name: Validate protected public surface
+        run: |
+          set -euo pipefail
+          test -f README.md
+          test -f SKILL.md
+          test -f skills/cookiy/SKILL.md
+          test -f .mcp.json
+          cmp -s SKILL.md skills/cookiy/SKILL.md
+          grep -q 'npx skills add cookiy-ai/cookiy-skill' README.md
+          grep -q 'claude plugin add cookiy-ai/cookiy-skill' README.md
+          grep -q 'clawhub install cookiy' README.md
+          grep -q 'npx cookiy-mcp' README.md
+          python3 - <<'PY'
+          import json
+          import pathlib
+          import re
+
+          root_skill = pathlib.Path("SKILL.md").read_text()
+          assert re.search(r"^name:\s*cookiy\s*$", root_skill, re.M), "root skill name drifted"
+
+          mcp = json.loads(pathlib.Path(".mcp.json").read_text())
+          url = mcp["mcpServers"]["cookiy"]["url"]
+          assert url == "https://s-api.cookiy.ai/mcp", f"unexpected MCP URL: {url}"
+          PY
+
+      - name: Ensure manual report generation is not reintroduced in public docs
+        run: |
+          set -euo pipefail
+          if grep -R -n 'cookiy_report_generate' README.md skills/cookiy/references/tool-contract.md skills/cookiy/references/report-insights.md; then
+            echo "manual report generation surfaced again in public docs"
+            exit 1
+          fi
+
+      - name: Dry-run README install commands
+        run: bash scripts/check-readme-commands.sh
