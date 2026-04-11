@@ -4,7 +4,7 @@
 # Requires: bash, curl, jq, grep, sed.
 set -euo pipefail
 
-VERSION="1.19.0"
+VERSION="1.20.0"
 DEFAULT_SERVER_URL="https://s-api.cookiy.ai"
 DEFAULT_TOKEN_PATH="${COOKIY_CREDENTIALS:-$HOME/.cookiy/token.txt}"
 # Long-running API call timeout (seconds); override with COOKIY_API_RPC_TIMEOUT or legacy COOKIY_MCP_RPC_TIMEOUT.
@@ -55,7 +55,7 @@ Commands:
   study list|create|status|upload|..  Includes guide|interview|run-synthetic-user|report
   recruit start                       Qualitative or quant recruitment (auto-detects mode)
   quant list|create|get|update|report|admin-link  Quantitative survey management (keyed by survey-id)
-  billing balance|checkout|price-table
+  billing balance|checkout|price-table|transactions
 
 Examples:
   cookiy.sh save-token eyJhbGciOi...
@@ -64,6 +64,7 @@ Examples:
   cookiy.sh study create --query "..."  --wait
   cookiy.sh study report generate --study-id 123 --skip-synthetic-interview --wait
   cookiy.sh study report wait --study-id 123 --timeout-ms 300000
+  cookiy.sh billing transactions --limit 50
 EOF
 }
 
@@ -586,6 +587,11 @@ billing balance
     Usage:   cookiy.sh billing balance
     Output:  one plain-text line: .data.balance_summary only (jq).
 
+billing transactions — wallet ledger (REST)
+    Usage:   cookiy.sh billing transactions [--limit <n>] [--cursor <iso8601>]
+    Output:  JSON array: amount_cents, type, quantity, created_at, study, survey, receipt_url.
+    Note:    Uses GET /v1/billing/transactions (Bearer token); not JSON-RPC tools. Same token as save-token.
+
 billing checkout
     Usage:   cookiy.sh billing checkout --amount-usd-cents <n>
     Flags:   USD integer cents (min 100); internally mapped to API amount_cents.
@@ -945,7 +951,39 @@ billing)
       [[ ${#btail[@]} -eq 0 ]] || die "billing price-table takes no arguments"
       invoke cookiy_billing_price_table '{}'
       ;;
-    *) die "billing balance|checkout|price-table" ;;
+    transactions)
+      command -v jq >/dev/null 2>&1 || die "cookiy.sh billing transactions requires jq"
+      build_json "limit cursor" "${btail[@]+"${btail[@]}"}"
+      api_base="$(resolve_server_base)"
+      url="${api_base%/}/v1/billing/transactions"
+      qs="$(echo "$BUILT_JSON" | jq -r '
+        [
+          (if (.limit | type) == "number" or ((.limit | type) == "string" and (.limit | length) > 0)
+            then "limit=\(.limit)" else empty end),
+          (if (.cursor | type) == "string" and (.cursor | length) > 0
+            then "cursor=\(.cursor | @uri)" else empty end)
+        ] | map(select(. != null and . != "")) | join("&")
+      ')"
+      [[ -n "$qs" ]] && url="$url?$qs"
+      resp="$(curl -sS --max-time "$TIMEOUT" -w '\n%{http_code}' \
+        -H "Authorization: Bearer $ACCESS_TOKEN" \
+        -H "Accept: application/json" \
+        "$url")" || die "billing transactions: curl failed"
+      http="$(printf '%s' "$resp" | tail -n1)"
+      body="$(printf '%s' "$resp" | sed '$d')"
+      if [[ "$http" == "401" || "$http" == "403" ]]; then
+        die_no_access
+      fi
+      if [[ "$http" != "200" ]]; then
+        echo "billing transactions: HTTP $http" >&2
+        printf '%s' "$body" | head -c 4000 >&2
+        echo >&2
+        exit 1
+      fi
+      check_auth_error "$body"
+      printf '%s' "$body" | jq .
+      ;;
+    *) die "billing balance|checkout|price-table|transactions" ;;
   esac
   ;;
 
