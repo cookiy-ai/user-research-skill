@@ -33,6 +33,7 @@ Use it for **general-purpose research** (design research plans, interview guides
 
 1. Download the [Skill ZIP file](https://github.com/cookiy-ai/user-research-skill/archive/refs/heads/main.zip)
 2. In the app: **Customize** > **Skills** > **+** > **Create Skill** > **Upload a skill**
+3. Enable network access: **Profile** (bottom left) > **Settings** > **Capabilities** > **Code execution and file creation** > turn on **Allow network egress**, then set **Domain allowlist** to **All domains** — or add `s-api.cookiy.ai` under **Additional allowed domains**.
 
 ### Claude Code / Codex / Cursor / OpenClaw / Other Agents
 
