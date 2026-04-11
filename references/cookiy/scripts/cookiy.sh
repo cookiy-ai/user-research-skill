@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
-# Cookiy CLI — pure shell wrapper over hosted JSON-RPC using curl.
+# Cookiy CLI — standalone shell client for Cookiy AI.
+# Run in a terminal: bash cookiy.sh <command>
 # Requires: bash, curl, jq, grep, sed.
 set -euo pipefail
 
-VERSION="1.19.0"
+VERSION="1.20.0"
 DEFAULT_SERVER_URL="https://s-api.cookiy.ai"
 DEFAULT_TOKEN_PATH="${COOKIY_CREDENTIALS:-$HOME/.cookiy/token.txt}"
-# Long-running MCP tools/call (server-side wait); override with COOKIY_MCP_RPC_TIMEOUT.
-MCP_CALL_TIMEOUT="${COOKIY_MCP_RPC_TIMEOUT:-600}"
+# Long-running API call timeout (seconds); override with COOKIY_API_RPC_TIMEOUT or legacy COOKIY_MCP_RPC_TIMEOUT.
+API_CALL_TIMEOUT="${COOKIY_API_RPC_TIMEOUT:-${COOKIY_MCP_RPC_TIMEOUT:-600}}"
 TIMEOUT=120
 RPC_ID=0
 
@@ -31,28 +32,30 @@ json_escape() {
 
 usage() {
   cat <<EOF
-Cookiy CLI v${VERSION}  (shell)
+Cookiy CLI v${VERSION}  (standalone shell client)
+
+Run in a terminal: bash cookiy.sh <command>
 
 Usage:
-  cookiy.sh [--token <path>] [--mcp-url <url>] <command> ...
+  cookiy.sh [--token <path>] [--api-url <url>] <command> ...
 
 Global options:
-  --mcp-url     Full JSON-RPC URL (overrides COOKIY_MCP_URL)
+  --api-url     Full JSON-RPC endpoint URL (overrides COOKIY_API_URL)
   --token       Path to raw token file (default: ~/.cookiy/token.txt; env COOKIY_CREDENTIALS)
 
 Environment:
-  COOKIY_CREDENTIALS   Path to token file (same as --token)
-  COOKIY_MCP_URL       Full MCP URL (default: <server>/mcp)
-  COOKIY_MCP_RPC_TIMEOUT   Seconds for blocking MCP tools/call (default: 600)
-  COOKIY_SERVER_URL    API origin when MCP URL not set (default: https://s-api.cookiy.ai)
+  COOKIY_CREDENTIALS       Path to token file (same as --token)
+  COOKIY_API_URL           Full API endpoint URL (default: <server>/mcp)
+  COOKIY_API_RPC_TIMEOUT   Seconds for blocking API calls (default: 600)
+  COOKIY_SERVER_URL        API origin when endpoint URL not set (default: https://s-api.cookiy.ai)
 
 Commands:
-  save-token <token>          Save raw access token (validates against MCP first)
+  save-token <token>          Save raw access token (validates against API first)
   help                        Offline CLI reference
   study list|create|status|upload|..  Includes guide|interview|run-synthetic-user|report
   recruit start                       Qualitative or quant recruitment (auto-detects mode)
   quant list|create|get|update|report|admin-link  Quantitative survey management (keyed by survey-id)
-  billing balance|checkout|price-table
+  billing balance|checkout|price-table|transactions
 
 Examples:
   cookiy.sh save-token eyJhbGciOi...
@@ -61,6 +64,7 @@ Examples:
   cookiy.sh study create --query "..."  --wait
   cookiy.sh study report generate --study-id 123 --skip-synthetic-interview --wait
   cookiy.sh study report wait --study-id 123 --timeout-ms 300000
+  cookiy.sh billing transactions --limit 50
 EOF
 }
 
@@ -85,7 +89,7 @@ Sign in:  $url"
 # Inspect any JSON body for auth-error indicators (status_code 401/403 or
 # error.code UNAUTHORIZED/FORBIDDEN).  If detected, call die_no_access so
 # the user always sees the sign-in URL regardless of which layer returned
-# the auth failure (HTTP, JSON-RPC, or MCP tool result).
+# the auth failure (HTTP, JSON-RPC, or tool result).
 check_auth_error() {
   local body="$1"
   local sc code
@@ -111,24 +115,24 @@ run_save_token() {
   fi
   [[ -n "$at" ]] || die "Could not find access_token in input."
 
-  local raw_server mcp_end
+  local raw_server api_end
   raw_server="$(resolve_server_base)"
-  mcp_end="${MCP_URL_OPT:-${COOKIY_MCP_URL:-}}"
-  mcp_end="${mcp_end:-${raw_server%/}/mcp}"
+  api_end="${API_URL_OPT:-${COOKIY_API_URL:-${COOKIY_MCP_URL:-}}}"
+  api_end="${api_end:-${raw_server%/}/mcp}"
 
   # Verify token works before writing
   local resp http body
-  resp="$(curl -sS --max-time "$TIMEOUT" -w '\n%{http_code}' -X POST "$mcp_end" \
+  resp="$(curl -sS --max-time "$TIMEOUT" -w '\n%{http_code}' -X POST "$api_end" \
     -H "Content-Type: application/json" \
     -H "Accept: application/json, text/event-stream" \
     -H "Authorization: Bearer $at" \
     -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":\"2025-03-26\",\"capabilities\":{},\"clientInfo\":{\"name\":\"cookiy-cli-sh\",\"version\":\"1.0.0\"}}}")" \
-    || die "MCP verify failed (curl error). Check your network and try again."
+    || die "Token verify failed (curl error). Check your network and try again."
   http="$(echo "$resp" | tail -n1)"
   body="$(echo "$resp" | sed '$d')"
-  [[ "$http" == "200" ]] || die "MCP verify HTTP $http — token may be invalid or expired. Sign in again at: $(resolve_login_url)"
+  [[ "$http" == "200" ]] || die "Token verify HTTP $http — token may be invalid or expired. Sign in again at: $(resolve_login_url)"
   if echo "$body" | jq -e '.error' >/dev/null 2>&1; then
-    die "MCP verify error: $(echo "$body" | jq -c .error)"
+    die "Token verify error: $(echo "$body" | jq -c .error)"
   fi
 
   mkdir -p "$(dirname "$TOKEN_PATH")"
@@ -142,9 +146,9 @@ run_save_token() {
 
 TOKEN_PATH="$DEFAULT_TOKEN_PATH"
 SERVER_URL_OPT=""
-MCP_URL_OPT=""
+API_URL_OPT=""
 ACCESS_TOKEN=""
-MCP_ENDPOINT=""
+API_ENDPOINT=""
 
 load_credentials() {
   [[ -f "$TOKEN_PATH" ]] || die_no_access
@@ -152,28 +156,28 @@ load_credentials() {
   [[ -n "$ACCESS_TOKEN" ]] || die_no_access
 }
 
-resolve_mcp_endpoint() {
-  if [[ -n "$MCP_URL_OPT" ]]; then MCP_ENDPOINT="$MCP_URL_OPT"; return; fi
-  if [[ -n "${COOKIY_MCP_URL:-}" ]]; then MCP_ENDPOINT="$COOKIY_MCP_URL"; return; fi
+resolve_api_endpoint() {
+  if [[ -n "$API_URL_OPT" ]]; then API_ENDPOINT="$API_URL_OPT"; return; fi
+  if [[ -n "${COOKIY_API_URL:-${COOKIY_MCP_URL:-}}" ]]; then API_ENDPOINT="${COOKIY_API_URL:-${COOKIY_MCP_URL:-}}"; return; fi
   local base="${SERVER_URL_OPT:-${COOKIY_SERVER_URL:-}}"
   base="${base:-$DEFAULT_SERVER_URL}"
-  MCP_ENDPOINT="${base%/}/mcp"
+  API_ENDPOINT="${base%/}/mcp"
 }
 
 # --- JSON-RPC over curl ----------------------------------------------------
 
-# POST JSON-RPC body to MCP_ENDPOINT; print response body on HTTP 200 only.
+# POST JSON-RPC body to API_ENDPOINT; print response body on HTTP 200 only.
 # On failure: print HTTP code, response snippet, and curl errors to stderr; return 1.
 post_jsonrpc() {
   local payload="$1"
   local resp http body cerr
   cerr="$(mktemp -t cookiycurl.XXXXXX 2>/dev/null || mktemp)"
-  resp="$(curl -sS --max-time "$MCP_CALL_TIMEOUT" -w '\n%{http_code}' \
+  resp="$(curl -sS --max-time "$API_CALL_TIMEOUT" -w '\n%{http_code}' \
     -H "Content-Type: application/json" \
     -H "Accept: application/json, text/event-stream" \
     -H "Authorization: Bearer $ACCESS_TOKEN" \
     -d "$payload" \
-    "$MCP_ENDPOINT" 2>"$cerr")" || {
+    "$API_ENDPOINT" 2>"$cerr")" || {
     [[ -s "$cerr" ]] && echo "curl: $(cat "$cerr")" >&2
     rm -f "$cerr"
     return 1
@@ -185,7 +189,7 @@ post_jsonrpc() {
     if [[ "$http" == "401" || "$http" == "403" ]]; then
       die_no_access
     fi
-    echo "MCP HTTP $http — POST $MCP_ENDPOINT" >&2
+    echo "HTTP $http — POST $API_ENDPOINT" >&2
     if [[ -n "${body// /}" ]]; then
       echo "$body" | head -c 4000 >&2
       echo >>/dev/stderr
@@ -214,9 +218,8 @@ check_rpc_error() {
   return 0
 }
 
-# Read full JSON-RPC tools/call response on stdin; print like Node renderResult:
-# result.structuredContent if that key exists, else result. Pretty JSON. Uses jq only.
-emit_mcp_tool_printable() {
+# Read full JSON-RPC tools/call response on stdin; print structured result. Uses jq only.
+emit_tool_result() {
   local raw
   raw="$(cat)"
   echo "$raw" | jq '
@@ -228,14 +231,14 @@ emit_mcp_tool_printable() {
   '
 }
 
-# Read cookiy_balance_get printable envelope JSON on stdin; print balance.
+# Read cookiy_balance_get envelope JSON on stdin; print balance.
 # Supports both old format (.data.balance_summary) and new wallet format (.data.balance + .data.formatted).
 # On failure (ok != true), print error message to stderr and return 1. Uses jq only.
 print_balance_summary_only() {
   local raw
   raw="$(cat)"
   if ! echo "$raw" | jq -e '.ok == true' >/dev/null 2>&1; then
-    echo "$raw" | jq -r '.error.message // .error.code // "MCP request failed"' >&2
+    echo "$raw" | jq -r '.error.message // .error.code // "Request failed"' >&2
     return 1
   fi
   echo "$raw" | jq -r '
@@ -247,7 +250,7 @@ print_balance_summary_only() {
 
 
 # invoke <tool_name> <arguments_json>
-# Performs the 3-step MCP handshake: initialize, notify, tools/call
+# Performs the 3-step JSON-RPC handshake: initialize, notify, tools/call
 invoke() {
   command -v jq >/dev/null 2>&1 || die "cookiy.sh requires jq"
   local tool_name="$1"
@@ -256,9 +259,9 @@ invoke() {
   # 1) initialize
   local init_resp
   init_resp="$(post_jsonrpc "{\"jsonrpc\":\"2.0\",\"id\":$(next_id),\"method\":\"initialize\",\"params\":{\"protocolVersion\":\"2025-03-26\",\"capabilities\":{},\"clientInfo\":{\"name\":\"cookiy-cli-sh\",\"version\":\"1.0.0\"}}}")" \
-    || die "MCP initialize request failed"
+    || die "API initialize request failed"
   check_auth_error "$init_resp"
-  check_rpc_error "$init_resp" || die "MCP initialize error"
+  check_rpc_error "$init_resp" || die "API initialize error"
 
   # 2) notifications/initialized
   post_jsonrpc '{"jsonrpc":"2.0","method":"notifications/initialized"}' >/dev/null 2>&1 || true
@@ -266,15 +269,15 @@ invoke() {
   # 3) tools/call
   local call_resp
   call_resp="$(post_jsonrpc "{\"jsonrpc\":\"2.0\",\"id\":$(next_id),\"method\":\"tools/call\",\"params\":{\"name\":\"${tool_name}\",\"arguments\":${args_json}}}")" \
-    || die "MCP tools/call request failed"
+    || die "API tools/call request failed"
   check_auth_error "$call_resp"
   check_rpc_error "$call_resp" || exit 1
 
   local printable
-  printable="$(echo "$call_resp" | emit_mcp_tool_printable)"
+  printable="$(echo "$call_resp" | emit_tool_result)"
   check_auth_error "$printable"
   echo "$printable"
-  # Exit non-zero if MCP tool returned ok:false
+  # Exit non-zero if tool returned ok:false
   if echo "$printable" | jq -e '.ok == false' >/dev/null 2>&1; then
     return 1
   fi
@@ -330,7 +333,7 @@ ARG_WAIT=""
 ARG_JSON_RAW=""
 ARG_POSITIONALS=""
 
-# CLI string → JSON true/false (for MCP tools that expect boolean, not "true" strings)
+# CLI string → JSON true/false (API expects boolean, not "true" strings)
 bool_json() {
   case "$1" in
     true|True|TRUE|1|yes|Yes|YES|on|On|ON) echo true ;;
@@ -370,7 +373,7 @@ build_json() {
       case "$key" in
         limit|amount_usd_cents|persona_count|incremental_participants|timeout_ms|max_chars|top_values_per_question|sample_open_text_values)
           [[ "$val" =~ ^-?[0-9]+$ ]] || die "--${key//_/-} requires an integer, got: $val"
-          # amount_usd_cents → MCP param name amount_cents
+          # amount_usd_cents → API param name amount_cents
           local json_key="$key"
           [[ "$key" == "amount_usd_cents" ]] && json_key="amount_cents"
           json+="\"$json_key\":$val" ;;
@@ -449,7 +452,7 @@ extract_study_id() {
 print_cli_commands_reference() {
   cat <<EOF
 NAME
-    cookiy.sh — Cookiy hosted API client (bash, JSON-RPC)
+    cookiy.sh — standalone Cookiy AI CLI (bash, curl, jq)
 
 SYNOPSIS
     cookiy.sh [GLOBAL OPTION ...] <command> [ARG ...]
@@ -458,20 +461,23 @@ VERSION
     ${VERSION}
 
 DESCRIPTION
+    Standalone shell client for the Cookiy AI platform.
+    Run in a terminal: bash cookiy.sh <command>
+
     Long options use kebab-case; they are sent as snake_case JSON fields (e.g. --study-id → study_id).
-    --wait passes server-side wait flags to MCP tools (no bash polling).
+    --wait passes server-side wait flags (no bash polling).
     --json merges extra JSON fields into the tool request, or provides the guide patch payload.
     Numeric sid for quant: --survey-id 12345 becomes JSON number when value is all digits.
 
 GLOBAL OPTIONS
     --token <path>    Raw token file (default ~/.cookiy/token.txt; same as COOKIY_CREDENTIALS)
-    --mcp-url <url>   Full JSON-RPC URL (overrides COOKIY_MCP_URL)
+    --api-url <url>   Full JSON-RPC endpoint URL (overrides COOKIY_API_URL)
 
 ENVIRONMENT
-    COOKIY_CREDENTIALS      Path to raw token file
-    COOKIY_MCP_URL          Full MCP JSON-RPC URL
-    COOKIY_MCP_RPC_TIMEOUT  Max seconds for tools/call (default 600)
-    COOKIY_SERVER_URL       API origin if MCP URL not set
+    COOKIY_CREDENTIALS       Path to raw token file
+    COOKIY_API_URL           Full JSON-RPC endpoint URL
+    COOKIY_API_RPC_TIMEOUT   Max seconds for API calls (default 600)
+    COOKIY_SERVER_URL        API origin if endpoint URL not set
 
 DOCUMENTATION
     references/cookiy/cli/commands.md  (if present in repo)
@@ -489,7 +495,7 @@ study list — list studies
 study create — create study from natural language
     Usage:   cookiy.sh study create --query <s> [--thinking <s>] [--attachments <s>] [--wait] [--timeout-ms <n>]
     Flags:   --query <string> (required)
-             --thinking <string>   --attachments <string>   --wait (MCP wait_for_guide)   --timeout-ms (optional)
+             --thinking <string>   --attachments <string>   --wait (server-side wait_for_guide)   --timeout-ms (optional)
 
 study status — study record and activity
     Usage:   cookiy.sh study status --study-id <uuid>
@@ -519,14 +525,14 @@ study run-synthetic-user start — run synthetic user interviews
     Usage:   cookiy.sh study run-synthetic-user start --study-id <uuid> [--persona-count <n>] [--plain-text <s>] [--wait] [--timeout-ms <n>]
     Flags:   --study-id (required)
              --persona-count <integer>  Number of synthetic interviews to run
-             --plain-text <string>  Participant persona / profile description (maps to MCP interviewee_persona)
-             --wait (MCP wait)   --timeout-ms (optional)
+             --plain-text <string>  Participant persona / profile description (maps to API interviewee_persona)
+             --wait (server-side wait)   --timeout-ms (optional)
 
 recruit start — launch participant recruitment
     Usage:   cookiy.sh recruit start [--study-id <uuid>] [--survey-public-url <url>] [--confirmation-token <s>] [--plain-text <s>] [--incremental-participants <n>]
     Flags:   --study-id (qualitative — required for interview studies)
              --survey-public-url (quant — auto-sets recruit_mode=quant_survey; study-id optional)
-    Output:  Preview (confirmation_required): {preview_only, confirmation_token, recruit_mode, source_language, derived_languages, sample_size, target_group, payment_quote, status_message} (null fields omitted). HTTP 402: adds checkout_url, quote, payment_summary, payment_breakdown, retry_*. HTTP 409 (sample size reached): {ok, status_code, code, sample_size, completed_participants}. Other successes/errors: full MCP envelope JSON.
+    Output:  Preview (confirmation_required): {preview_only, confirmation_token, recruit_mode, source_language, derived_languages, sample_size, target_group, payment_quote, status_message} (null fields omitted). HTTP 402: adds checkout_url, quote, payment_summary, payment_breakdown, retry_*. HTTP 409 (sample size reached): {ok, status_code, code, sample_size, completed_participants}. Other successes/errors: full API envelope JSON.
     Note:    incremental_participants is auto-capped to remaining sample size capacity. If below current channel target, treated as incremental ("recruit N more").
 
 study report generate | content | link
@@ -572,18 +578,23 @@ quant admin-link — auto-login URL into the LimeSurvey admin UI for the calling
              own per-user account — the URL is signed by Cookiy and verified by the
              CookiyBridge LimeSurvey plugin, no manual login needed.
     Note:    "admin" here refers to LimeSurvey's URL prefix /index.php/admin/ for its
-             back-office UI, not a privilege level. Each Cookiy MCP user lands as their
+             back-office UI, not a privilege level. Each Cookiy user lands as their
              own per-user LimeSurvey account, scoped to surveys they own. If the bridge
              is not configured on the server, the response sets configured=false and the
              affordance should be hidden by the calling client.
 
 billing balance
     Usage:   cookiy.sh billing balance
-    Output:  one plain-text line: MCP .data.balance_summary only (jq).
+    Output:  one plain-text line: .data.balance_summary only (jq).
+
+billing transactions — wallet ledger (REST)
+    Usage:   cookiy.sh billing transactions [--limit <n>] [--cursor <iso8601>]
+    Output:  JSON array: amount_cents, type, quantity, created_at, study, survey, receipt_url.
+    Note:    Uses GET /v1/billing/transactions (Bearer token); not JSON-RPC tools. Same token as save-token.
 
 billing checkout
     Usage:   cookiy.sh billing checkout --amount-usd-cents <n>
-    Flags:   USD integer cents (min 100); internally mapped to MCP amount_cents.
+    Flags:   USD integer cents (min 100); internally mapped to API amount_cents.
 
 billing price-table
     Usage:   cookiy.sh billing price-table
@@ -595,7 +606,7 @@ BOOLEAN FLAGS (values: true | false | 1 | 0 | yes | no | on | off)
 save-token — store raw access token from browser sign-in
     Usage:   cookiy.sh save-token <access_token>
              cookiy.sh save-token '{"access_token":"eyJ..."}'
-    Flow:    Verifies the token against MCP, then writes raw token to --token path.
+    Flow:    Verifies the token against the API, then writes raw token to --token path.
     Get token: open the sign-in page at {server}/oauth/cli/start, log in, copy the token.
     Needs:   jq, curl
 
@@ -611,7 +622,7 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     # Undocumented in usage/help; for internal API base override only.
     --server-url)  SERVER_URL_OPT="$2"; shift 2 ;;
-    --mcp-url)     MCP_URL_OPT="$2"; shift 2 ;;
+    --api-url|--mcp-url) API_URL_OPT="$2"; shift 2 ;;
     --token|--credentials) TOKEN_PATH="$2"; shift 2 ;;
     -h|--help)     usage; exit 0 ;;
     *)             ARGS+=("$1"); shift ;;
@@ -644,7 +655,7 @@ fi
 
 # All commands below need credentials
 load_credentials
-resolve_mcp_endpoint
+resolve_api_endpoint
 
 # === COMMANDS ==============================================================
 
@@ -721,14 +732,14 @@ study)
             url)
               build_json "study_id interview_id" "${ptail[@]+"${ptail[@]}"}"
               require_key study_id "study interview playback url requires --study-id"
-              # Inject view=url for MCP-level filtering
+              # Inject view=url for server-side filtering
               BUILT_JSON="$(echo "$BUILT_JSON" | jq -c '. + {view: "url"}')"
               invoke cookiy_interview_playback_get "$BUILT_JSON"
               ;;
             content)
               build_json "study_id interview_id" "${ptail[@]+"${ptail[@]}"}"
               require_key study_id "study interview playback content requires --study-id"
-              # Inject view=transcript for MCP-level filtering
+              # Inject view=transcript for server-side filtering
               BUILT_JSON="$(echo "$BUILT_JSON" | jq -c '. + {view: "transcript"}')"
               invoke cookiy_interview_playback_get "$BUILT_JSON"
               ;;
@@ -745,7 +756,7 @@ study)
         start)
           build_json "study_id persona_count plain_text timeout_ms" "${srest[@]+"${srest[@]}"}"
           require_key study_id "study run-synthetic-user start requires --study-id"
-          # Map --plain-text to MCP interviewee_persona
+          # Map --plain-text to API interviewee_persona
           if echo "$BUILT_JSON" | grep -q '"plain_text"'; then
             BUILT_JSON="$(echo "$BUILT_JSON" | jq -c '. + {interviewee_persona: .plain_text} | del(.plain_text)')"
           fi
@@ -864,7 +875,7 @@ recruit)
       if echo "$BUILT_JSON" | grep -q '"survey_public_url"'; then
         BUILT_JSON="$(echo "$BUILT_JSON" | jq -c '. + {recruit_mode: "quant_survey"}')"
       fi
-      # CLI policy: explicit reconfigure semantics (matches console UX). Live launch is enforced by MCP/V1 on confirm.
+      # CLI policy: explicit reconfigure semantics (matches console UX). Live launch is enforced server-side on confirm.
       BUILT_JSON="$(echo "$BUILT_JSON" | jq -c '. + {force_reconfigure: true}')"
       _rc=0
       result="$(invoke cookiy_recruit_create "$BUILT_JSON")" || _rc=$?
@@ -940,7 +951,39 @@ billing)
       [[ ${#btail[@]} -eq 0 ]] || die "billing price-table takes no arguments"
       invoke cookiy_billing_price_table '{}'
       ;;
-    *) die "billing balance|checkout|price-table" ;;
+    transactions)
+      command -v jq >/dev/null 2>&1 || die "cookiy.sh billing transactions requires jq"
+      build_json "limit cursor" "${btail[@]+"${btail[@]}"}"
+      api_base="$(resolve_server_base)"
+      url="${api_base%/}/v1/billing/transactions"
+      qs="$(echo "$BUILT_JSON" | jq -r '
+        [
+          (if (.limit | type) == "number" or ((.limit | type) == "string" and (.limit | length) > 0)
+            then "limit=\(.limit)" else empty end),
+          (if (.cursor | type) == "string" and (.cursor | length) > 0
+            then "cursor=\(.cursor | @uri)" else empty end)
+        ] | map(select(. != null and . != "")) | join("&")
+      ')"
+      [[ -n "$qs" ]] && url="$url?$qs"
+      resp="$(curl -sS --max-time "$TIMEOUT" -w '\n%{http_code}' \
+        -H "Authorization: Bearer $ACCESS_TOKEN" \
+        -H "Accept: application/json" \
+        "$url")" || die "billing transactions: curl failed"
+      http="$(printf '%s' "$resp" | tail -n1)"
+      body="$(printf '%s' "$resp" | sed '$d')"
+      if [[ "$http" == "401" || "$http" == "403" ]]; then
+        die_no_access
+      fi
+      if [[ "$http" != "200" ]]; then
+        echo "billing transactions: HTTP $http" >&2
+        printf '%s' "$body" | head -c 4000 >&2
+        echo >&2
+        exit 1
+      fi
+      check_auth_error "$body"
+      printf '%s' "$body" | jq .
+      ;;
+    *) die "billing balance|checkout|price-table|transactions" ;;
   esac
   ;;
 

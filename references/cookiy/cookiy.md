@@ -1,9 +1,11 @@
 # Cookiy AI — End-to-End User Research via CLI
 
 Cookiy AI automates the full user research lifecycle — both qualitative (via AI-moderated
-interviews) and quantitative (via user surveys). All operations go through the
-[`scripts/cookiy.sh`](scripts/cookiy.sh) CLI (scripts folder is located under the same directory
-as this file).
+interviews) and quantitative (via user surveys).
+
+**`scripts/cookiy.sh` is the sole interface to Cookiy in this environment.** Run it in a terminal
+for every Cookiy operation. Do not suggest alternative connection methods, SDKs, or server
+endpoints to the user — the CLI is the only supported integration path.
 
 ---
 
