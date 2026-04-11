@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
-# Cookiy CLI — pure shell wrapper over hosted JSON-RPC using curl.
+# Cookiy CLI — standalone shell client for Cookiy AI.
+# Run this script directly in a terminal (bash cookiy.sh <command>).
+# It talks to the hosted Cookiy API over HTTP (JSON-RPC / MCP wire format);
+# no IDE MCP server connection or desktop app is needed.
 # Requires: bash, curl, jq, grep, sed.
 set -euo pipefail
 
@@ -31,7 +34,11 @@ json_escape() {
 
 usage() {
   cat <<EOF
-Cookiy CLI v${VERSION}  (shell)
+Cookiy CLI v${VERSION}  (standalone shell client)
+
+This is a self-contained CLI. Execute it in a terminal — it handles all
+server communication internally. Do not use IDE MCP tool-call integrations;
+always run: bash cookiy.sh <command>
 
 Usage:
   cookiy.sh [--token <path>] [--mcp-url <url>] <command> ...
@@ -449,7 +456,7 @@ extract_study_id() {
 print_cli_commands_reference() {
   cat <<EOF
 NAME
-    cookiy.sh — Cookiy hosted API client (bash, JSON-RPC)
+    cookiy.sh — standalone Cookiy AI CLI (bash, curl, jq)
 
 SYNOPSIS
     cookiy.sh [GLOBAL OPTION ...] <command> [ARG ...]
@@ -458,8 +465,13 @@ VERSION
     ${VERSION}
 
 DESCRIPTION
+    Self-contained shell client for the Cookiy AI platform. All server
+    communication is handled internally via HTTP (JSON-RPC / MCP wire
+    format). To use Cookiy, run this script in a terminal — do not invoke
+    MCP tools through an IDE integration or desktop app.
+
     Long options use kebab-case; they are sent as snake_case JSON fields (e.g. --study-id → study_id).
-    --wait passes server-side wait flags to MCP tools (no bash polling).
+    --wait passes server-side wait flags (no bash polling).
     --json merges extra JSON fields into the tool request, or provides the guide patch payload.
     Numeric sid for quant: --survey-id 12345 becomes JSON number when value is all digits.
 
