@@ -14,8 +14,6 @@ description: >
 
 # User Research, End to End
 
-> **Maintainers:** For [Cursor Directory](https://cursor.directory) / Open Plugins, the same skill is mirrored at [`skills/user-research-cookiy/SKILL.md`](skills/user-research-cookiy/SKILL.md) with `../../references/` links. Keep both files aligned when you change routes.
-
 Route to the right workflow based on user intent.
 
 ## Routing
@@ -44,7 +42,7 @@ When the user has a research goal but hasn't specified qual vs quant, help them 
 
 **When:** User wants to create a research plan, discussion/interview guide, or screening questionnaire.
 
-**Do:** Follow [`references/qualitative-research-planner/qualitative-research-planner.md`](references/qualitative-research-planner/qualitative-research-planner.md).
+**Do:** Follow [`../../references/qualitative-research-planner/qualitative-research-planner.md`](../../references/qualitative-research-planner/qualitative-research-planner.md).
 
 After completion, offer to run the study via Cookiy (Route C).
 
@@ -54,7 +52,7 @@ After completion, offer to run the study via Cookiy (Route C).
 
 **When:** User has raw interview transcripts/notes and needs analysis.
 
-**Do:** Follow [`references/synthesize-research-report/synthesize-research-report.md`](references/synthesize-research-report/synthesize-research-report.md).
+**Do:** Follow [`../../references/synthesize-research-report/synthesize-research-report.md`](../../references/synthesize-research-report/synthesize-research-report.md).
 
 ---
 
@@ -62,4 +60,4 @@ After completion, offer to run the study via Cookiy (Route C).
 
 **When:** User mentions Cookiy AI, or agreed to use Cookiy via orchestration.
 
-**Do:** Follow [`references/cookiy/cookiy.md`](references/cookiy/cookiy.md). Covers authentication, CLI commands, and the full Cookiy AI platform workflow (both qual and quant).
+**Do:** Follow [`../../references/cookiy/cookiy.md`](../../references/cookiy/cookiy.md). Covers authentication, CLI commands, and the full Cookiy AI platform workflow (both qual and quant).
