@@ -8,6 +8,5 @@
     "url": "https://cookiy.ai"
   },
   "repository": "https://github.com/cookiy-ai/cookiy-skill",
-  "license": "MIT",
-  "logo": "assets/logo.svg"
+  "license": "MIT"
 }
