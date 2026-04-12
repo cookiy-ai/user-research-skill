@@ -517,9 +517,11 @@ study upload — attach media (image upload)
 
 study interview list | playback url|content
     Usage:   cookiy.sh study interview list --study-id <uuid> [--cursor <s>]
-             cookiy.sh study interview playback url --study-id <uuid> [--interview-id <uuid>]
-             cookiy.sh study interview playback content --study-id <uuid> [--interview-id <uuid>]
+             cookiy.sh study interview playback url --study-id <uuid> [--interview-id <uuid>] [--cursor <s>]
+             cookiy.sh study interview playback content --study-id <uuid> [--interview-id <uuid>] [--cursor <s>]
     Note:    list always includes synthetic interviews in results (not configurable via CLI).
+             When --interview-id is omitted, playback returns a paginated list (default 20).
+             Use --cursor to fetch subsequent pages.
 
 study run-synthetic-user start — run synthetic user interviews
     Usage:   cookiy.sh study run-synthetic-user start --study-id <uuid> [--persona-count <n>] [--plain-text <s>] [--wait] [--timeout-ms <n>]
@@ -729,16 +731,14 @@ study)
           ptail=("${itail[@]:1}")
           case "$psub" in
             url)
-              build_json "study_id interview_id" "${ptail[@]+"${ptail[@]}"}"
+              build_json "study_id interview_id cursor" "${ptail[@]+"${ptail[@]}"}"
               require_key study_id "study interview playback url requires --study-id"
-              # Inject view=url for server-side filtering
               BUILT_JSON="$(echo "$BUILT_JSON" | jq -c '. + {view: "url"}')"
               invoke cookiy_interview_playback_get "$BUILT_JSON"
               ;;
             content)
-              build_json "study_id interview_id" "${ptail[@]+"${ptail[@]}"}"
+              build_json "study_id interview_id cursor" "${ptail[@]+"${ptail[@]}"}"
               require_key study_id "study interview playback content requires --study-id"
-              # Inject view=transcript for server-side filtering
               BUILT_JSON="$(echo "$BUILT_JSON" | jq -c '. + {view: "transcript"}')"
               invoke cookiy_interview_playback_get "$BUILT_JSON"
               ;;
