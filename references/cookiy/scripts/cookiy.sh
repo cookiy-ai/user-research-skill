@@ -4,7 +4,7 @@
 # Requires: bash, curl, jq, grep, sed.
 set -euo pipefail
 
-VERSION="1.20.0"
+VERSION="1.21.0"
 DEFAULT_SERVER_URL="https://s-api.cookiy.ai"
 DEFAULT_TOKEN_PATH="${COOKIY_CREDENTIALS:-$HOME/.cookiy/token.txt}"
 # Long-running API call timeout (seconds); override with COOKIY_API_RPC_TIMEOUT or legacy COOKIY_MCP_RPC_TIMEOUT.
@@ -281,64 +281,6 @@ invoke() {
   if echo "$printable" | jq -e '.ok == false' >/dev/null 2>&1; then
     return 1
   fi
-}
-
-# Try MCP tool cookiy_billing_transactions first; on -32601 (Unknown tool)
-# fall back to direct REST GET /v1/billing/transactions.
-invoke_or_rest_transactions() {
-  local args_json="$1"
-
-  local init_resp call_resp
-  init_resp="$(post_jsonrpc "{\"jsonrpc\":\"2.0\",\"id\":$(next_id),\"method\":\"initialize\",\"params\":{\"protocolVersion\":\"2025-03-26\",\"capabilities\":{},\"clientInfo\":{\"name\":\"cookiy-cli-sh\",\"version\":\"1.0.0\"}}}")" \
-    || die "billing transactions: MCP initialize failed"
-  check_auth_error "$init_resp"
-  check_rpc_error "$init_resp" || die "billing transactions: MCP initialize error"
-  post_jsonrpc '{"jsonrpc":"2.0","method":"notifications/initialized"}' >/dev/null 2>&1 || true
-  call_resp="$(post_jsonrpc "{\"jsonrpc\":\"2.0\",\"id\":$(next_id),\"method\":\"tools/call\",\"params\":{\"name\":\"cookiy_billing_transactions\",\"arguments\":${args_json}}}")" \
-    || die "billing transactions: MCP tools/call failed"
-  check_auth_error "$call_resp"
-
-  # If server knows the tool, use MCP result
-  if ! echo "$call_resp" | jq -e '.error.code == -32601' >/dev/null 2>&1 \
-    && ! echo "$call_resp" | jq -r '.error.message // empty' 2>/dev/null | grep -q 'Unknown tool'; then
-    check_rpc_error "$call_resp" || exit 1
-    local printable
-    printable="$(echo "$call_resp" | emit_tool_result)"
-    check_auth_error "$printable"
-    if ! echo "$printable" | jq -e '.ok == true' >/dev/null 2>&1; then
-      echo "$printable" | jq . >&2; exit 1
-    fi
-    echo "$printable" | jq '.data'
-    return 0
-  fi
-
-  # --- REST fallback (old servers without the MCP tool) ---
-  echo "Note: server does not have cookiy_billing_transactions yet; falling back to REST." >&2
-  local api_base url qs resp http body
-  api_base="$(resolve_server_base)"
-  url="${api_base%/}/v1/billing/transactions"
-  qs="$(echo "$args_json" | jq -r '
-    [
-      (if (.limit | type) == "number" or ((.limit | type) == "string" and (.limit | length) > 0)
-        then "limit=\(.limit)" else empty end),
-      (if (.cursor | type) == "string" and (.cursor | length) > 0
-        then "cursor=\(.cursor | @uri)" else empty end)
-    ] | map(select(. != null and . != "")) | join("&")
-  ')"
-  [[ -n "$qs" ]] && url="$url?$qs"
-  resp="$(curl -sS --max-time "$TIMEOUT" -w '\n%{http_code}' \
-    -H "Authorization: Bearer $ACCESS_TOKEN" \
-    -H "Accept: application/json" \
-    "$url")" || die "billing transactions: REST fallback curl failed"
-  http="$(printf '%s' "$resp" | tail -n1)"
-  body="$(printf '%s' "$resp" | sed '$d')"
-  if [[ "$http" == "401" || "$http" == "403" ]]; then die_no_access; fi
-  if [[ "$http" != "200" ]]; then
-    echo "billing transactions: REST fallback HTTP $http" >&2
-    printf '%s' "$body" | head -c 4000 >&2; echo >&2; exit 1
-  fi
-  check_auth_error "$body"
-  printf '%s' "$body" | jq .
 }
 
 wait_for_report_completion_via_link() {
@@ -645,10 +587,9 @@ billing balance
     Usage:   cookiy.sh billing balance
     Output:  one plain-text line: .data.balance_summary only (jq).
 
-billing transactions — wallet ledger (MCP, REST fallback)
+billing transactions — wallet ledger
     Usage:   cookiy.sh billing transactions [--limit <n>] [--cursor <iso8601>]
-    Output:  JSON ledger rows (MCP .data when available, or raw REST body).
-    Note:    Prefers MCP cookiy_billing_transactions; falls back to REST if server is older.
+    Note:    MCP tool cookiy_billing_transactions (same JSON-RPC session as balance/checkout).
 
 billing checkout
     Usage:   cookiy.sh billing checkout --amount-usd-cents <n>
@@ -1010,9 +951,8 @@ billing)
       invoke cookiy_billing_price_table '{}'
       ;;
     transactions)
-      command -v jq >/dev/null 2>&1 || die "cookiy.sh billing transactions requires jq"
       build_json "limit cursor" "${btail[@]+"${btail[@]}"}"
-      invoke_or_rest_transactions "$BUILT_JSON"
+      invoke cookiy_billing_transactions "$BUILT_JSON"
       ;;
     *) die "billing balance|checkout|price-table|transactions" ;;
   esac
