@@ -27,10 +27,6 @@ Use it for **general-purpose research** (design research plans, interview guides
 
 ---
 
-## Repository layout
-
-This repo follows the [Open Plugins](https://open-plugins.com) layout expected by [Cursor Directory](https://cursor.directory): the installable skill is [`skills/user-research-cookiy/SKILL.md`](skills/user-research-cookiy/SKILL.md).
-
 ## Install
 
 ### Claude Desktop (Chat / Cowork)
