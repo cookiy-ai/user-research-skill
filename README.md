@@ -29,7 +29,7 @@ Use it for **general-purpose research** (design research plans, interview guides
 
 ## Repository layout
 
-This repo follows the [Open Plugins](https://open-plugins.com) layout expected by [Cursor Directory](https://cursor.directory): the installable skill is [`skills/user-research-cookiy/SKILL.md`](skills/user-research-cookiy/SKILL.md). A copy also exists at the repository root (`SKILL.md`) with the same instructions; paths in the root file are relative to the repo root, while paths under `skills/` use `../../references/` so links resolve when the full repository is checked out.
+This repo follows the [Open Plugins](https://open-plugins.com) layout expected by [Cursor Directory](https://cursor.directory): the installable skill is [`skills/user-research-cookiy/SKILL.md`](skills/user-research-cookiy/SKILL.md).
 
 ## Install
 
