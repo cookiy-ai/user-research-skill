@@ -29,6 +29,11 @@ Use it for **general-purpose research** (design research plans, interview guides
 
 ## Install
 
+### Claude Plugin (Claude CoWork / Claude Code)
+
+1. Add a plugin marketplace using URL: `https://github.com/cookiy-ai/user-research-skill`
+2. Install the `user-research` plugin from the `cookiy-ai` marketplace.
+
 ### Claude Desktop (Chat / Cowork)
 
 1. Download the [Skill ZIP file](https://github.com/cookiy-ai/user-research-skill/archive/refs/heads/main.zip)
