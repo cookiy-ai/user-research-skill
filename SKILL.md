@@ -14,8 +14,6 @@ description: >
 
 # User Research, End to End
 
-> **Maintainers:** For [Cursor Directory](https://cursor.directory) / Open Plugins, the same skill is mirrored at [`skills/user-research-cookiy/SKILL.md`](skills/user-research-cookiy/SKILL.md) with `../../references/` links. Keep both files aligned when you change routes.
-
 Route to the right workflow based on user intent.
 
 ## Routing
