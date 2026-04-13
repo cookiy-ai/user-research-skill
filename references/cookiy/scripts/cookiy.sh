@@ -590,7 +590,7 @@ billing balance
     Output:  one plain-text line: .data.balance_summary only (jq).
 
 billing transactions — wallet ledger
-    Usage:   cookiy.sh billing transactions [--limit <n>] [--cursor <iso8601>]
+    Usage:   cookiy.sh billing transactions [--limit <n>] [--cursor <iso8601>] [--study-id <uuid>] [--survey-id <sid>]
     Note:    MCP tool cookiy_billing_transactions (same JSON-RPC session as balance/checkout).
 
 billing checkout
@@ -951,7 +951,7 @@ billing)
       invoke cookiy_billing_price_table '{}'
       ;;
     transactions)
-      build_json "limit cursor" "${btail[@]+"${btail[@]}"}"
+      build_json "limit cursor study_id survey_id" "${btail[@]+"${btail[@]}"}"
       invoke cookiy_billing_transactions "$BUILT_JSON"
       ;;
     *) die "billing balance|checkout|price-table|transactions" ;;
