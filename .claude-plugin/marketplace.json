@@ -1,0 +1,13 @@
+{
+  "name": "cookiy-ai",
+  "owner": {
+    "name": "Cookiy AI",
+    "email": "dev@cookiy.com"
+  },
+  "plugins": [
+    {
+      "name": "user-research",
+      "source": "./"
+    }
+  ]
+}
