@@ -18,6 +18,14 @@ Many operations cost money (recruit, synthetic interview, report generation, dis
 
 ## CLI Commands
 
+### billing transactions
+
+List wallet transaction history. Optionally filter by study or survey.
+
+```
+scripts/cookiy.sh billing transactions [--limit <n>] [--cursor <iso8601>] [--study-id <uuid>] [--survey-id <sid>]
+```
+
 ### billing price-table
 
 Get current pricing for all operations.
