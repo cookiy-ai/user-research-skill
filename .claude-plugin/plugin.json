@@ -1,12 +1,35 @@
 {
-  "name": "cookiy",
-  "description": "AI-powered user research: create studies, conduct interviews, recruit participants, and generate insight reports through natural language.",
-  "version": "1.0.3",
+  "name": "user-research",
+  "version": "1.1.0",
+  "description": "End-to-end user research skill for AI agents — plan qualitative studies (research plans, screening questionnaires, interview guides), synthesize interview transcripts into evidence-backed reports with codebooks and personas, run AI-moderated interviews with real or synthetic participants, and design and distribute multilingual quantitative surveys with conditional logic — all via natural language, powered by Cookiy AI.",
   "author": {
     "name": "Cookiy AI",
-    "email": "dev@cookiy.ai",
+    "email": "dev@cookiy.com",
     "url": "https://cookiy.ai"
   },
+  "homepage": "https://cookiy.ai",
   "repository": "https://github.com/cookiy-ai/user-research-skill",
-  "license": "MIT"
+  "license": "MIT",
+  "keywords": [
+    "user research",
+    "qualitative research",
+    "quantitative research",
+    "user interviews",
+    "interview guide",
+    "discussion guide",
+    "research plan",
+    "screening questionnaire",
+    "research synthesis",
+    "thematic analysis",
+    "survey design",
+    "participant recruitment",
+    "synthetic users",
+    "AI-moderated interviews",
+    "usability study",
+    "research report",
+    "discovery research",
+    "contextual inquiry",
+    "diary study"
+  ],
+  "skills": "./"
 }
