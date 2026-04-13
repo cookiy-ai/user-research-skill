@@ -851,15 +851,12 @@ quant)
     report)
       build_json "survey_id include_raw" "${qtail[@]+"${qtail[@]}"}"
       require_key survey_id "quant report requires --survey-id (numeric sid from quant list)"
-      local _report_raw
       _report_raw="$(invoke cookiy_quant_survey_report "$BUILT_JSON")" || { echo "$_report_raw"; exit 1; }
       # Extract PDF base64, decode to file, then strip from JSON output
-      local _pdf_b64
       _pdf_b64="$(echo "$_report_raw" | jq -r '.data.statistics_pdf_base64 // empty')"
       if [[ -n "$_pdf_b64" ]]; then
-        local _sid
         _sid="$(echo "$BUILT_JSON" | jq -r '.survey_id')"
-        local _pdf_path="report-${_sid}.pdf"
+        _pdf_path="report-${_sid}.pdf"
         echo "$_pdf_b64" | base64 -d > "$_pdf_path" 2>/dev/null
         if [[ -s "$_pdf_path" ]]; then
           echo "PDF report saved: $(pwd)/${_pdf_path}" >&2
