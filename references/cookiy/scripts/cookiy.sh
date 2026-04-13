@@ -566,10 +566,12 @@ quant update — patch survey
     Flags:   --survey-id (required, numeric)
              --json (required): JSON with survey, groups, questions, quotas_create, quotas_update, etc.
 
-quant report — survey report
+quant report — survey report (structured JSON + PDF)
     Usage:   cookiy.sh quant report --survey-id <n> [--include-raw <bool>]
     Flags:   --survey-id (required, numeric)
              --include-raw <bool>   Include raw response rows (default: false)
+    Output:  JSON with distributions, labels, percentages, numeric stats, completion funnel.
+             PDF saved to ./report-{survey_id}.pdf (from LimeSurvey native statistics).
 
 quant admin-link — auto-login URL into the LimeSurvey admin UI for the calling user
     Usage:   cookiy.sh quant admin-link [--survey-id <n>]
@@ -849,7 +851,24 @@ quant)
     report)
       build_json "survey_id include_raw" "${qtail[@]+"${qtail[@]}"}"
       require_key survey_id "quant report requires --survey-id (numeric sid from quant list)"
-      invoke cookiy_quant_survey_report "$BUILT_JSON"
+      local _report_raw
+      _report_raw="$(invoke cookiy_quant_survey_report "$BUILT_JSON")" || { echo "$_report_raw"; exit 1; }
+      # Extract PDF base64, decode to file, then strip from JSON output
+      local _pdf_b64
+      _pdf_b64="$(echo "$_report_raw" | jq -r '.data.statistics_pdf_base64 // empty')"
+      if [[ -n "$_pdf_b64" ]]; then
+        local _sid
+        _sid="$(echo "$BUILT_JSON" | jq -r '.survey_id')"
+        local _pdf_path="report-${_sid}.pdf"
+        echo "$_pdf_b64" | base64 -d > "$_pdf_path" 2>/dev/null
+        if [[ -s "$_pdf_path" ]]; then
+          echo "PDF report saved: $(pwd)/${_pdf_path}" >&2
+        else
+          rm -f "$_pdf_path"
+        fi
+      fi
+      # Print JSON without the base64 blob
+      echo "$_report_raw" | jq 'if .data then .data.statistics_pdf_base64 = null else . end'
       ;;
     admin-link)
       # survey_id is optional — when omitted, the URL lands on the LS admin
