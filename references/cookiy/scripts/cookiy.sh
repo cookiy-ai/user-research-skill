@@ -30,6 +30,35 @@ json_escape() {
   printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' -e 's/	/\\t/g' | tr '\n' ' '
 }
 
+# Add or overwrite a key in BUILT_JSON.  Value must be a raw JSON literal
+# (e.g. '"url"', 'true', '300000').
+json_set() {
+  local key="$1" val="$2"
+  # Remove existing key (if any) then append
+  BUILT_JSON="$(printf '%s' "$BUILT_JSON" | sed 's/,"'"$key"'":[^,}]*//;s/{"'"$key"'":[^,}]*,/{/')"
+  BUILT_JSON="${BUILT_JSON%\}},\"$key\":$val}"
+}
+
+# Remove a key from BUILT_JSON.
+json_del() {
+  local key="$1"
+  BUILT_JSON="$(printf '%s' "$BUILT_JSON" | sed 's/,"'"$key"'":[^,}]*//;s/{"'"$key"'":[^,}]*,/{/')"
+  # Handle case where it's the only key
+  BUILT_JSON="$(printf '%s' "$BUILT_JSON" | sed 's/{"'"$key"'":[^}]*}/{}/')"
+}
+
+# Read a string/number value from BUILT_JSON (no jq).
+built_get() {
+  echo "$BUILT_JSON" | json_get "$1"
+}
+
+# Read a numeric value with fallback default (no jq).
+built_get_num() {
+  local val
+  val="$(echo "$BUILT_JSON" | sed -n 's/.*"'"$1"'"[[:space:]]*:[[:space:]]*\([0-9][0-9]*\).*/\1/p' | head -1)"
+  echo "${val:-$2}"
+}
+
 usage() {
   cat <<EOF
 Cookiy CLI v${VERSION}  (standalone shell client)
@@ -232,23 +261,6 @@ emit_tool_result() {
   '
 }
 
-# Read cookiy_balance_get envelope JSON on stdin; print balance.
-# Supports both old format (.data.balance_summary) and new wallet format (.data.balance + .data.formatted).
-# On failure (ok != true), print error message to stderr and return 1. Uses jq only.
-print_balance_summary_only() {
-  local raw
-  raw="$(cat)"
-  if ! echo "$raw" | jq -e '.ok == true' >/dev/null 2>&1; then
-    echo "$raw" | jq -r '.error.message // .error.code // "Request failed"' >&2
-    return 1
-  fi
-  echo "$raw" | jq -r '
-    if .data.balance_summary then .data.balance_summary
-    elif .data.formatted then "Wallet balance: \(.data.formatted) (\(.data.balance // 0) cents)"
-    else empty
-    end'
-}
-
 
 # invoke <tool_name> <arguments_json>
 # Performs the 3-step JSON-RPC handshake: initialize, notify, tools/call
@@ -284,39 +296,14 @@ invoke() {
   fi
 }
 
-wait_for_report_completion_via_link() {
+# Wait for report completion server-side, then return the share link.
+wait_for_report_then_link() {
   local study_id="$1"
-  local timeout_ms="${2:-300000}"  # default 5 min to prevent infinite loop
-  local started_ms now_ms elapsed_ms
-  started_ms="$(date +%s000)"
-
-  while true; do
-    local result status
-    result="$(invoke cookiy_report_share_link_get "{\"study_id\":\"$(json_escape "$study_id")\"}")" || return 1
-    status="$(echo "$result" | jq -r '.data.status // .data.report_status // empty')"
-
-    case "$status" in
-      completed)
-        echo "$result"
-        return 0
-        ;;
-      failed)
-        echo "$result"
-        return 1
-        ;;
-    esac
-
-    if [[ -n "$timeout_ms" ]]; then
-      now_ms="$(date +%s000)"
-      elapsed_ms=$((now_ms - started_ms))
-      if (( elapsed_ms >= timeout_ms )); then
-        echo "$result"
-        return 1
-      fi
-    fi
-
-    sleep 10
-  done
+  local timeout_ms="${2:-300000}"
+  # Server-side wait via cookiy_report_status (blocks until done or timeout)
+  invoke cookiy_report_status "{\"study_id\":\"$(json_escape "$study_id")\",\"wait\":true,\"timeout_ms\":$timeout_ms}" > /dev/null || return 1
+  # Report ready — fetch share link
+  invoke cookiy_report_share_link_get "{\"study_id\":\"$(json_escape "$study_id")\"}"
 }
 
 # --- arg builder -----------------------------------------------------------
@@ -433,11 +420,6 @@ require_non_empty_string_value() {
   fi
 }
 
-# Get a string value from BUILT_JSON
-built_get() {
-  echo "$BUILT_JSON" | json_get "$1"
-}
-
 # Extract study_id from a JSON response string
 extract_study_id() {
   local r="$1"
@@ -535,7 +517,7 @@ recruit start — launch participant recruitment
     Usage:   cookiy.sh recruit start [--study-id <uuid>] [--survey-public-url <url>] [--confirmation-token <s>] [--plain-text <s>] [--incremental-participants <n>]
     Flags:   --study-id (qualitative — required for interview studies)
              --survey-public-url (quant — auto-sets recruit_mode=quant_survey; study-id optional)
-    Output:  Preview (confirmation_required): {preview_only, confirmation_token, recruit_mode, source_language, derived_languages, sample_size, target_group, payment_quote, status_message} (null fields omitted). HTTP 402: adds checkout_url, quote, payment_summary, payment_breakdown, retry_*. HTTP 409 (sample size reached): {ok, status_code, code, sample_size, completed_participants}. Other successes/errors: full API envelope JSON.
+    Output:  Full API envelope JSON (preview includes top-level sample_size, target_group, payment_quote, derived_languages).
     Note:    incremental_participants is auto-capped to remaining sample size capacity. If below current channel target, treated as incremental ("recruit N more").
 
 study report generate | content | link
@@ -590,7 +572,7 @@ quant admin-link — auto-login URL into the LimeSurvey admin UI for the calling
 
 billing balance
     Usage:   cookiy.sh billing balance
-    Output:  one plain-text line: .data.balance_summary only (jq).
+    Output:  one plain-text line (balance_summary from API).
 
 billing transactions — wallet ledger
     Usage:   cookiy.sh billing transactions [--limit <n>] [--cursor <iso8601>] [--study-id <uuid>] [--survey-id <sid>]
@@ -685,12 +667,11 @@ study)
     create)
       build_json "query thinking attachments timeout_ms" "${stail[@]+"${stail[@]}"}"
       require_key query "study create requires --query"
-      payload="$BUILT_JSON"
       # --wait or --timeout-ms implies server-side wait
-      if [[ "$ARG_WAIT" == "true" ]] || echo "$payload" | grep -q '"timeout_ms"'; then
-        payload="$(echo "$payload" | jq -c '. + {wait_for_guide: true}')"
+      if [[ "$ARG_WAIT" == "true" ]] || echo "$BUILT_JSON" | grep -q '"timeout_ms"'; then
+        json_set wait_for_guide true
       fi
-      invoke cookiy_study_create "$payload"
+      invoke cookiy_study_create "$BUILT_JSON"
       ;;
     upload)
       build_json "image_data image_url content_type" "${stail[@]+"${stail[@]}"}"
@@ -726,7 +707,7 @@ study)
         list)
           build_json "study_id cursor" "${itail[@]+"${itail[@]}"}"
           require_key study_id "study interview list requires --study-id"
-          BUILT_JSON="$(echo "$BUILT_JSON" | jq -c '. + {include_simulation: true}')"
+          json_set include_simulation true
           invoke cookiy_interview_list "$BUILT_JSON"
           ;;
         playback)
@@ -736,13 +717,13 @@ study)
             url)
               build_json "study_id interview_id cursor" "${ptail[@]+"${ptail[@]}"}"
               require_key study_id "study interview playback url requires --study-id"
-              BUILT_JSON="$(echo "$BUILT_JSON" | jq -c '. + {view: "url"}')"
+              json_set view '"url"'
               invoke cookiy_interview_playback_get "$BUILT_JSON"
               ;;
             content)
               build_json "study_id interview_id cursor" "${ptail[@]+"${ptail[@]}"}"
               require_key study_id "study interview playback content requires --study-id"
-              BUILT_JSON="$(echo "$BUILT_JSON" | jq -c '. + {view: "transcript"}')"
+              json_set view '"transcript"'
               invoke cookiy_interview_playback_get "$BUILT_JSON"
               ;;
             *) die "study interview playback url|content --study-id <uuid> [--interview-id <uuid>]" ;;
@@ -760,13 +741,15 @@ study)
           require_key study_id "study run-synthetic-user start requires --study-id"
           # Map --plain-text to API interviewee_persona
           if echo "$BUILT_JSON" | grep -q '"plain_text"'; then
-            BUILT_JSON="$(echo "$BUILT_JSON" | jq -c '. + {interviewee_persona: .plain_text} | del(.plain_text)')"
+            local pt_val
+            pt_val="$(built_get plain_text)"
+            json_del plain_text
+            json_set interviewee_persona "\"$(json_escape "$pt_val")\""
           fi
-          payload="$BUILT_JSON"
-          if [[ "$ARG_WAIT" == "true" ]] || echo "$payload" | grep -q '"timeout_ms"'; then
-            payload="$(echo "$payload" | jq -c '. + {wait: true}')"
+          if [[ "$ARG_WAIT" == "true" ]] || echo "$BUILT_JSON" | grep -q '"timeout_ms"'; then
+            json_set wait true
           fi
-          invoke cookiy_simulated_interview_generate "$payload"
+          invoke cookiy_simulated_interview_generate "$BUILT_JSON"
           ;;
         *) die "study run-synthetic-user start" ;;
       esac
@@ -782,8 +765,8 @@ study)
             _grc=0
             invoke cookiy_report_generate "$BUILT_JSON" >&2 || _grc=$?
             [[ $_grc -eq 0 ]] || exit 1
-            study_id_value="$(echo "$BUILT_JSON" | jq -r '.study_id')"
-            wait_for_report_completion_via_link "$study_id_value"
+            study_id_value="$(built_get study_id)"
+            wait_for_report_then_link "$study_id_value"
           else
             invoke cookiy_report_generate "$BUILT_JSON"
           fi
@@ -793,12 +776,13 @@ study)
           require_key study_id "study report content requires --study-id"
           # --wait or --timeout-ms: poll status first, then fetch content
           if [[ "$ARG_WAIT" == "true" ]] || echo "$BUILT_JSON" | grep -q '"timeout_ms"'; then
-            wait_payload="$(echo "$BUILT_JSON" | jq -c '. + {wait: true}')"
+            json_set wait true
             _rrc=0
-            invoke cookiy_report_status "$wait_payload" > /dev/null || _rrc=$?
+            invoke cookiy_report_status "$BUILT_JSON" > /dev/null || _rrc=$?
             [[ $_rrc -eq 0 ]] || exit 1
           fi
-          invoke cookiy_report_content_get "$(echo "$BUILT_JSON" | jq -c 'del(.timeout_ms)')"
+          json_del timeout_ms
+          invoke cookiy_report_content_get "$BUILT_JSON"
           ;;
         link)
           build_json "study_id" "${rrest[@]+"${rrest[@]}"}"
@@ -808,9 +792,9 @@ study)
         wait)
           build_json "study_id timeout_ms" "${rrest[@]+"${rrest[@]}"}"
           require_key study_id "study report wait requires --study-id"
-          study_id_value="$(echo "$BUILT_JSON" | jq -r '.study_id')"
-          timeout_ms_value="$(echo "$BUILT_JSON" | jq -r '.timeout_ms // 300000')"
-          wait_for_report_completion_via_link "$study_id_value" "$timeout_ms_value"
+          study_id_value="$(built_get study_id)"
+          timeout_ms_value="$(built_get_num timeout_ms 300000)"
+          wait_for_report_then_link "$study_id_value" "$timeout_ms_value"
           ;;
         *) die "study report generate|content|link|wait" ;;
       esac
@@ -838,7 +822,10 @@ quant)
     get)
       build_json "survey_id include_structure" "${qtail[@]+"${qtail[@]}"}"
       require_key survey_id "quant get requires --survey-id (numeric sid from quant list)"
-      BUILT_JSON="$(echo "$BUILT_JSON" | jq -c '.structure_presentation |= (. // "json")')"
+      # Default structure_presentation to json for CLI
+      if ! echo "$BUILT_JSON" | grep -q '"structure_presentation"'; then
+        json_set structure_presentation '"json"'
+      fi
       invoke cookiy_quant_survey_detail "$BUILT_JSON"
       ;;
     update)
@@ -892,58 +879,11 @@ recruit)
       build_json "study_id confirmation_token plain_text incremental_participants survey_public_url" "${rtail[@]+"${rtail[@]}"}"
       # Auto-detect quant mode when --survey-public-url is provided
       if echo "$BUILT_JSON" | grep -q '"survey_public_url"'; then
-        BUILT_JSON="$(echo "$BUILT_JSON" | jq -c '. + {recruit_mode: "quant_survey"}')"
+        json_set recruit_mode '"quant_survey"'
       fi
       # CLI policy: explicit reconfigure semantics (matches console UX). Live launch is enforced server-side on confirm.
-      BUILT_JSON="$(echo "$BUILT_JSON" | jq -c '. + {force_reconfigure: true}')"
-      _rc=0
-      result="$(invoke cookiy_recruit_create "$BUILT_JSON")" || _rc=$?
-      echo "$result" | jq '
-        if .ok == false and .status_code == 409 and (.data | type) == "object" then
-          {
-            ok: false,
-            status_code: 409,
-            code: .data.code,
-            sample_size: .data.data.sample_size,
-            completed_participants: .data.data.completed_participants
-          }
-        elif .ok == false and .status_code == 402 and (.data | type) == "object" then
-          {
-            ok: false,
-            status_code: 402,
-            workflow_state: .data.workflow_state,
-            preview_only: .data.preview_only,
-            confirmation_token: .data.confirmation_token,
-            status_message: .data.status_message,
-            checkout_url: .data.checkout_url,
-            checkout_url_short: .data.checkout_url_short,
-            checkout_id: .data.checkout_id,
-            quote: .data.quote,
-            payment_summary: .data.payment_summary,
-            payment_breakdown: .data.payment_breakdown,
-            retry_same_tool: .data.retry_same_tool,
-            retry_tool_name: .data.retry_tool_name,
-            retry_input_hint: .data.retry_input_hint
-          }
-        elif .ok == true and (.data | type) == "object" and ((.data.preview_only == true) or (.data.status == "confirmation_required")) then
-          {
-            preview_only: .data.preview_only,
-            confirmation_token: .data.confirmation_token,
-            recruit_mode: .data.recruit_mode,
-            survey_public_url: .data.survey_public_url,
-            source_language: .data.source_language,
-            derived_languages: .data.targeting_preview.derived_languages_canonical,
-            sample_size: .data.study_summary.sample_size,
-            interview_duration_minutes: .data.study_summary.interview_duration_minutes,
-            target_group: (.data.targeting_preview.target_persona_summary // .data.targeting_preview.target_group),
-            payment_quote: .data.targeting_preview.payment_quote,
-            status_message: .data.status_message
-          } | with_entries(select(.value != null))
-        else
-          .
-        end
-      '
-      exit $_rc
+      json_set force_reconfigure true
+      invoke cookiy_recruit_create "$BUILT_JSON"
       ;;
     *) die "recruit start" ;;
   esac
@@ -956,10 +896,7 @@ billing)
   case "$sub" in
     balance)
       [[ ${#btail[@]} -eq 0 ]] || die "billing balance takes no arguments"
-      _brc=0
-      result="$(invoke cookiy_balance_get '{}')" || _brc=$?
-      echo "$result" | print_balance_summary_only
-      [[ $_brc -eq 0 ]] || exit 1
+      invoke cookiy_balance_get '{}'
       ;;
     checkout)
       build_json "amount_usd_cents" "${btail[@]+"${btail[@]}"}"
