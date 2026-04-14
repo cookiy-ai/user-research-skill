@@ -83,7 +83,7 @@ Commands:
   help                        Offline CLI reference
   study list|create|status|upload|..  Includes guide|interview|run-synthetic-user|report
   recruit start                       Qualitative or quant recruitment (auto-detects mode)
-  quant list|create|get|update|report|admin-link  Quantitative survey management (keyed by survey-id)
+  quant list|create|get|update|status|report|admin-link  Quantitative survey management (keyed by survey-id)
   intro                               Platform introduction (capabilities, highlights)
   billing balance|checkout|price-table|transactions
 
@@ -548,6 +548,12 @@ quant update — patch survey
     Flags:   --survey-id (required, numeric)
              --json (required): JSON with survey, groups, questions, quotas_create, quotas_update, etc.
 
+quant status — survey completion progress (lightweight)
+    Usage:   cookiy.sh quant status --survey-id <n>
+    Flags:   --survey-id (required, numeric)
+    Output:  completed_responses, incomplete_responses, full_responses, token_* counts.
+    Note:    Wraps a single get_summary RPC. For per-question detail use quant report.
+
 quant report — survey report (structured JSON + PDF)
     Usage:   cookiy.sh quant report --survey-id <n> [--include-raw <bool>]
     Flags:   --survey-id (required, numeric)
@@ -835,6 +841,11 @@ quant)
       [[ -n "$ARG_JSON_RAW" ]] || die "quant update requires --json '<obj>'"
       invoke cookiy_quant_survey_patch "$BUILT_JSON"
       ;;
+    status)
+      build_json "survey_id" "${qtail[@]+"${qtail[@]}"}"
+      require_key survey_id "quant status requires --survey-id (numeric sid from quant list)"
+      invoke cookiy_quant_survey_status "$BUILT_JSON"
+      ;;
     report)
       build_json "survey_id include_raw" "${qtail[@]+"${qtail[@]}"}"
       require_key survey_id "quant report requires --survey-id (numeric sid from quant list)"
@@ -865,7 +876,7 @@ quant)
       invoke cookiy_quant_survey_admin_link "$BUILT_JSON"
       ;;
     *)
-      die "quant list|create|get|update|report|admin-link"
+      die "quant list|create|get|update|status|report|admin-link"
       ;;
   esac
   ;;
