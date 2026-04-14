@@ -554,12 +554,15 @@ quant status — survey completion progress (lightweight)
     Output:  completed_responses, incomplete_responses, full_responses, token_* counts.
     Note:    Wraps a single get_summary RPC. For per-question detail use quant report.
 
-quant report — survey report (structured JSON + PDF)
+quant report — survey report (structured JSON + Excel)
     Usage:   cookiy.sh quant report --survey-id <n> [--include-raw <bool>]
     Flags:   --survey-id (required, numeric)
-             --include-raw <bool>   Include raw response rows (default: false)
+             --include-raw <bool>   Include raw rows, participants, and timings (default: false)
     Output:  JSON with distributions, labels, percentages, numeric stats, completion funnel.
-             PDF saved to ./report-{survey_id}.pdf (from LimeSurvey native statistics).
+             Excel saved to ./report-{survey_id}.xls (from LimeSurvey native statistics;
+             opens in Excel/Numbers/Sheets even though it's an HTML table internally).
+    include_raw additions: raw_results.results_json, raw_participants (closed-access tokens),
+             raw_timings_csv_base64 (per-question timings; requires timing plugin).
 
 quant admin-link — auto-login URL into the LimeSurvey admin UI for the calling user
     Usage:   cookiy.sh quant admin-link [--survey-id <n>]
@@ -849,24 +852,26 @@ quant)
     report)
       build_json "survey_id include_raw" "${qtail[@]+"${qtail[@]}"}"
       require_key survey_id "quant report requires --survey-id (numeric sid from quant list)"
-      local _report_raw
       _report_raw="$(invoke cookiy_quant_survey_report "$BUILT_JSON")" || { echo "$_report_raw"; exit 1; }
-      # Extract PDF base64, decode to file, then strip from JSON output
-      local _pdf_b64
-      _pdf_b64="$(echo "$_report_raw" | jq -r '.data.statistics_pdf_base64 // empty')"
-      if [[ -n "$_pdf_b64" ]]; then
-        local _sid
+      # emit_tool_result unwraps .data on success; on failure the full envelope
+      # is returned. Check both shapes for statistics_xlsx_base64.
+      _xls_b64="$(echo "$_report_raw" | jq -r '(.statistics_xlsx_base64 // .data.statistics_xlsx_base64) // empty')"
+      if [[ -n "$_xls_b64" ]]; then
         _sid="$(echo "$BUILT_JSON" | jq -r '.survey_id')"
-        local _pdf_path="report-${_sid}.pdf"
-        echo "$_pdf_b64" | base64 -d > "$_pdf_path" 2>/dev/null
-        if [[ -s "$_pdf_path" ]]; then
-          echo "PDF report saved: $(pwd)/${_pdf_path}" >&2
+        _xls_path="report-${_sid}.xls"
+        echo "$_xls_b64" | base64 -d > "$_xls_path" 2>/dev/null
+        if [[ -s "$_xls_path" ]]; then
+          echo "Excel report saved: $(pwd)/${_xls_path}" >&2
         else
-          rm -f "$_pdf_path"
+          rm -f "$_xls_path"
         fi
       fi
-      # Print JSON without the base64 blob
-      echo "$_report_raw" | jq 'if .data then .data.statistics_pdf_base64 = null else . end'
+      # Print JSON without the base64 blob (handles both unwrapped and enveloped shapes)
+      echo "$_report_raw" | jq '
+        if has("statistics_xlsx_base64") then .statistics_xlsx_base64 = null
+        elif .data and (.data | has("statistics_xlsx_base64")) then .data.statistics_xlsx_base64 = null
+        else . end
+      '
       ;;
     admin-link)
       # survey_id is optional — when omitted, the URL lands on the LS admin
