@@ -555,14 +555,12 @@ quant status — survey completion progress (lightweight)
     Note:    Wraps a single get_summary RPC. For per-question detail use quant report.
 
 quant report — survey report (structured JSON + Excel)
-    Usage:   cookiy.sh quant report --survey-id <n> [--include-raw <bool>]
+    Usage:   cookiy.sh quant report --survey-id <n>
     Flags:   --survey-id (required, numeric)
-             --include-raw <bool>   Include raw rows, participants, and timings (default: false)
-    Output:  JSON with distributions, labels, percentages, numeric stats, completion funnel.
-             Excel saved to ./report-{survey_id}.xls (from LimeSurvey native statistics;
-             opens in Excel/Numbers/Sheets even though it's an HTML table internally).
-    include_raw additions: raw_results.results_json, raw_participants (closed-access tokens),
-             raw_timings_csv_base64 (per-question timings; requires timing plugin).
+    Output:  JSON on stdout — aggregates (distributions/labels/percentages/numeric stats/
+             completion funnel) + raw data (results_json, raw_participants, raw_timings_csv_base64).
+             Raw data is auto-included; max_chars cap of 120K chars prevents context explosion.
+             Excel file saved to ./report-{survey_id}.xls (LS native statistics export).
 
 quant admin-link — auto-login URL into the LimeSurvey admin UI for the calling user
     Usage:   cookiy.sh quant admin-link [--survey-id <n>]
@@ -850,7 +848,7 @@ quant)
       invoke cookiy_quant_survey_status "$BUILT_JSON"
       ;;
     report)
-      build_json "survey_id include_raw" "${qtail[@]+"${qtail[@]}"}"
+      build_json "survey_id" "${qtail[@]+"${qtail[@]}"}"
       require_key survey_id "quant report requires --survey-id (numeric sid from quant list)"
       _report_raw="$(invoke cookiy_quant_survey_report "$BUILT_JSON")" || { echo "$_report_raw"; exit 1; }
       # emit_tool_result unwraps .data on success; on failure the full envelope
