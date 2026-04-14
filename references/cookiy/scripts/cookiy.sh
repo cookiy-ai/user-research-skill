@@ -925,7 +925,11 @@ billing)
   case "$sub" in
     balance)
       [[ ${#btail[@]} -eq 0 ]] || die "billing balance takes no arguments"
-      invoke cookiy_balance_get '{}'
+      # Print the balance as a single plain-text line (per documented output).
+      # emit_tool_result already unwraps the envelope on success, so the
+      # response here is just {"balance_summary": "..."} — pull out the string.
+      _bal="$(invoke cookiy_balance_get '{}')" || { echo "$_bal"; exit 1; }
+      echo "$_bal" | jq -r 'if type == "object" and has("balance_summary") then .balance_summary else . end'
       ;;
     checkout)
       build_json "amount_usd_cents" "${btail[@]+"${btail[@]}"}"
