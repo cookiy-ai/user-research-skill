@@ -587,12 +587,13 @@ quant status — survey completion progress (lightweight)
     Output:  completed_responses, incomplete_responses, full_responses, token_* counts.
     Note:    Wraps a single get_summary RPC. For per-question detail use quant report.
 
-quant report — survey report (structured JSON + PDF)
-    Usage:   cookiy.sh quant report --survey-id <n> [--include-raw <bool>]
+quant report — survey report (structured JSON + Excel)
+    Usage:   cookiy.sh quant report --survey-id <n>
     Flags:   --survey-id (required, numeric)
-             --include-raw <bool>   Include raw response rows (default: false)
-    Output:  JSON with distributions, labels, percentages, numeric stats, completion funnel.
-             PDF saved to ./report-{survey_id}.pdf (from LimeSurvey native statistics).
+    Output:  JSON on stdout — aggregates (distributions/labels/percentages/numeric stats/
+             completion funnel) + raw data (results_json, raw_participants, raw_timings_csv_base64).
+             Raw data is auto-included; max_chars cap of 120K chars prevents context explosion.
+             Excel file saved to ./report-{survey_id}.xls (LS native statistics export).
 
 quant admin-link — auto-login URL into the LimeSurvey admin UI for the calling user
     Usage:   cookiy.sh quant admin-link [--survey-id <n>]
@@ -880,30 +881,26 @@ quant)
       invoke cookiy_quant_survey_status "$BUILT_JSON"
       ;;
     report)
-      build_json "survey_id include_raw" "${qtail[@]+"${qtail[@]}"}"
+      build_json "survey_id" "${qtail[@]+"${qtail[@]}"}"
       require_key survey_id "quant report requires --survey-id (numeric sid from quant list)"
-      local _report_raw
       _report_raw="$(invoke cookiy_quant_survey_report "$BUILT_JSON")" || { echo "$_report_raw"; exit 1; }
-      # emit_tool_result unwraps .data on success, so the success payload is
-      # already the business object. On failure the full envelope is returned
-      # (still has .data), so check both shapes for statistics_pdf_base64.
-      local _pdf_b64
-      _pdf_b64="$(echo "$_report_raw" | jq -r '(.statistics_pdf_base64 // .data.statistics_pdf_base64) // empty')"
-      if [[ -n "$_pdf_b64" ]]; then
-        local _sid
+      # emit_tool_result unwraps .data on success; on failure the full envelope
+      # is returned. Check both shapes for statistics_xlsx_base64.
+      _xls_b64="$(echo "$_report_raw" | jq -r '(.statistics_xlsx_base64 // .data.statistics_xlsx_base64) // empty')"
+      if [[ -n "$_xls_b64" ]]; then
         _sid="$(echo "$BUILT_JSON" | jq -r '.survey_id')"
-        local _pdf_path="report-${_sid}.pdf"
-        echo "$_pdf_b64" | base64 -d > "$_pdf_path" 2>/dev/null
-        if [[ -s "$_pdf_path" ]]; then
-          echo "PDF report saved: $(pwd)/${_pdf_path}" >&2
+        _xls_path="report-${_sid}.xls"
+        echo "$_xls_b64" | base64 -d > "$_xls_path" 2>/dev/null
+        if [[ -s "$_xls_path" ]]; then
+          echo "Excel report saved: $(pwd)/${_xls_path}" >&2
         else
-          rm -f "$_pdf_path"
+          rm -f "$_xls_path"
         fi
       fi
       # Print JSON without the base64 blob (handles both unwrapped and enveloped shapes)
       echo "$_report_raw" | jq '
-        if has("statistics_pdf_base64") then .statistics_pdf_base64 = null
-        elif .data and (.data | has("statistics_pdf_base64")) then .data.statistics_pdf_base64 = null
+        if has("statistics_xlsx_base64") then .statistics_xlsx_base64 = null
+        elif .data and (.data | has("statistics_xlsx_base64")) then .data.statistics_xlsx_base64 = null
         else . end
       '
       ;;
