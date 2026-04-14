@@ -249,14 +249,26 @@ check_rpc_error() {
 }
 
 # Read full JSON-RPC tools/call response on stdin; print structured result. Uses jq only.
+#
+# On success (envelope.ok == true): prints just the business .data payload so
+# the CLI user is not shown protocol wrappers (ok / status_code / error /
+# request_id). Agent-only data fields (next_recommended_tools, status_message,
+# presentation_hint, etc.) are already stripped server-side by the MCP tool.
+#
+# On failure: prints the full envelope so error/status_code/request_id remain
+# available for debugging.
 emit_tool_result() {
   local raw
   raw="$(cat)"
   echo "$raw" | jq '
-    .result as $r
-    | if ($r | type) == "object" and ($r | has("structuredContent"))
-      then $r.structuredContent
-      else $r
+    (.result as $r
+     | if ($r | type) == "object" and ($r | has("structuredContent"))
+       then $r.structuredContent
+       else $r
+       end) as $env
+    | if ($env | type) == "object" and $env.ok == true and ($env | has("data"))
+      then $env.data
+      else $env
       end
   '
 }
@@ -851,9 +863,11 @@ quant)
       require_key survey_id "quant report requires --survey-id (numeric sid from quant list)"
       local _report_raw
       _report_raw="$(invoke cookiy_quant_survey_report "$BUILT_JSON")" || { echo "$_report_raw"; exit 1; }
-      # Extract PDF base64, decode to file, then strip from JSON output
+      # emit_tool_result unwraps .data on success, so the success payload is
+      # already the business object. On failure the full envelope is returned
+      # (still has .data), so check both shapes for statistics_pdf_base64.
       local _pdf_b64
-      _pdf_b64="$(echo "$_report_raw" | jq -r '.data.statistics_pdf_base64 // empty')"
+      _pdf_b64="$(echo "$_report_raw" | jq -r '(.statistics_pdf_base64 // .data.statistics_pdf_base64) // empty')"
       if [[ -n "$_pdf_b64" ]]; then
         local _sid
         _sid="$(echo "$BUILT_JSON" | jq -r '.survey_id')"
@@ -865,8 +879,12 @@ quant)
           rm -f "$_pdf_path"
         fi
       fi
-      # Print JSON without the base64 blob
-      echo "$_report_raw" | jq 'if .data then .data.statistics_pdf_base64 = null else . end'
+      # Print JSON without the base64 blob (handles both unwrapped and enveloped shapes)
+      echo "$_report_raw" | jq '
+        if has("statistics_pdf_base64") then .statistics_pdf_base64 = null
+        elif .data and (.data | has("statistics_pdf_base64")) then .data.statistics_pdf_base64 = null
+        else . end
+      '
       ;;
     admin-link)
       # survey_id is optional — when omitted, the URL lands on the LS admin
