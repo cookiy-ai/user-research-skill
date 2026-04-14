@@ -248,27 +248,46 @@ check_rpc_error() {
   return 0
 }
 
-# Read full JSON-RPC tools/call response on stdin; print structured result. Uses jq only.
+# Read full JSON-RPC tools/call response on stdin; print CLI-facing result.
 #
-# On success (envelope.ok == true): prints just the business .data payload so
-# the CLI user is not shown protocol wrappers (ok / status_code / error /
-# request_id). Agent-only data fields (next_recommended_tools, status_message,
-# presentation_hint, etc.) are already stripped server-side by the MCP tool.
+# MCP tools return two parallel representations:
+#   - structuredContent:  the full envelope {ok, status_code, data, error, request_id}
+#   - content[0].text:    the human-readable text (defaults to JSON of envelope;
+#                         tools override via options.contentText for markdown
+#                         tables, narration, plain-text summaries, etc.)
 #
-# On failure: prints the full envelope so error/status_code/request_id remain
-# available for debugging.
+# Rules:
+#   1. If content[0].text is different from the JSON form of structuredContent,
+#      the tool has provided a human-readable display — emit it raw (no JSON).
+#   2. Otherwise (content.text is just the JSON form), fall through to the
+#      envelope unwrap:
+#        - success (ok == true): emit just .data (drop ok/status_code/error/
+#          request_id protocol wrappers).
+#        - failure: emit the full envelope so error/status_code/request_id
+#          remain visible for debugging.
+#
+# Agent-only fields (next_recommended_tools, status_message, presentation_hint,
+# id_discovery_hint, etc.) are already stripped server-side by respond().
+#
+# -r flag: on string output prints raw text (no quotes); on object output
+# still prints JSON. Both cases work correctly.
 emit_tool_result() {
   local raw
   raw="$(cat)"
-  echo "$raw" | jq '
-    (.result as $r
-     | if ($r | type) == "object" and ($r | has("structuredContent"))
+  echo "$raw" | jq -r '
+    .result as $r
+    | (if ($r | type) == "object" and ($r | has("structuredContent"))
        then $r.structuredContent
        else $r
-       end) as $env
-    | if ($env | type) == "object" and $env.ok == true and ($env | has("data"))
-      then $env.data
-      else $env
+       end) as $sc
+    | (($r.content // [])[0].text // "") as $ct
+    | ($ct | fromjson? // null) as $ctj
+    | if $ct != "" and $ctj != $sc then
+        $ct
+      elif ($sc | type) == "object" and $sc.ok == true and ($sc | has("data")) then
+        $sc.data
+      else
+        $sc
       end
   '
 }
@@ -302,8 +321,10 @@ invoke() {
   printable="$(echo "$call_resp" | emit_tool_result)"
   check_auth_error "$printable"
   echo "$printable"
-  # Exit non-zero if tool returned ok:false
-  if echo "$printable" | jq -e '.ok == false' >/dev/null 2>&1; then
+  # Exit non-zero if tool returned ok:false. Guard with type == "object" so
+  # plain-text results (from tools that set a custom contentText) do not
+  # trigger jq errors or false positives.
+  if echo "$printable" | jq -e 'type == "object" and .ok == false' >/dev/null 2>&1; then
     return 1
   fi
 }
@@ -925,11 +946,7 @@ billing)
   case "$sub" in
     balance)
       [[ ${#btail[@]} -eq 0 ]] || die "billing balance takes no arguments"
-      # Print the balance as a single plain-text line (per documented output).
-      # emit_tool_result already unwraps the envelope on success, so the
-      # response here is just {"balance_summary": "..."} — pull out the string.
-      _bal="$(invoke cookiy_balance_get '{}')" || { echo "$_bal"; exit 1; }
-      echo "$_bal" | jq -r 'if type == "object" and has("balance_summary") then .balance_summary else . end'
+      invoke cookiy_balance_get '{}'
       ;;
     checkout)
       build_json "amount_usd_cents" "${btail[@]+"${btail[@]}"}"
