@@ -248,15 +248,46 @@ check_rpc_error() {
   return 0
 }
 
-# Read full JSON-RPC tools/call response on stdin; print structured result. Uses jq only.
+# Read full JSON-RPC tools/call response on stdin; print CLI-facing result.
+#
+# MCP tools return two parallel representations:
+#   - structuredContent:  the full envelope {ok, status_code, data, error, request_id}
+#   - content[0].text:    the human-readable text (defaults to JSON of envelope;
+#                         tools override via options.contentText for markdown
+#                         tables, narration, plain-text summaries, etc.)
+#
+# Rules:
+#   1. If content[0].text is different from the JSON form of structuredContent,
+#      the tool has provided a human-readable display — emit it raw (no JSON).
+#   2. Otherwise (content.text is just the JSON form), fall through to the
+#      envelope unwrap:
+#        - success (ok == true): emit just .data (drop ok/status_code/error/
+#          request_id protocol wrappers).
+#        - failure: emit the full envelope so error/status_code/request_id
+#          remain visible for debugging.
+#
+# Agent-only fields (next_recommended_tools, status_message, presentation_hint,
+# id_discovery_hint, etc.) are already stripped server-side by respond().
+#
+# -r flag: on string output prints raw text (no quotes); on object output
+# still prints JSON. Both cases work correctly.
 emit_tool_result() {
   local raw
   raw="$(cat)"
-  echo "$raw" | jq '
+  echo "$raw" | jq -r '
     .result as $r
-    | if ($r | type) == "object" and ($r | has("structuredContent"))
-      then $r.structuredContent
-      else $r
+    | (if ($r | type) == "object" and ($r | has("structuredContent"))
+       then $r.structuredContent
+       else $r
+       end) as $sc
+    | (($r.content // [])[0].text // "") as $ct
+    | ($ct | fromjson? // null) as $ctj
+    | if $ct != "" and $ctj != $sc then
+        $ct
+      elif ($sc | type) == "object" and $sc.ok == true and ($sc | has("data")) then
+        $sc.data
+      else
+        $sc
       end
   '
 }
@@ -290,8 +321,10 @@ invoke() {
   printable="$(echo "$call_resp" | emit_tool_result)"
   check_auth_error "$printable"
   echo "$printable"
-  # Exit non-zero if tool returned ok:false
-  if echo "$printable" | jq -e '.ok == false' >/dev/null 2>&1; then
+  # Exit non-zero if tool returned ok:false. Guard with type == "object" so
+  # plain-text results (from tools that set a custom contentText) do not
+  # trigger jq errors or false positives.
+  if echo "$printable" | jq -e 'type == "object" and .ok == false' >/dev/null 2>&1; then
     return 1
   fi
 }
@@ -851,9 +884,11 @@ quant)
       require_key survey_id "quant report requires --survey-id (numeric sid from quant list)"
       local _report_raw
       _report_raw="$(invoke cookiy_quant_survey_report "$BUILT_JSON")" || { echo "$_report_raw"; exit 1; }
-      # Extract PDF base64, decode to file, then strip from JSON output
+      # emit_tool_result unwraps .data on success, so the success payload is
+      # already the business object. On failure the full envelope is returned
+      # (still has .data), so check both shapes for statistics_pdf_base64.
       local _pdf_b64
-      _pdf_b64="$(echo "$_report_raw" | jq -r '.data.statistics_pdf_base64 // empty')"
+      _pdf_b64="$(echo "$_report_raw" | jq -r '(.statistics_pdf_base64 // .data.statistics_pdf_base64) // empty')"
       if [[ -n "$_pdf_b64" ]]; then
         local _sid
         _sid="$(echo "$BUILT_JSON" | jq -r '.survey_id')"
@@ -865,8 +900,12 @@ quant)
           rm -f "$_pdf_path"
         fi
       fi
-      # Print JSON without the base64 blob
-      echo "$_report_raw" | jq 'if .data then .data.statistics_pdf_base64 = null else . end'
+      # Print JSON without the base64 blob (handles both unwrapped and enveloped shapes)
+      echo "$_report_raw" | jq '
+        if has("statistics_pdf_base64") then .statistics_pdf_base64 = null
+        elif .data and (.data | has("statistics_pdf_base64")) then .data.statistics_pdf_base64 = null
+        else . end
+      '
       ;;
     admin-link)
       # survey_id is optional — when omitted, the URL lands on the LS admin
