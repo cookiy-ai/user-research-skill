@@ -84,7 +84,6 @@ Commands:
   study list|create|status|upload|..  Includes guide|interview|run-synthetic-user|report
   recruit start                       Qualitative or quant recruitment (auto-detects mode)
   quant list|create|get|update|status|report|admin-link  Quantitative survey management (keyed by survey-id)
-  intro                               Platform introduction (capabilities, highlights)
   billing balance|checkout|price-table|transactions
 
 Examples:
@@ -960,11 +959,6 @@ billing)
       ;;
     *) die "billing balance|checkout|price-table|transactions" ;;
   esac
-  ;;
-
-intro)
-  [[ ${#TAIL[@]} -eq 0 ]] || die "intro takes no arguments"
-  invoke cookiy_intro '{}'
   ;;
 
 *)
