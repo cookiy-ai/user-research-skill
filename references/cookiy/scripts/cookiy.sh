@@ -250,10 +250,9 @@ check_rpc_error() {
 # Read full JSON-RPC tools/call response on stdin; print CLI-facing result.
 #
 # Read path only (how we parse the JSON-RPC body — no network, no writes):
-#   1. Prefer .result.structuredContent.data when present.
-#   2. Else .result.data (legacy / respondReport / older servers).
-#   3. Success with null payload → print nothing.
-#   4. Failure → print structuredContent envelope, or {ok,status_code,error} from result.
+#   1. Success payload: .result.structuredContent.data only (no result.data fallback).
+#   2. Success with null/missing data → print nothing.
+#   3. Failure → full .result.structuredContent envelope when structuredContent.ok == false.
 #
 # content[0].text is ignored (agent/chat UIs only).
 emit_tool_result() {
@@ -262,16 +261,11 @@ emit_tool_result() {
   echo "$raw" | jq -r '
     .result as $r
     | ($r.structuredContent // null) as $sc
-    | (if $sc != null and ($sc | has("data")) then $sc.data
-       elif ($r | type) == "object" and ($r | has("data")) then $r.data
-       else null
-       end) as $payload
+    | (if $sc != null and ($sc | has("data")) then $sc.data else null end) as $payload
     | if $payload != null then
         $payload
       elif $sc != null and $sc.ok == false then
         $sc
-      elif ($r | type) == "object" and ($r | has("ok")) and $r.ok == false then
-        {ok: $r.ok, status_code: $r.status_code, error: $r.error}
       else
         null
       end
