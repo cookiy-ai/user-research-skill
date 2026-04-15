@@ -586,13 +586,12 @@ quant status — survey completion progress (lightweight)
     Output:  completed_responses, incomplete_responses, full_responses, token_* counts.
     Note:    Wraps a single get_summary RPC. For per-question detail use quant report.
 
-quant report — survey report (structured JSON + Excel)
+quant report — survey report (structured JSON)
     Usage:   cookiy.sh quant report --survey-id <n>
     Flags:   --survey-id (required, numeric)
     Output:  JSON on stdout — aggregates (distributions/labels/percentages/numeric stats/
-             completion funnel) + raw data (results_json, raw_participants, raw_timings_csv_base64).
+             completion funnel) + raw data (results_json, raw_participants).
              Raw data is auto-included; max_chars cap of 120K chars prevents context explosion.
-             Excel file saved to ./report-{survey_id}.xls (LS native statistics export).
 
 quant admin-link — auto-login URL into the LimeSurvey admin UI for the calling user
     Usage:   cookiy.sh quant admin-link [--survey-id <n>]
@@ -882,26 +881,7 @@ quant)
     report)
       build_json "survey_id" "${qtail[@]+"${qtail[@]}"}"
       require_key survey_id "quant report requires --survey-id (numeric sid from quant list)"
-      _report_raw="$(invoke cookiy_quant_survey_report "$BUILT_JSON")" || { echo "$_report_raw"; exit 1; }
-      # emit_tool_result unwraps .data on success; on failure the full envelope
-      # is returned. Check both shapes for statistics_xlsx_base64.
-      _xls_b64="$(echo "$_report_raw" | jq -r '(.statistics_xlsx_base64 // .data.statistics_xlsx_base64) // empty')"
-      if [[ -n "$_xls_b64" ]]; then
-        _sid="$(echo "$BUILT_JSON" | jq -r '.survey_id')"
-        _xls_path="report-${_sid}.xls"
-        echo "$_xls_b64" | base64 -d > "$_xls_path" 2>/dev/null
-        if [[ -s "$_xls_path" ]]; then
-          echo "Excel report saved: $(pwd)/${_xls_path}" >&2
-        else
-          rm -f "$_xls_path"
-        fi
-      fi
-      # Print JSON without the base64 blob (handles both unwrapped and enveloped shapes)
-      echo "$_report_raw" | jq '
-        if has("statistics_xlsx_base64") then .statistics_xlsx_base64 = null
-        elif .data and (.data | has("statistics_xlsx_base64")) then .data.statistics_xlsx_base64 = null
-        else . end
-      '
+      invoke cookiy_quant_survey_report "$BUILT_JSON"
       ;;
     admin-link)
       # survey_id is optional — when omitted, the URL lands on the LS admin
