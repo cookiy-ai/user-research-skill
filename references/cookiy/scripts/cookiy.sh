@@ -5,7 +5,7 @@
 set -euo pipefail
 
 VERSION="1.21.0"
-DEFAULT_SERVER_URL="https://s-api.cookiy.ai"
+DEFAULT_SERVER_URL="https://dev3-api.cookiy.ai"
 DEFAULT_TOKEN_PATH="${COOKIY_CREDENTIALS:-$HOME/.cookiy/token.txt}"
 # Long-running API call timeout (seconds); override with COOKIY_API_RPC_TIMEOUT or legacy COOKIY_MCP_RPC_TIMEOUT.
 API_CALL_TIMEOUT="${COOKIY_API_RPC_TIMEOUT:-${COOKIY_MCP_RPC_TIMEOUT:-600}}"
@@ -597,10 +597,11 @@ quant update — patch survey
 quant status — combined survey + panel recruitment status
     Usage:   cookiy.sh quant status --survey-id <n>
     Flags:   --survey-id <integer>   Numeric LimeSurvey sid from `quant list`
-    Output:  Two JSON envelopes emitted sequentially (mirrors qual `study status`):
-             (1) cookiy_quant_survey_status — LS completion counts (completed/incomplete/full/tokens)
-             (2) cookiy_quant_recruit_status — panel recruit progress (target_participants,
-                 current_participants, progress_text "N/M completed", recruit_project_id, status).
+    Output:  Single JSON envelope wrapping both sides:
+             { survey_id, survey: { completed_responses, incomplete_responses, full_responses },
+               recruit: { total_bought, total_completed } }.
+             When no recruit project exists yet (recruit not started), the recruit block
+             reports zeros instead of erroring.
 
 quant report — survey report (structured JSON)
     Usage:   cookiy.sh quant report --survey-id <n>
@@ -896,10 +897,7 @@ quant)
     status)
       build_json "survey_id" "${qtail[@]+"${qtail[@]}"}"
       require_key survey_id "quant status requires --survey-id (numeric sid from quant list)"
-      _s1=0; _s2=0
-      invoke cookiy_quant_survey_status "$BUILT_JSON" || _s1=$?
-      invoke cookiy_quant_recruit_status "$BUILT_JSON" || _s2=$?
-      [[ $_s1 -eq 0 && $_s2 -eq 0 ]] || exit 1
+      invoke cookiy_quant_status "$BUILT_JSON"
       ;;
     report)
       build_json "survey_id" "${qtail[@]+"${qtail[@]}"}"
