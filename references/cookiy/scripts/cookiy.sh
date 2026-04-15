@@ -908,6 +908,10 @@ recruit)
   case "$sub" in
     start)
       build_json "study_id confirmation_token plain_text incremental_participants survey_public_url" "${rtail[@]+"${rtail[@]}"}"
+      # --plain-text required on preview (step 1); step 2 only needs --confirmation-token
+      if ! echo "$BUILT_JSON" | grep -q '"confirmation_token"'; then
+        echo "$BUILT_JSON" | grep -q '"plain_text"' || die "recruit start: --plain-text is required"
+      fi
       # Auto-detect quant mode when --survey-public-url is provided
       if echo "$BUILT_JSON" | grep -q '"survey_public_url"'; then
         json_set recruit_mode '"quant_survey"'

@@ -42,9 +42,17 @@ Update basic survey fields (e.g. title, format). Groups/questions cannot be modi
 scripts/cookiy.sh quant update --survey-id <n> --json '<obj>'
 ```
 
+### quant status
+
+Show overall survey status including recruitment progress.
+
+```
+scripts/cookiy.sh quant status --survey-id <n>
+```
+
 ### quant report
 
-Get survey report.
+Fetch per-question response statistics. Returns JSON with a `question_summaries` field — present it visually or as text per the user's request.
 
 ```
 scripts/cookiy.sh quant report --survey-id <n>
