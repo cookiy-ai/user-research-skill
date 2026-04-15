@@ -249,44 +249,31 @@ check_rpc_error() {
 
 # Read full JSON-RPC tools/call response on stdin; print CLI-facing result.
 #
-# MCP tools return two parallel representations:
-#   - structuredContent:  the full envelope {ok, status_code, data, error, request_id}
-#   - content[0].text:    the human-readable text (defaults to JSON of envelope;
-#                         tools override via options.contentText for markdown
-#                         tables, narration, plain-text summaries, etc.)
+# Read path only (how we parse the JSON-RPC body — no network, no writes):
+#   1. Prefer .result.structuredContent.data when present.
+#   2. Else .result.data (legacy / respondReport / older servers).
+#   3. Success with null payload → print nothing.
+#   4. Failure → print structuredContent envelope, or {ok,status_code,error} from result.
 #
-# Rules:
-#   1. If content[0].text is different from the JSON form of structuredContent,
-#      the tool has provided a human-readable display — emit it raw (no JSON).
-#   2. Otherwise (content.text is just the JSON form), fall through to the
-#      envelope unwrap:
-#        - success (ok == true): emit just .data (drop ok/status_code/error/
-#          request_id protocol wrappers).
-#        - failure: emit the full envelope so error/status_code/request_id
-#          remain visible for debugging.
-#
-# Agent-only fields (next_recommended_tools, status_message, presentation_hint,
-# id_discovery_hint, etc.) are already stripped server-side by respond().
-#
-# -r flag: on string output prints raw text (no quotes); on object output
-# still prints JSON. Both cases work correctly.
+# content[0].text is ignored (agent/chat UIs only).
 emit_tool_result() {
   local raw
   raw="$(cat)"
   echo "$raw" | jq -r '
     .result as $r
-    | (if ($r | type) == "object" and ($r | has("structuredContent"))
-       then $r.structuredContent
-       else $r
-       end) as $sc
-    | (($r.content // [])[0].text // "") as $ct
-    | ($ct | fromjson? // null) as $ctj
-    | if $ct != "" and $ctj != $sc then
-        $ct
-      elif ($sc | type) == "object" and $sc.ok == true and ($sc | has("data")) then
-        $sc.data
-      else
+    | ($r.structuredContent // null) as $sc
+    | (if $sc != null and ($sc | has("data")) then $sc.data
+       elif ($r | type) == "object" and ($r | has("data")) then $r.data
+       else null
+       end) as $payload
+    | if $payload != null then
+        $payload
+      elif $sc != null and $sc.ok == false then
         $sc
+      elif ($r | type) == "object" and ($r | has("ok")) and $r.ok == false then
+        {ok: $r.ok, status_code: $r.status_code, error: $r.error}
+      else
+        null
       end
   '
 }
