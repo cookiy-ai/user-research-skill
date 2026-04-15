@@ -267,7 +267,7 @@ emit_tool_result() {
       elif $sc != null and $sc.ok == false then
         $sc
       else
-        null
+        empty
       end
   '
 }
