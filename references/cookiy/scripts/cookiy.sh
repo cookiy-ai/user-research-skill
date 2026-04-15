@@ -249,44 +249,25 @@ check_rpc_error() {
 
 # Read full JSON-RPC tools/call response on stdin; print CLI-facing result.
 #
-# MCP tools return two parallel representations:
-#   - structuredContent:  the full envelope {ok, status_code, data, error, request_id}
-#   - content[0].text:    the human-readable text (defaults to JSON of envelope;
-#                         tools override via options.contentText for markdown
-#                         tables, narration, plain-text summaries, etc.)
+# Read path only (how we parse the JSON-RPC body — no network, no writes):
+#   1. Success payload: .result.structuredContent.data only (no result.data fallback).
+#   2. Success with null/missing data → print nothing.
+#   3. Failure → full .result.structuredContent envelope when structuredContent.ok == false.
 #
-# Rules:
-#   1. If content[0].text is different from the JSON form of structuredContent,
-#      the tool has provided a human-readable display — emit it raw (no JSON).
-#   2. Otherwise (content.text is just the JSON form), fall through to the
-#      envelope unwrap:
-#        - success (ok == true): emit just .data (drop ok/status_code/error/
-#          request_id protocol wrappers).
-#        - failure: emit the full envelope so error/status_code/request_id
-#          remain visible for debugging.
-#
-# Agent-only fields (next_recommended_tools, status_message, presentation_hint,
-# id_discovery_hint, etc.) are already stripped server-side by respond().
-#
-# -r flag: on string output prints raw text (no quotes); on object output
-# still prints JSON. Both cases work correctly.
+# content[0].text is ignored (agent/chat UIs only).
 emit_tool_result() {
   local raw
   raw="$(cat)"
   echo "$raw" | jq -r '
     .result as $r
-    | (if ($r | type) == "object" and ($r | has("structuredContent"))
-       then $r.structuredContent
-       else $r
-       end) as $sc
-    | (($r.content // [])[0].text // "") as $ct
-    | ($ct | fromjson? // null) as $ctj
-    | if $ct != "" and $ctj != $sc then
-        $ct
-      elif ($sc | type) == "object" and $sc.ok == true and ($sc | has("data")) then
-        $sc.data
-      else
+    | ($r.structuredContent // null) as $sc
+    | (if $sc != null and ($sc | has("data")) then $sc.data else null end) as $payload
+    | if $payload != null then
+        $payload
+      elif $sc != null and $sc.ok == false then
         $sc
+      else
+        null
       end
   '
 }
@@ -596,7 +577,7 @@ quant update — patch survey
 
 quant status — combined survey + panel recruitment status
     Usage:   cookiy.sh quant status --survey-id <n>
-    Flags:   --survey-id <integer>   Numeric LimeSurvey sid from `quant list`
+    Flags:   --survey-id <integer>   Numeric LimeSurvey sid from quant list
     Output:  Single JSON envelope wrapping both sides:
              { survey_id, survey: { completed_responses, incomplete_responses, full_responses },
                recruit: { total_bought, total_completed } }.
