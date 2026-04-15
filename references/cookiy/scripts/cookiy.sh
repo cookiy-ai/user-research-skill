@@ -577,7 +577,7 @@ quant update — patch survey
 
 quant status — combined survey + panel recruitment status
     Usage:   cookiy.sh quant status --survey-id <n>
-    Flags:   --survey-id <integer>   Numeric LimeSurvey sid from `quant list`
+    Flags:   --survey-id <integer>   Numeric LimeSurvey sid from quant list
     Output:  Single JSON envelope wrapping both sides:
              { survey_id, survey: { completed_responses, incomplete_responses, full_responses },
                recruit: { total_bought, total_completed } }.
