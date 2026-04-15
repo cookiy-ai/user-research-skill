@@ -73,6 +73,12 @@ scripts/cookiy.sh study status --study-id <uuid>
 
 ---
 
+## Waiting on Async Operations
+
+Guide, report generation expose a `wait` subcommand (see the relevant sub-reference) to block until complete. Use it only when the user explicitly asks to wait. For all other progress checks, use `study status`.
+
+---
+
 ## Sub-References
 
 Only read these when you need to perform the specific operation:
