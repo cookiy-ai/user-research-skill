@@ -402,6 +402,16 @@ build_json() {
           else json+="\"$key\":\"$(json_escape "$val")\""; fi ;;
         include_structure|include_raw|skip_synthetic_interview)
           json+="\"$key\":$(bool_json "$val")" ;;
+        attachments)
+          # JSON array passthrough — validated via jq when available.
+          if command -v jq >/dev/null 2>&1; then
+            echo "$val" | jq -e 'type == "array"' >/dev/null 2>&1 \
+              || die "--attachments requires a JSON array, got: $val"
+          else
+            [[ "${val:0:1}" == "[" && "${val: -1}" == "]" ]] \
+              || die "--attachments requires a JSON array, got: $val"
+          fi
+          json+="\"$key\":$val" ;;
         *)
           json+="\"$key\":\"$(json_escape "$val")\"" ;;
       esac
@@ -508,9 +518,12 @@ study list — list studies
     Flags:   --limit <integer>   --cursor <string>
 
 study create — create study from natural language
-    Usage:   cookiy.sh study create --query <s> [--thinking <s>] [--attachments <s>] [--wait] [--timeout-ms <n>]
+    Usage:   cookiy.sh study create --query <s> [--thinking <s>] [--attachments <json-array>] [--wait] [--timeout-ms <n>]
     Flags:   --query <string> (required)
-             --thinking <string>   --attachments <string>   --wait (server-side wait_for_guide)   --timeout-ms (optional)
+             --thinking <string>
+             --attachments <json-array>   JSON array, e.g. '[{"s3_key":"...","description":"..."}]'.
+             --wait (server-side wait_for_guide — off by default; agents should poll study status instead)
+             --timeout-ms <n> (only honored when --wait is set)
 
 study status — study record and activity
     Usage:   cookiy.sh study status --study-id <uuid>
@@ -543,7 +556,8 @@ study run-synthetic-user start — run synthetic user interviews
     Flags:   --study-id (required)
              --persona-count <integer>  Number of synthetic interviews to run
              --plain-text <string>  Participant persona / profile description (maps to API interviewee_persona)
-             --wait (server-side wait)   --timeout-ms (optional)
+             --wait (server-side wait — off by default; agents should poll status instead)
+             --timeout-ms <n> (only honored when --wait is set)
 
 recruit start — launch participant recruitment
     Usage:   cookiy.sh recruit start [--study-id <uuid>] [--survey-public-url <url>] [--confirmation-token <s>] [--plain-text <s>] [--incremental-participants <n>]
@@ -707,9 +721,11 @@ study)
     create)
       build_json "query thinking attachments timeout_ms" "${stail[@]+"${stail[@]}"}"
       require_key query "study create requires --query"
-      # --wait or --timeout-ms implies server-side wait
-      if [[ "$ARG_WAIT" == "true" ]] || echo "$BUILT_JSON" | grep -q '"timeout_ms"'; then
+      # Only explicit --wait enables server-side wait. --timeout-ms alone is inert.
+      if [[ "$ARG_WAIT" == "true" ]]; then
         json_set wait_for_guide true
+      else
+        json_del timeout_ms
       fi
       invoke cookiy_study_create "$BUILT_JSON"
       ;;
@@ -786,8 +802,10 @@ study)
             json_del plain_text
             json_set interviewee_persona "\"$(json_escape "$pt_val")\""
           fi
-          if [[ "$ARG_WAIT" == "true" ]] || echo "$BUILT_JSON" | grep -q '"timeout_ms"'; then
+          if [[ "$ARG_WAIT" == "true" ]]; then
             json_set wait true
+          else
+            json_del timeout_ms
           fi
           invoke cookiy_simulated_interview_generate "$BUILT_JSON"
           ;;
@@ -814,8 +832,8 @@ study)
         content)
           build_json "study_id timeout_ms" "${rrest[@]+"${rrest[@]}"}"
           require_key study_id "study report content requires --study-id"
-          # --wait or --timeout-ms: poll status first, then fetch content
-          if [[ "$ARG_WAIT" == "true" ]] || echo "$BUILT_JSON" | grep -q '"timeout_ms"'; then
+          # Only explicit --wait polls status first. --timeout-ms alone is inert.
+          if [[ "$ARG_WAIT" == "true" ]]; then
             json_set wait true
             _rrc=0
             invoke cookiy_report_status "$BUILT_JSON" > /dev/null || _rrc=$?
