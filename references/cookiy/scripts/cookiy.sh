@@ -575,12 +575,14 @@ quant update — patch survey
     Flags:   --survey-id (required, numeric)
              --json (required): JSON with survey, groups, questions, quotas_create, quotas_update, etc.
 
-quant status — LimeSurvey completion snapshot for a survey
+quant status — combined survey + panel recruitment status
     Usage:   cookiy.sh quant status --survey-id <n>
-    Flags:   --survey-id <integer>   Numeric LimeSurvey sid from quant list
-    Output:  JSON from cookiy_quant_survey_status (completed / incomplete / full response counts).
-             Panel-side quant recruit progress is not exposed as a separate MCP tool on all
-             servers; use cookiy_recruit_status with study_id when the study is linked.
+    Flags:   --survey-id <integer>   Numeric LimeSurvey sid from `quant list`
+    Output:  Single JSON envelope wrapping both sides:
+             { survey_id, survey: { completed_responses, incomplete_responses, full_responses },
+               recruit: { total_bought, total_completed } }.
+             When no recruit project exists yet (recruit not started), the recruit block
+             reports zeros instead of erroring.
 
 quant report — survey report (structured JSON)
     Usage:   cookiy.sh quant report --survey-id <n>
