@@ -58,6 +58,14 @@ Fetch per-question response statistics. Returns JSON with a `question_summaries`
 scripts/cookiy.sh quant report --survey-id <n>
 ```
 
+### quant raw-response
+
+Raw survey responses as CSV. Excludes incomplete by default. Output can be large — better redirect to a file.
+
+```
+scripts/cookiy.sh quant raw-response --survey-id <n> [--include-incomplete]
+```
+
 ---
 
 For the JSON schema used in `create` and `update`, refer to [`cookiy-quant-schema.md`](cookiy-quant-schema.md).
