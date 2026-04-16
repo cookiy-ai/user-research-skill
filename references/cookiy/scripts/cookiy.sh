@@ -83,7 +83,7 @@ Commands:
   help                        Offline CLI reference
   study list|create|status|upload|..  Includes guide|interview|run-synthetic-user|report
   recruit start                       Qualitative or quant recruitment (auto-detects mode)
-  quant list|create|get|update|status|report|admin-link  Quantitative survey management (keyed by survey-id)
+  quant list|create|get|update|status|report  Quantitative survey management (keyed by survey-id)
   billing balance|checkout|price-table|transactions
 
 Examples:
@@ -591,21 +591,6 @@ quant report — survey report (structured JSON)
              completion funnel) + raw data (results_json, raw_participants).
              Raw data is auto-included; max_chars cap of 120K chars prevents context explosion.
 
-quant admin-link — auto-login URL into the LimeSurvey admin UI for the calling user
-    Usage:   cookiy.sh quant admin-link [--survey-id <n>]
-    Flags:   --survey-id (optional, numeric): when provided, the URL deep-links to that
-                                              survey's edit page; when omitted, lands on
-                                              the admin home filtered to surveys you own.
-    Output:  JSON with admin_login_url (one-time, 60-second TTL), ls_uid, ls_username.
-             Open admin_login_url in a browser to land directly inside LimeSurvey as your
-             own per-user account — the URL is signed by Cookiy and verified by the
-             CookiyBridge LimeSurvey plugin, no manual login needed.
-    Note:    "admin" here refers to LimeSurvey's URL prefix /index.php/admin/ for its
-             back-office UI, not a privilege level. Each Cookiy user lands as their
-             own per-user LimeSurvey account, scoped to surveys they own. If the bridge
-             is not configured on the server, the response sets configured=false and the
-             affordance should be hidden by the calling client.
-
 billing balance
     Usage:   cookiy.sh billing balance
     Output:  one plain-text line (balance_summary from API).
@@ -885,15 +870,8 @@ quant)
       require_key survey_id "quant report requires --survey-id (numeric sid from quant list)"
       invoke cookiy_quant_survey_report "$BUILT_JSON"
       ;;
-    admin-link)
-      # survey_id is optional — when omitted, the URL lands on the LS admin
-      # home (filtered to surveys the calling user owns). When provided, it
-      # deep-links to that survey's edit page.
-      build_json "survey_id" "${qtail[@]+"${qtail[@]}"}"
-      invoke cookiy_quant_survey_admin_link "$BUILT_JSON"
-      ;;
     *)
-      die "quant list|create|get|update|status|report|admin-link"
+      die "quant list|create|get|update|status|report"
       ;;
   esac
   ;;
