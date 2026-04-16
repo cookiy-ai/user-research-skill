@@ -7,7 +7,7 @@
   "plugins": [
     {
       "name": "user-research",
-      "source": "./"
+      "source": "./plugins/user-research"
     }
   ]
 }
