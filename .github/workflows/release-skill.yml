@@ -14,14 +14,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build skill.zip
-        run: zip -r skill.zip SKILL.md references
+      - name: Build user-research-cookiy-skill.zip
+        run: zip -r user-research-cookiy-skill.zip SKILL.md references
 
       - name: Publish to "latest" release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest
           name: Latest skill build
-          files: skill.zip
+          files: user-research-cookiy-skill.zip
           prerelease: false
           make_latest: "true"
