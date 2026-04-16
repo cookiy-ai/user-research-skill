@@ -94,6 +94,7 @@ Examples:
   cookiy.sh study report generate --study-id 123 --skip-synthetic-interview --wait
   cookiy.sh study report wait --study-id 123 --timeout-ms 300000
   cookiy.sh billing transactions --limit 50
+  cookiy.sh billing transactions --format json
 EOF
 }
 
@@ -272,6 +273,31 @@ emit_tool_result() {
   '
 }
 
+# stdin: JSON array of GET /v1/billing/transactions items. stdout: TSV data rows (no header).
+format_billing_transactions_tsv_rows() {
+  jq -r '
+    def fmt_cents:
+      . as $c
+      | (if $c < 0 then -$c else $c end) as $abs
+      | (if $c < 0 then "-" else "+" end)
+      + "$"
+      + (($abs / 100) | floor | tostring)
+      + "."
+      + (($abs % 100) | if . < 10 then "0" + (tostring) else (tostring) end);
+    def row_kind:
+      if (.type == "checkout" or .type == "off_session" or .type == "trial") then "Credit"
+      elif .amount_cents < 0 then "Debit"
+      else "Refund" end;
+    def trunc_note: (.description // "") | if length > 72 then .[0:69] + "…" else . end;
+    def trunc_prod:
+      if (.product_id == null) or (.product_id == "") then "—"
+      else (.product_id | if length > 48 then .[0:45] + "…" else . end) end;
+    def study_name: (.study // null) | if . == null then "—" else (.project_name // "—") end;
+    def dt: (.created_at | if test("T") then split("T")[0] else . end);
+    sort_by(.created_at)[] | [dt, (.amount_cents | fmt_cents), row_kind, .type, study_name, trunc_prod, trunc_note] | @tsv
+  '
+}
+
 
 # invoke <tool_name> <arguments_json>
 # Performs the 3-step JSON-RPC handshake: initialize, notify, tools/call
@@ -332,6 +358,7 @@ wait_for_report_then_link() {
 
 ARG_WAIT=""
 ARG_JSON_RAW=""
+ARG_FORMAT=""
 ARG_POSITIONALS=""
 
 # CLI string → JSON true/false (API expects boolean, not "true" strings)
@@ -350,6 +377,7 @@ build_json() {
   local first=true
   ARG_WAIT=""
   ARG_JSON_RAW=""
+  ARG_FORMAT=""
   ARG_POSITIONALS=""
 
   while [[ $# -gt 0 ]]; do
@@ -364,6 +392,7 @@ build_json() {
       # Special flags: never forwarded as tool JSON fields
       if [[ "$key" == "wait" ]]; then ARG_WAIT="$val"; continue; fi
       if [[ "$key" == "json" ]]; then ARG_JSON_RAW="$val"; continue; fi
+      if [[ "$key" == "format" ]]; then ARG_FORMAT="$val"; continue; fi
       # Skip if not in allowed list
       case " $allowed " in
         *" $key "*) ;;
@@ -596,7 +625,8 @@ billing balance
     Output:  one plain-text line (balance_summary from API).
 
 billing transactions — wallet ledger
-    Usage:   cookiy.sh billing transactions [--limit <n>] [--cursor <iso8601>] [--study-id <uuid>] [--survey-id <sid>]
+    Usage:   cookiy.sh billing transactions [--format json] [--limit <n>] [--cursor <iso8601>] [--study-id <uuid>] [--survey-id <sid>]
+    Output:  default: human-readable table (oldest-first in page); --format json: full JSON array.
     Note:    MCP tool cookiy_billing_transactions (same JSON-RPC session as balance/checkout).
 
 billing checkout
@@ -919,7 +949,26 @@ billing)
       ;;
     transactions)
       build_json "limit cursor study_id survey_id" "${btail[@]+"${btail[@]}"}"
-      invoke cookiy_billing_transactions "$BUILT_JSON"
+      tx_out="$(invoke cookiy_billing_transactions "$BUILT_JSON")" || exit $?
+      arr_json="$(echo "$tx_out" | jq -c 'if type == "array" then . elif (.data | type) == "array" then .data else empty end')"
+      if [[ -z "$arr_json" || "$arr_json" == "null" ]]; then
+        printf '%s\n' "$tx_out"
+        exit 0
+      fi
+      case "${ARG_FORMAT:-}" in
+        ""|table)
+          {
+            printf '%s\n' "Date	Money	Kind	Type	Study	Product	Note"
+            echo "$arr_json" | format_billing_transactions_tsv_rows
+          } | column -t -s $'\t'
+          ;;
+        json)
+          echo "$arr_json" | jq .
+          ;;
+        *)
+          die "billing transactions: use --format json or omit for table"
+          ;;
+      esac
       ;;
     *) die "billing balance|checkout|price-table|transactions" ;;
   esac
