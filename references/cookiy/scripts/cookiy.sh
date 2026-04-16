@@ -5,7 +5,7 @@
 set -euo pipefail
 
 VERSION="1.21.0"
-DEFAULT_SERVER_URL="https://s-api.cookiy.ai"
+DEFAULT_SERVER_URL="https://dev3-api.cookiy.ai"
 DEFAULT_TOKEN_PATH="${COOKIY_CREDENTIALS:-$HOME/.cookiy/token.txt}"
 # Long-running API call timeout (seconds); override with COOKIY_API_RPC_TIMEOUT or legacy COOKIY_MCP_RPC_TIMEOUT.
 API_CALL_TIMEOUT="${COOKIY_API_RPC_TIMEOUT:-${COOKIY_MCP_RPC_TIMEOUT:-600}}"
@@ -863,7 +863,7 @@ quant)
     status)
       build_json "survey_id" "${qtail[@]+"${qtail[@]}"}"
       require_key survey_id "quant status requires --survey-id (numeric sid from quant list)"
-      invoke cookiy_quant_survey_status "$BUILT_JSON"
+      invoke cookiy_quant_status "$BUILT_JSON"
       ;;
     report)
       build_json "survey_id" "${qtail[@]+"${qtail[@]}"}"
