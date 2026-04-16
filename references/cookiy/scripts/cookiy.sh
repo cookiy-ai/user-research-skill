@@ -863,7 +863,7 @@ quant)
     status)
       build_json "survey_id" "${qtail[@]+"${qtail[@]}"}"
       require_key survey_id "quant status requires --survey-id (numeric sid from quant list)"
-      invoke cookiy_quant_survey_status "$BUILT_JSON"
+      invoke cookiy_quant_status "$BUILT_JSON"
       ;;
     report)
       build_json "survey_id" "${qtail[@]+"${qtail[@]}"}"
