@@ -318,6 +318,27 @@ wait_for_report_then_link() {
   invoke cookiy_report_share_link_get "{\"study_id\":\"$(json_escape "$study_id")\"}"
 }
 
+# Poll study status until guide generation leaves "guide_generation_in_progress"
+# or the deadline passes; print the last observed sources.guide object.
+wait_for_guide() {
+  local study_id="$1"
+  local timeout_ms="${2:-120000}"
+  local deadline=$(( $(date +%s) + (timeout_ms + 999) / 1000 ))
+  local args="{\"study_id\":\"$(json_escape "$study_id")\"}"
+  local resp guide status timed_out=0
+  guide='{}'
+  while :; do
+    resp="$(invoke cookiy_activity_get "$args")" || return 1
+    guide="$(echo "$resp" | jq -c '.sources.guide // {}')"
+    status="$(echo "$resp" | jq -r '.sources.guide.status // ""')"
+    [[ "$status" != "guide_generation_in_progress" ]] && break
+    if [[ $(date +%s) -ge $deadline ]]; then timed_out=1; break; fi
+    sleep 15
+  done
+  echo "$guide"
+  [[ $timed_out -eq 0 ]]
+}
+
 # --- arg builder -----------------------------------------------------------
 # Parses --key value pairs from "$@" and builds a JSON object.
 # Only includes keys listed in the allowed-keys spec.
@@ -518,6 +539,13 @@ study guide update — apply patch to discussion guide
     Usage:   cookiy.sh study guide update --study-id <uuid> --base-revision <s> --idempotency-key <s> [--change-message <s>] --json '<patch>'
     Flags:   --study-id (required)   --base-revision (required)   --idempotency-key (required)   --json (required)
              --change-message
+
+study guide wait — poll study status until guide generation is no longer in progress
+    Usage:   cookiy.sh study guide wait --study-id <uuid> [--timeout-ms <n>]
+    Flags:   --study-id (required)   --timeout-ms <n> (default 120000)
+    Output:  The last observed sources.guide object from study status (JSON).
+    Behavior: Polls every 15s while sources.guide.status == "guide_generation_in_progress".
+             Exits 0 when the status transitions to any other value; exits 1 on timeout.
 
 study upload — attach media (image upload)
     Usage:   cookiy.sh study upload --content-type <s> (--image-data <s> | --image-url <s>)
@@ -725,7 +753,14 @@ study)
           BUILT_JSON="${BUILT_JSON%\}},\"patch\":$ARG_JSON_RAW}"
           invoke cookiy_guide_patch "$BUILT_JSON"
           ;;
-        *) die "Unknown: study guide ${gcmd:-}" ;;
+        wait)
+          build_json "study_id timeout_ms" "${gtail[@]+"${gtail[@]}"}"
+          require_key study_id "study guide wait requires --study-id"
+          study_id_value="$(built_get study_id)"
+          timeout_ms_value="$(built_get_num timeout_ms 120000)"
+          wait_for_guide "$study_id_value" "$timeout_ms_value"
+          ;;
+        *) die "Unknown: study guide ${gcmd:-} (get|update|wait)" ;;
       esac
       ;;
     interview)
