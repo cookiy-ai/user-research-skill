@@ -33,7 +33,7 @@ Use it for **general-purpose research** (design research plans, interview guides
 
 1. `Customize` > `Personal Plugins` > `+` > `Create Plugin` > `Add marketplace`, input `cookiy-ai/user-research-skill`, click `Sync`
 2. `Plugins` > `Personal` > `user-research-skill`, click `+` on `User research`
-3. (**Claude CoWork only**) Enable network access: `Profile` (bottom left) > `Settings` > `Capabilities` > `Code execution and file creation` > turn on `Allow network egress`, then set `Domain allowlist` to `All domains` — or add `s-api.cookiy.ai` under `Additional allowed domains`.
+3. (**Claude Cowork only**) Enable network access: `Profile` (bottom left) > `Settings` > `Capabilities` > `Code execution and file creation` > turn on `Allow network egress`, then set `Domain allowlist` to `All domains` — or add `s-api.cookiy.ai` under `Additional allowed domains`.
 
 ### Claude Chat Desktop
 
