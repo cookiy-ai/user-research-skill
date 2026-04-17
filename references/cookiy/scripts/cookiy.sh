@@ -83,7 +83,7 @@ Commands:
   help                        Offline CLI reference
   study list|create|status|upload|..  Includes guide|interview|run-synthetic-user|report
   recruit start                       Qualitative or quant recruitment (auto-detects mode)
-  quant list|create|get|update|status|report  Quantitative survey management (keyed by survey-id)
+  quant list|create|get|update|status|report|raw-response  Quantitative survey management (keyed by survey-id)
   billing balance|checkout|price-table|transactions
 
 Examples:
@@ -94,7 +94,6 @@ Examples:
   cookiy.sh study report generate --study-id 123 --skip-synthetic-interview --wait
   cookiy.sh study report wait --study-id 123 --timeout-ms 300000
   cookiy.sh billing transactions --limit 50
-  cookiy.sh billing transactions --format json
 EOF
 }
 
@@ -273,32 +272,6 @@ emit_tool_result() {
   '
 }
 
-# stdin: JSON array of GET /v1/billing/transactions items. stdout: TSV data rows (no header).
-format_billing_transactions_tsv_rows() {
-  jq -r '
-    def fmt_cents:
-      . as $c
-      | (if $c < 0 then -$c else $c end) as $abs
-      | (if $c < 0 then "-" else "+" end)
-      + "$"
-      + (($abs / 100) | floor | tostring)
-      + "."
-      + (($abs % 100) | if . < 10 then "0" + (tostring) else (tostring) end);
-    def row_kind:
-      if (.type == "checkout" or .type == "off_session" or .type == "trial") then "Credit"
-      elif .amount_cents < 0 then "Debit"
-      else "Refund" end;
-    def trunc_note: (.description // "") | if length > 72 then .[0:69] + "…" else . end;
-    def trunc_prod:
-      if (.product_id == null) or (.product_id == "") then "—"
-      else (.product_id | if length > 48 then .[0:45] + "…" else . end) end;
-    def study_name: (.study // null) | if . == null then "—" else (.project_name // "—") end;
-    def dt: (.created_at | if test("T") then split("T")[0] else . end);
-    sort_by(.created_at)[] | [dt, (.amount_cents | fmt_cents), row_kind, .type, study_name, trunc_prod, trunc_note] | @tsv
-  '
-}
-
-
 # invoke <tool_name> <arguments_json>
 # Performs the 3-step JSON-RPC handshake: initialize, notify, tools/call
 invoke() {
@@ -352,13 +325,12 @@ wait_for_report_then_link() {
 # Numeric keys: limit, amount_usd_cents, persona_count, incremental_participants,
 #   max_chars, top_values_per_question, sample_open_text_values
 # survey_id: digits only → JSON number (LimeSurvey sid); otherwise string
-# Boolean keys: include_structure, include_raw (interview list always sends include_simulation=true)
+# Boolean keys: include_raw, include_incomplete (interview list always sends include_simulation=true)
 # The rest are strings.
 # Sets global: BUILT_JSON, ARG_WAIT, ARG_JSON_RAW, ARG_POSITIONALS
 
 ARG_WAIT=""
 ARG_JSON_RAW=""
-ARG_FORMAT=""
 ARG_POSITIONALS=""
 
 # CLI string → JSON true/false (API expects boolean, not "true" strings)
@@ -377,7 +349,6 @@ build_json() {
   local first=true
   ARG_WAIT=""
   ARG_JSON_RAW=""
-  ARG_FORMAT=""
   ARG_POSITIONALS=""
 
   while [[ $# -gt 0 ]]; do
@@ -392,7 +363,6 @@ build_json() {
       # Special flags: never forwarded as tool JSON fields
       if [[ "$key" == "wait" ]]; then ARG_WAIT="$val"; continue; fi
       if [[ "$key" == "json" ]]; then ARG_JSON_RAW="$val"; continue; fi
-      if [[ "$key" == "format" ]]; then ARG_FORMAT="$val"; continue; fi
       # Skip if not in allowed list
       case " $allowed " in
         *" $key "*) ;;
@@ -410,7 +380,7 @@ build_json() {
         survey_id)
           if [[ "$val" =~ ^[0-9]+$ ]]; then json+="\"$key\":$val"
           else json+="\"$key\":\"$(json_escape "$val")\""; fi ;;
-        include_structure|include_raw|skip_synthetic_interview)
+        include_raw|skip_synthetic_interview|include_incomplete)
           json+="\"$key\":$(bool_json "$val")" ;;
         attachments)
           # JSON array passthrough — validated via jq when available.
@@ -538,7 +508,7 @@ study create — create study from natural language
 study status — study record and activity
     Usage:   cookiy.sh study status --study-id <uuid>
     Flags:   --study-id (required)
-    Calls both cookiy_study_get and cookiy_activity_get for the study.
+    Calls cookiy_activity_get which server-side merges the study record and activity summary.
 
 study guide get
     Usage:   cookiy.sh study guide get --study-id <uuid>
@@ -593,11 +563,9 @@ quant create — create survey (multi-language)
                 Respondents can switch language on the survey page.
     Schema:  See cookiy-quant-create-schema.md for full field reference.
 
-quant get — survey detail with structure
-    Usage:   cookiy.sh quant get --survey-id <n> [--include-structure <bool>]
+quant get — survey detail
+    Usage:   cookiy.sh quant get --survey-id <n>
     Flags:   --survey-id (required, numeric)
-             --include-structure <bool>            Load group/question structure (default: true)
-    Note:    structure_presentation defaults to json for CLI.
 
 quant update — patch survey
     Usage:   cookiy.sh quant update --survey-id <n> --json '<obj>'
@@ -620,13 +588,20 @@ quant report — survey report (structured JSON)
              completion funnel) + raw data (results_json, raw_participants).
              Raw data is auto-included; max_chars cap of 120K chars prevents context explosion.
 
+quant raw-response — raw survey responses as CSV
+    Usage:   cookiy.sh quant raw-response --survey-id <n> [--include-incomplete]
+    Flags:   --survey-id (required, numeric)
+             --include-incomplete (bool; default false — exclude incomplete responses)
+    Output:  Raw CSV text on stdout (no JSON envelope). Output can be large —
+             redirect to a file, e.g. \`cookiy.sh quant raw-response --survey-id 12345 > responses.csv\`.
+
 billing balance
     Usage:   cookiy.sh billing balance
     Output:  one plain-text line (balance_summary from API).
 
 billing transactions — wallet ledger
-    Usage:   cookiy.sh billing transactions [--format json] [--limit <n>] [--cursor <iso8601>] [--study-id <uuid>] [--survey-id <sid>]
-    Output:  default: human-readable table (oldest-first in page); --format json: full JSON array.
+    Usage:   cookiy.sh billing transactions [--limit <n>] [--cursor <iso8601>] [--study-id <uuid>] [--survey-id <sid>]
+    Output:  pretty-printed JSON array (agent-friendly; same fields as GET /v1/billing/transactions).
     Note:    MCP tool cookiy_billing_transactions (same JSON-RPC session as balance/checkout).
 
 billing checkout
@@ -638,7 +613,7 @@ billing price-table
     Output:  Current pricing table for all Cookiy operations (fetched from server).
 
 BOOLEAN FLAGS (values: true | false | 1 | 0 | yes | no | on | off)
-    --include-structure   --include-raw   --skip-synthetic-interview
+    --include-raw   --skip-synthetic-interview   --include-incomplete
 
 save-token — store raw access token from browser sign-in
     Usage:   cookiy.sh save-token <access_token>
@@ -710,10 +685,10 @@ study)
     status)
       build_json "study_id" "${stail[@]+"${stail[@]}"}"
       require_key study_id "study status requires --study-id"
-      _s1=0; _s2=0
-      invoke cookiy_study_get "$BUILT_JSON" || _s1=$?
-      invoke cookiy_activity_get "$BUILT_JSON" || _s2=$?
-      [[ $_s1 -eq 0 && $_s2 -eq 0 ]] || exit 1
+      # Server-side merge: cookiy_activity_get now spreads cookiy_study_get's
+      # normalised fields at the top of its data payload, so a single call
+      # covers both the study record and the activity summary.
+      invoke cookiy_activity_get "$BUILT_JSON"
       ;;
     create)
       build_json "query thinking attachments timeout_ms" "${stail[@]+"${stail[@]}"}"
@@ -792,13 +767,8 @@ study)
         start)
           build_json "study_id persona_count plain_text timeout_ms" "${srest[@]+"${srest[@]}"}"
           require_key study_id "study run-synthetic-user start requires --study-id"
-          # Map --plain-text to API interviewee_persona
-          if echo "$BUILT_JSON" | grep -q '"plain_text"'; then
-            local pt_val
-            pt_val="$(built_get plain_text)"
-            json_del plain_text
-            json_set interviewee_persona "\"$(json_escape "$pt_val")\""
-          fi
+          # Server accepts plain_text directly (FakeInterviewGenerateSchema);
+          # no client-side remap needed.
           if [[ "$ARG_WAIT" == "true" ]]; then
             json_set wait true
           else
@@ -875,12 +845,8 @@ quant)
       invoke cookiy_quant_survey_create "$BUILT_JSON"
       ;;
     get)
-      build_json "survey_id include_structure" "${qtail[@]+"${qtail[@]}"}"
+      build_json "survey_id" "${qtail[@]+"${qtail[@]}"}"
       require_key survey_id "quant get requires --survey-id (numeric sid from quant list)"
-      # Default structure_presentation to json for CLI
-      if ! echo "$BUILT_JSON" | grep -q '"structure_presentation"'; then
-        json_set structure_presentation '"json"'
-      fi
       invoke cookiy_quant_survey_detail "$BUILT_JSON"
       ;;
     update)
@@ -900,8 +866,16 @@ quant)
       require_key survey_id "quant report requires --survey-id (numeric sid from quant list)"
       invoke cookiy_quant_survey_report "$BUILT_JSON"
       ;;
+    raw-response|raw_response)
+      build_json "survey_id include_incomplete" "${qtail[@]+"${qtail[@]}"}"
+      require_key survey_id "quant raw-response requires --survey-id (numeric sid from quant list)"
+      # Dedicated raw-export tool: two parallel LS RPCs (export_responses CSV
+      # + list_participants), no aggregation. --include-incomplete maps 1:1.
+      rr_out="$(invoke cookiy_quant_survey_raw_responses "$BUILT_JSON")" || exit $?
+      echo "$rr_out" | jq -r '.raw_results.raw // empty'
+      ;;
     *)
-      die "quant list|create|get|update|status|report"
+      die "quant list|create|get|update|status|report|raw-response"
       ;;
   esac
   ;;
@@ -949,26 +923,7 @@ billing)
       ;;
     transactions)
       build_json "limit cursor study_id survey_id" "${btail[@]+"${btail[@]}"}"
-      tx_out="$(invoke cookiy_billing_transactions "$BUILT_JSON")" || exit $?
-      arr_json="$(echo "$tx_out" | jq -c 'if type == "array" then . elif (.data | type) == "array" then .data else empty end')"
-      if [[ -z "$arr_json" || "$arr_json" == "null" ]]; then
-        printf '%s\n' "$tx_out"
-        exit 0
-      fi
-      case "${ARG_FORMAT:-}" in
-        ""|table)
-          {
-            printf '%s\n' "Date	Money	Kind	Type	Study	Product	Note"
-            echo "$arr_json" | format_billing_transactions_tsv_rows
-          } | column -t -s $'\t'
-          ;;
-        json)
-          echo "$arr_json" | jq .
-          ;;
-        *)
-          die "billing transactions: use --format json or omit for table"
-          ;;
-      esac
+      invoke cookiy_billing_transactions "$BUILT_JSON"
       ;;
     *) die "billing balance|checkout|price-table|transactions" ;;
   esac
