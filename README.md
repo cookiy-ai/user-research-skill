@@ -31,15 +31,15 @@ Use it for **general-purpose research** (design research plans, interview guides
 
 ### Claude Cowork / Code Desktop:
 
-1. **Customize** > **Personal Plugins** > **+** > **Create Plugin** > **Add marketplace**, input `cookiy-ai/user-research-skill`, click **Sync**
-2. **Plugins** > **Personal** > **user-research-skill**, click **+** on **User research**
-3. (**Claude CoWork only**) Enable network access: **Profile** (bottom left) > **Settings** > **Capabilities** > **Code execution and file creation** > turn on **Allow network egress**, then set **Domain allowlist** to **All domains** — or add `s-api.cookiy.ai` under **Additional allowed domains**.
+1. `Customize` > `Personal Plugins` > `+` > `Create Plugin` > `Add marketplace`, input `cookiy-ai/user-research-skill`, click `Sync`
+2. `Plugins` > `Personal` > `user-research-skill`, click `+` on `User research`
+3. (**Claude CoWork only**) Enable network access: `Profile` (bottom left) > `Settings` > `Capabilities` > `Code execution and file creation` > turn on `Allow network egress`, then set `Domain allowlist` to `All domains` — or add `s-api.cookiy.ai` under `Additional allowed domains`.
 
 ### Claude Chat Desktop
 
 1. Download the [Skill ZIP file](https://github.com/cookiy-ai/user-research-skill/releases/download/latest/user-research-cookiy-skill.zip)
-2. In the app: **Customize** > **Skills** > **+** > **Create Skill** > **Upload a skill**
-3. Enable network access: **Profile** (bottom left) > **Settings** > **Capabilities** > **Code execution and file creation** > turn on **Allow network egress**, then set **Domain allowlist** to **All domains** — or add `s-api.cookiy.ai` under **Additional allowed domains**.
+2. In the app: `Customize` > `Skills` > `+` > `Create Skill` > `Upload a skill`
+3. Enable network access: `Profile` (bottom left) > `Settings` > `Capabilities` > `Code execution and file creation` > turn on `Allow network egress`, then set `Domain allowlist` to `All domains` — or add `s-api.cookiy.ai` under `Additional allowed domains`.
 
 ### Claude Code Terminal
 
@@ -49,7 +49,7 @@ Use it for **general-purpose research** (design research plans, interview guides
 /reload-plugins
 ```
 
-**Optional — enable auto-update:** `/plugin`, then choose **Marketplaces** tab > **cookiy-ai** > **Enable auto-update**
+**Optional — enable auto-update:** `/plugin`, then choose `Marketplaces` tab > `cookiy-ai` > `Enable auto-update`
 
 ### Codex / Cursor / OpenClaw / Other Agents
 
