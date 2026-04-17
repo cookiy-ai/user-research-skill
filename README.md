@@ -29,7 +29,7 @@ Use it for **general-purpose research** (design research plans, interview guides
 
 ## Install
 
-### Claude Cowork / Code Desktop:
+### Claude Cowork / Code Desktop
 
 1. `Customize` > `Personal Plugins` > `+` > `Create Plugin` > `Add marketplace`, input `cookiy-ai/user-research-skill`, click `Sync`
 2. `Plugins` > `Personal` > `user-research-skill`, click `+` on `User research`
