@@ -378,8 +378,7 @@ build_json() {
           [[ "$key" == "amount_usd_cents" ]] && json_key="amount_cents"
           json+="\"$json_key\":$val" ;;
         survey_id)
-          if [[ "$val" =~ ^[0-9]+$ ]]; then json+="\"$key\":$val"
-          else json+="\"$key\":\"$(json_escape "$val")\""; fi ;;
+          json+="\"$key\":\"$(json_escape "$val")\"" ;;
         include_raw|skip_synthetic_interview|include_incomplete)
           json+="\"$key\":$(bool_json "$val")" ;;
         attachments)
