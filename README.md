@@ -29,24 +29,42 @@ Use it for **general-purpose research** (design research plans, interview guides
 
 ## Install
 
-### Claude Plugin (Claude CoWork / Claude Code)
+### Claude Cowork / Code Desktop:
 
-1. Add a plugin marketplace using URL: `https://github.com/cookiy-ai/user-research-skill`
-2. Install the `user-research` plugin from the `cookiy-ai` marketplace.
+1. **Customize** > **Personal Plugins** > **+** > **Create Plugin** > **Add marketplace**, input `cookiy-ai/user-research-skill`, click **Sync**
+2. **Plugins** > **Personal** > **user-research-skill**, click **+** on **User research**
+3. (**Claude CoWork only**) Enable network access: **Profile** (bottom left) > **Settings** > **Capabilities** > **Code execution and file creation** > turn on **Allow network egress**, then set **Domain allowlist** to **All domains** — or add `s-api.cookiy.ai` under **Additional allowed domains**.
 
-### Claude Desktop (Chat / Cowork)
+### Claude Chat Desktop
 
-1. Download the [Skill ZIP file](https://github.com/cookiy-ai/user-research-skill/archive/refs/heads/main.zip)
+1. Download the [Skill ZIP file](https://github.com/cookiy-ai/user-research-skill/releases/download/latest/user-research-cookiy-skill.zip)
 2. In the app: **Customize** > **Skills** > **+** > **Create Skill** > **Upload a skill**
 3. Enable network access: **Profile** (bottom left) > **Settings** > **Capabilities** > **Code execution and file creation** > turn on **Allow network egress**, then set **Domain allowlist** to **All domains** — or add `s-api.cookiy.ai` under **Additional allowed domains**.
 
-### Claude Code / Codex / Cursor / OpenClaw / Other Agents
+### Claude Code Terminal
+
+```bash
+/plugin marketplace add cookiy-ai/user-research-skill
+/plugin install user-research@cookiy-ai
+/reload-plugins
+```
+
+**Optional — enable auto-update:** `/plugin`, then choose **Marketplaces** tab > **cookiy-ai** > **Enable auto-update**
+
+### Codex / Cursor / OpenClaw / Other Agents
 
 ```bash
 npx skills add cookiy-ai/user-research-skill -g -y
 ```
 
 Or follow your agent's skill installation instructions to install manually.
+
+---
+
+## Usage
+
+- Type `/user-research-cookiy` to explicitly invoke the skill.
+- Or just describe your research goal — your agent will load the skill automatically based on semantic matching.
 
 ---
 
