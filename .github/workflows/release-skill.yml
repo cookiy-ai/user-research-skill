@@ -21,7 +21,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest
-          name: Latest skill build
+          name: Download latest skill zip
           files: user-research-cookiy-skill.zip
           prerelease: false
           make_latest: "true"
