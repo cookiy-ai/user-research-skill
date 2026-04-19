@@ -90,8 +90,8 @@ Examples:
   cookiy.sh save-token eyJhbGciOi...
   cookiy.sh help commands
   cookiy.sh study list --limit 10
-  cookiy.sh study create --query "..."  --wait
-  cookiy.sh study report generate --study-id 123 --skip-synthetic-interview --wait
+  cookiy.sh study create --query "..."
+  cookiy.sh study report generate --study-id 123 --skip-synthetic-interview
   cookiy.sh study report wait --study-id 123 --timeout-ms 300000
   cookiy.sh billing transactions --limit 50
 EOF
@@ -308,16 +308,6 @@ invoke() {
   fi
 }
 
-# Wait for report completion server-side, then return the share link.
-wait_for_report_then_link() {
-  local study_id="$1"
-  local timeout_ms="${2:-300000}"
-  # Server-side wait via cookiy_report_status (blocks until done or timeout)
-  invoke cookiy_report_status "{\"study_id\":\"$(json_escape "$study_id")\",\"wait\":true,\"timeout_ms\":$timeout_ms}" > /dev/null || return 1
-  # Report ready — fetch share link
-  invoke cookiy_report_share_link_get "{\"study_id\":\"$(json_escape "$study_id")\"}"
-}
-
 # Poll study status until guide generation leaves "guide_generation_in_progress"
 # or the deadline passes; print the last observed sources.guide object.
 wait_for_guide() {
@@ -339,6 +329,25 @@ wait_for_guide() {
   [[ $timed_out -eq 0 ]]
 }
 
+# Poll study status until report generation leaves "report_generation_in_progress"
+# or the deadline passes, then print the report share link.
+# Returns 1 on timeout or invoke failure.
+wait_for_report_then_link() {
+  local study_id="$1"
+  local timeout_ms="${2:-300000}"
+  local deadline=$(( $(date +%s) + (timeout_ms + 999) / 1000 ))
+  local args="{\"study_id\":\"$(json_escape "$study_id")\"}"
+  local resp status
+  while :; do
+    resp="$(invoke cookiy_activity_get "$args")" || return 1
+    status="$(echo "$resp" | jq -r '.sources.report.status // ""')"
+    [[ "$status" != "report_generation_in_progress" ]] && break
+    if [[ $(date +%s) -ge $deadline ]]; then return 1; fi
+    sleep 15
+  done
+  invoke cookiy_report_share_link_get "$args"
+}
+
 # --- arg builder -----------------------------------------------------------
 # Parses --key value pairs from "$@" and builds a JSON object.
 # Only includes keys listed in the allowed-keys spec.
@@ -348,9 +357,8 @@ wait_for_guide() {
 # survey_id: digits only → JSON number (LimeSurvey sid); otherwise string
 # Boolean keys: include_raw, include_incomplete (interview list always sends include_simulation=true)
 # The rest are strings.
-# Sets global: BUILT_JSON, ARG_WAIT, ARG_JSON_RAW, ARG_POSITIONALS
+# Sets global: BUILT_JSON, ARG_JSON_RAW, ARG_POSITIONALS
 
-ARG_WAIT=""
 ARG_JSON_RAW=""
 ARG_POSITIONALS=""
 
@@ -368,7 +376,6 @@ build_json() {
   local -a pos=()
   local json="{"
   local first=true
-  ARG_WAIT=""
   ARG_JSON_RAW=""
   ARG_POSITIONALS=""
 
@@ -382,7 +389,6 @@ build_json() {
         local val="true"; shift
       fi
       # Special flags: never forwarded as tool JSON fields
-      if [[ "$key" == "wait" ]]; then ARG_WAIT="$val"; continue; fi
       if [[ "$key" == "json" ]]; then ARG_JSON_RAW="$val"; continue; fi
       # Skip if not in allowed list
       case " $allowed " in
@@ -490,7 +496,6 @@ DESCRIPTION
     Run in a terminal: bash cookiy.sh <command>
 
     Long options use kebab-case; they are sent as snake_case JSON fields (e.g. --study-id → study_id).
-    --wait passes server-side wait flags (no bash polling).
     --json merges extra JSON fields into the tool request, or provides the guide patch payload.
     Numeric sid for quant: --survey-id 12345 becomes JSON number when value is all digits.
 
@@ -518,12 +523,10 @@ study list — list studies
     Flags:   --limit <integer>   --cursor <string>
 
 study create — create study from natural language
-    Usage:   cookiy.sh study create --query <s> [--thinking <s>] [--attachments <json-array>] [--wait] [--timeout-ms <n>]
+    Usage:   cookiy.sh study create --query <s> [--thinking <s>] [--attachments <json-array>]
     Flags:   --query <string> (required)
              --thinking <string>
              --attachments <json-array>   JSON array, e.g. '[{"s3_key":"...","description":"..."}]'.
-             --wait (server-side wait_for_guide — off by default; agents should poll study status instead)
-             --timeout-ms <n> (only honored when --wait is set)
 
 study status — study record and activity
     Usage:   cookiy.sh study status --study-id <uuid>
@@ -559,12 +562,10 @@ study interview list | playback url|content
              Use --cursor to fetch subsequent pages.
 
 study run-synthetic-user start — run synthetic user interviews
-    Usage:   cookiy.sh study run-synthetic-user start --study-id <uuid> [--persona-count <n>] [--plain-text <s>] [--wait] [--timeout-ms <n>]
+    Usage:   cookiy.sh study run-synthetic-user start --study-id <uuid> [--persona-count <n>] [--plain-text <s>]
     Flags:   --study-id (required)
              --persona-count <integer>  Number of synthetic interviews to run
              --plain-text <string>  Participant persona / profile description (maps to API interviewee_persona)
-             --wait (server-side wait — off by default; agents should poll status instead)
-             --timeout-ms <n> (only honored when --wait is set)
 
 recruit start — launch participant recruitment
     Usage:   cookiy.sh recruit start [--study-id <uuid>] [--survey-public-url <url>] [--confirmation-token <s>] [--plain-text <s>] [--incremental-participants <n>]
@@ -573,11 +574,14 @@ recruit start — launch participant recruitment
     Output:  Full API envelope JSON (preview includes top-level sample_size, target_group, payment_quote, derived_languages).
     Note:    incremental_participants is auto-capped to remaining sample size capacity. If below current channel target, treated as incremental ("recruit N more").
 
-study report generate | content | link
-    Usage:   cookiy.sh study report generate --study-id <uuid> [--skip-synthetic-interview] [--wait]
-             cookiy.sh study report content --study-id <uuid> [--wait] [--timeout-ms <n>]
+study report generate | content | link | wait
+    Usage:   cookiy.sh study report generate --study-id <uuid> [--skip-synthetic-interview]
+             cookiy.sh study report content --study-id <uuid>
              cookiy.sh study report link --study-id <uuid>
-    generate with --wait polls report link every 10s until status=completed (or failed/timeout).
+             cookiy.sh study report wait --study-id <uuid> [--timeout-ms <n>]
+    wait polls study status every 15s while
+         sources.report.status == "report_generation_in_progress", then prints the
+         report share link. Exits 1 on timeout (default 300000ms).
 
 quant list — list surveys
     Usage:   cookiy.sh quant list
@@ -718,14 +722,8 @@ study)
       invoke cookiy_activity_get "$BUILT_JSON"
       ;;
     create)
-      build_json "query thinking attachments timeout_ms" "${stail[@]+"${stail[@]}"}"
+      build_json "query thinking attachments" "${stail[@]+"${stail[@]}"}"
       require_key query "study create requires --query"
-      # Only explicit --wait enables server-side wait. --timeout-ms alone is inert.
-      if [[ "$ARG_WAIT" == "true" ]]; then
-        json_set wait_for_guide true
-      else
-        json_del timeout_ms
-      fi
       invoke cookiy_study_create "$BUILT_JSON"
       ;;
     upload)
@@ -799,15 +797,10 @@ study)
       srest=("${stail[@]:1}")
       case "$ssub" in
         start)
-          build_json "study_id persona_count plain_text timeout_ms" "${srest[@]+"${srest[@]}"}"
+          build_json "study_id persona_count plain_text" "${srest[@]+"${srest[@]}"}"
           require_key study_id "study run-synthetic-user start requires --study-id"
           # Server accepts plain_text directly (FakeInterviewGenerateSchema);
           # no client-side remap needed.
-          if [[ "$ARG_WAIT" == "true" ]]; then
-            json_set wait true
-          else
-            json_del timeout_ms
-          fi
           invoke cookiy_simulated_interview_generate "$BUILT_JSON"
           ;;
         *) die "study run-synthetic-user start" ;;
@@ -820,27 +813,11 @@ study)
         generate)
           build_json "study_id skip_synthetic_interview" "${rrest[@]+"${rrest[@]}"}"
           require_key study_id "study report generate requires --study-id"
-          if [[ "$ARG_WAIT" == "true" ]]; then
-            _grc=0
-            invoke cookiy_report_generate "$BUILT_JSON" >&2 || _grc=$?
-            [[ $_grc -eq 0 ]] || exit 1
-            study_id_value="$(built_get study_id)"
-            wait_for_report_then_link "$study_id_value"
-          else
-            invoke cookiy_report_generate "$BUILT_JSON"
-          fi
+          invoke cookiy_report_generate "$BUILT_JSON"
           ;;
         content)
-          build_json "study_id timeout_ms" "${rrest[@]+"${rrest[@]}"}"
+          build_json "study_id" "${rrest[@]+"${rrest[@]}"}"
           require_key study_id "study report content requires --study-id"
-          # Only explicit --wait polls status first. --timeout-ms alone is inert.
-          if [[ "$ARG_WAIT" == "true" ]]; then
-            json_set wait true
-            _rrc=0
-            invoke cookiy_report_status "$BUILT_JSON" > /dev/null || _rrc=$?
-            [[ $_rrc -eq 0 ]] || exit 1
-          fi
-          json_del timeout_ms
           invoke cookiy_report_content_get "$BUILT_JSON"
           ;;
         link)
