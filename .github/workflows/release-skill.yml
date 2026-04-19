@@ -17,10 +17,16 @@ jobs:
       - name: Build user-research-cookiy-skill.zip
         run: zip -r user-research-cookiy-skill.zip SKILL.md references
 
+      - name: Move "latest" tag to current commit
+        run: |
+          git tag -f latest
+          git push origin latest --force
+
       - name: Publish to "latest" release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest
+          target_commitish: ${{ github.sha }}
           name: Download latest skill zip
           files: user-research-cookiy-skill.zip
           prerelease: false
