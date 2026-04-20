@@ -7,7 +7,7 @@
 Trigger report generation. Re-generates if a report already exists. Synthetic interviews are included by default; only pass `--skip-synthetic-interview` if the user explicitly asks to exclude them.
 
 ```
-npx cookiy-cli study report generate --study-id <uuid> [--skip-synthetic-interview]
+cookiy study report generate --study-id <uuid> [--skip-synthetic-interview]
 ```
 
 ### report wait
@@ -15,7 +15,7 @@ npx cookiy-cli study report generate --study-id <uuid> [--skip-synthetic-intervi
 Wait until the report has been generated.
 
 ```
-npx cookiy-cli study report wait --study-id <uuid>
+cookiy study report wait --study-id <uuid>
 ```
 
 ### report link
@@ -23,7 +23,7 @@ npx cookiy-cli study report wait --study-id <uuid>
 Get the public URL for the report.
 
 ```
-npx cookiy-cli study report link --study-id <uuid>
+cookiy study report link --study-id <uuid>
 ```
 
 ### report content
@@ -31,5 +31,5 @@ npx cookiy-cli study report link --study-id <uuid>
 Get the report as markdown.
 
 ```
-npx cookiy-cli study report content --study-id <uuid>
+cookiy study report content --study-id <uuid>
 ```

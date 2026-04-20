@@ -31,7 +31,7 @@ Review Guide  ──→  (optional) show/edit the guide
 Fetch existing studies.
 
 ```
-npx cookiy-cli study list [--limit <n>] [--cursor <s>]
+cookiy study list [--limit <n>] [--cursor <s>]
 ```
 
 ### study create
@@ -39,7 +39,7 @@ npx cookiy-cli study list [--limit <n>] [--cursor <s>]
 Create a new study. It automatically creates the discussion/interview guide (generated asynchronously).
 
 ```
-npx cookiy-cli study create --query <s> [--thinking <s>] [--attachments <s>]
+cookiy study create --query <s> [--thinking <s>] [--attachments <s>]
 ```
 
 | Flag | Required | Purpose |
@@ -54,7 +54,7 @@ Upload an image and get an s3 key back. The key can be used in `study create --a
 guide update payloads.
 
 ```
-npx cookiy-cli study upload --content-type <s> (--image-data <s> | --image-url <s>)
+cookiy study upload --content-type <s> (--image-data <s> | --image-url <s>)
 ```
 
 | Flag | Required | Purpose |
@@ -68,7 +68,7 @@ Check the current stage of a study (guide generation, recruitment, interviews, e
 whenever you need to know what's happening before taking the next step.
 
 ```
-npx cookiy-cli study status --study-id <uuid>
+cookiy study status --study-id <uuid>
 ```
 
 ---

@@ -15,7 +15,7 @@
 List surveys.
 
 ```
-npx cookiy-cli quant list
+cookiy quant list
 ```
 
 ### quant create
@@ -23,7 +23,7 @@ npx cookiy-cli quant list
 Create a survey.
 
 ```
-npx cookiy-cli quant create --json '<obj>'
+cookiy quant create --json '<obj>'
 ```
 
 ### quant get
@@ -31,7 +31,7 @@ npx cookiy-cli quant create --json '<obj>'
 Get survey detail.
 
 ```
-npx cookiy-cli quant get --survey-id <n>
+cookiy quant get --survey-id <n>
 ```
 
 ### quant update
@@ -39,7 +39,7 @@ npx cookiy-cli quant get --survey-id <n>
 Update basic survey fields (e.g. title, format). Groups/questions cannot be modified after creation. The JSON is a subset of the create schema — provided keys overwrite, missing keys unchanged.
 
 ```
-npx cookiy-cli quant update --survey-id <n> --json '<obj>'
+cookiy quant update --survey-id <n> --json '<obj>'
 ```
 
 ### quant status
@@ -47,7 +47,7 @@ npx cookiy-cli quant update --survey-id <n> --json '<obj>'
 Show overall survey status including recruitment progress.
 
 ```
-npx cookiy-cli quant status --survey-id <n>
+cookiy quant status --survey-id <n>
 ```
 
 ### quant report
@@ -55,7 +55,7 @@ npx cookiy-cli quant status --survey-id <n>
 Fetch per-question response statistics. Returns JSON with a `question_summaries` field — present it visually or as text per the user's request.
 
 ```
-npx cookiy-cli quant report --survey-id <n>
+cookiy quant report --survey-id <n>
 ```
 
 ### quant raw-response
@@ -63,7 +63,7 @@ npx cookiy-cli quant report --survey-id <n>
 Raw survey responses as CSV. Excludes incomplete by default. Output can be large — better redirect to a file.
 
 ```
-npx cookiy-cli quant raw-response --survey-id <n> [--include-incomplete]
+cookiy quant raw-response --survey-id <n> [--include-incomplete]
 ```
 
 ---
