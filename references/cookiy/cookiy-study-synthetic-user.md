@@ -11,7 +11,7 @@ Commands for launching synthetic user (not real participant) interviews for a st
 Run synthetic user interviews with AI personas.
 
 ```
-scripts/cookiy.sh study run-synthetic-user start --study-id <uuid> [--persona-count <n>] [--plain-text <s>]
+node scripts/cookiy.js study run-synthetic-user start --study-id <uuid> [--persona-count <n>] [--plain-text <s>]
 ```
 
 | Flag | Required | Purpose |

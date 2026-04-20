@@ -2,8 +2,8 @@
 
 Cookiy AI automates the full user research lifecycle — both qualitative (via AI-moderated
 interviews) and quantitative (via user surveys). All operations go through the
-[`scripts/cookiy.sh`](scripts/cookiy.sh) CLI (scripts folder is located under the same directory
-as this file). This is the only supported integration path — do not use alternative methods.
+[`scripts/cookiy.js`](scripts/cookiy.js) CLI (scripts folder is located under the same directory
+as this file). Requires Node.js 18+. This is the only supported integration path — do not use alternative methods.
 
 ---
 
@@ -37,5 +37,5 @@ or a response containing a login URL — handle it like this:
 **save-token** — Store an access token obtained from browser sign-in.
 
 ```
-scripts/cookiy.sh save-token <access_token>
+node scripts/cookiy.js save-token <access_token>
 ```
