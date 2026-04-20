@@ -23,7 +23,7 @@ Many operations cost money (recruit, synthetic interview, report generation, dis
 List wallet transaction history. Optionally filter by study or survey.
 
 ```
-scripts/cookiy.sh billing transactions [--limit <n>] [--cursor <iso8601>] [--study-id <uuid>] [--survey-id <sid>]
+npx cookiy-cli billing transactions [--limit <n>] [--cursor <iso8601>] [--study-id <uuid>] [--survey-id <sid>]
 ```
 
 ### billing price-table
@@ -31,7 +31,7 @@ scripts/cookiy.sh billing transactions [--limit <n>] [--cursor <iso8601>] [--stu
 Get current pricing for all operations.
 
 ```
-scripts/cookiy.sh billing price-table
+npx cookiy-cli billing price-table
 ```
 
 ### billing balance
@@ -39,7 +39,7 @@ scripts/cookiy.sh billing price-table
 Get current wallet balance.
 
 ```
-scripts/cookiy.sh billing balance
+npx cookiy-cli billing balance
 ```
 
 ### billing checkout
@@ -47,5 +47,5 @@ scripts/cookiy.sh billing balance
 Get a Stripe checkout URL to top up the wallet. Amount must be a whole dollar (no cents), minimum $10.
 
 ```
-scripts/cookiy.sh billing checkout --amount-usd-cents <n>
+npx cookiy-cli billing checkout --amount-usd-cents <n>
 ```

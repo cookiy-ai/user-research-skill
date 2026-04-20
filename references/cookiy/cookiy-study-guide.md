@@ -12,7 +12,7 @@ Get the full discussion/interview guide. Returns JSON — convert it to a human-
 before showing to the user.
 
 ```
-scripts/cookiy.sh study guide get --study-id <uuid>
+npx cookiy-cli study guide get --study-id <uuid>
 ```
 
 ### study guide wait
@@ -20,7 +20,7 @@ scripts/cookiy.sh study guide get --study-id <uuid>
 Wait until the discussion/interview guide has been generated for the study.
 
 ```
-scripts/cookiy.sh study guide wait --study-id <uuid>
+npx cookiy-cli study guide wait --study-id <uuid>
 ```
 
 ### study guide update
@@ -29,7 +29,7 @@ Partially update (patch) the discussion/interview guide. The patch is merged int
 by `study guide get`.
 
 ```
-scripts/cookiy.sh study guide update --study-id <uuid> --base-revision <s> --idempotency-key <s> [--change-message <s>] --json '<patch>'
+npx cookiy-cli study guide update --study-id <uuid> --base-revision <s> --idempotency-key <s> [--change-message <s>] --json '<patch>'
 ```
 
 | Flag | Required | Purpose |

@@ -2,8 +2,29 @@
 
 Cookiy AI automates the full user research lifecycle — both qualitative (via AI-moderated
 interviews) and quantitative (via user surveys). All operations go through the
-[`scripts/cookiy.sh`](scripts/cookiy.sh) CLI (scripts folder is located under the same directory
-as this file). This is the only supported integration path — do not use alternative methods.
+[`cookiy-cli`](https://www.npmjs.com/package/cookiy-cli) npm package. This is the only
+supported integration path — do not use alternative methods.
+
+---
+
+## Install / Upgrade
+
+The CLI is distributed via npm. Every agent session should ensure a current version is
+available before running any command.
+
+```bash
+# Preferred — zero install, always latest
+npx cookiy-cli <command>
+
+# Or install globally (invocations become just `cookiy <command>`)
+npm install -g cookiy-cli
+
+# Upgrade the globally installed copy
+npm update -g cookiy-cli
+```
+
+Requires Node.js **18+**. All examples in the module references below use `npx cookiy-cli`;
+substitute `cookiy` freely if you installed globally.
 
 ---
 
@@ -37,5 +58,5 @@ or a response containing a login URL — handle it like this:
 **save-token** — Store an access token obtained from browser sign-in.
 
 ```
-scripts/cookiy.sh save-token <access_token>
+npx cookiy-cli save-token <access_token>
 ```
