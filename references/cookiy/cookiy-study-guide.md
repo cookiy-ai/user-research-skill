@@ -15,14 +15,6 @@ before showing to the user.
 cookiy study guide get --study-id <uuid>
 ```
 
-### study guide wait
-
-Wait until the discussion/interview guide has been generated for the study.
-
-```
-cookiy study guide wait --study-id <uuid>
-```
-
 ### study guide update
 
 Partially update (patch) the discussion/interview guide. The patch is merged into the JSON returned

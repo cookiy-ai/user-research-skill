@@ -73,9 +73,11 @@ cookiy study status --study-id <uuid>
 
 ---
 
-## Waiting on Async Operations
+## Checking Async Operations
 
-Guide and report generation expose a `wait` subcommand (see the relevant sub-reference) to block until complete. Use it to poll-wait until the operation completes. For all other progress checks, use `study status`.
+Guide generation, synthetic interviews, and report generation are all asynchronous.
+Poll `cookiy study status --study-id <uuid>` to read the current activity state; the
+server-side `wait` flow has been retired, so the CLI never blocks.
 
 ---
 

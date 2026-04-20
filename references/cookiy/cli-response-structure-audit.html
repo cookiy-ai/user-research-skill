@@ -1,0 +1,2177 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/>
+<title>Cookiy CLI · response audit</title>
+<style>
+:root {
+  --ink: #0f172a;
+  --muted: #475569;
+  --line: #e2e8f0;
+  --accent: #1e293b;
+  --page: #ffffff;
+  --panel: #f8fafc;
+  --panel-dark: #f1f5f9;
+  --del-bg: #fef2f2; --del-ink: #991b1b; --del-border: #fecaca;
+  --add-bg: #ecfdf5; --add-ink: #065f46; --add-border: #a7f3d0;
+  --keep-bg: #ffffff; --keep-ink: #0f172a;
+  --skip-bg: #f8fafc; --skip-ink: #475569;
+}
+* { box-sizing: border-box; }
+html, body { background: var(--page); color: var(--ink); }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  font-size: 12px; line-height: 1.45; margin: 0; padding: 0;
+}
+.page { padding: 18px 18px 28px; max-width: 1040px; margin: 0 auto; }
+.mono, code, pre { font-family: "SF Mono", Menlo, Consolas, monospace; }
+header.doc { border-bottom: 2px solid var(--accent); padding-bottom: 10px; margin-bottom: 14px; }
+header.doc h1 { font-size: 20px; margin: 0 0 4px; }
+header.doc p { margin: 2px 0; color: var(--muted); font-size: 11px; }
+header.doc p code { background: #eef2f7; padding: 0 3px; border-radius: 3px; color: var(--ink); }
+.legend { margin-top: 6px; display: flex; gap: 8px; flex-wrap: wrap; font-size: 10.5px; color: var(--muted); }
+.legend .swatch { display: inline-flex; align-items: center; gap: 4px; padding: 1px 6px; border-radius: 3px; border: 1px solid transparent; }
+.legend .swatch.ok   { background: var(--add-bg); color: var(--add-ink); border-color: var(--add-border); }
+.legend .swatch.fail { background: var(--del-bg); color: var(--del-ink); border-color: var(--del-border); }
+.legend .swatch.skip { background: var(--skip-bg); color: var(--skip-ink); border: 1px dashed #c7cfdb; }
+.divider {
+  border-top: 2px solid var(--accent);
+  padding-top: 8px; margin-top: 18px; margin-bottom: 8px;
+}
+.divider .title { font-size: 13px; font-weight: 700; color: var(--ink); }
+.divider .sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+section.tool {
+  border: 1px solid var(--line); border-radius: 6px; overflow: hidden;
+  margin: 10px 0; background: var(--page);
+  break-inside: avoid; page-break-inside: avoid;
+}
+section.tool > header {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+  padding: 6px 10px; background: var(--panel); border-bottom: 1px solid var(--line);
+}
+section.tool > header h2 { margin: 0; font-size: 13px; font-weight: 600; display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; }
+section.tool > header .cli { font-family: "SF Mono", Menlo, Consolas, monospace; color: var(--accent); }
+section.tool > header .tool-id { font-family: "SF Mono", Menlo, Consolas, monospace; color: var(--muted); font-size: 11px; font-weight: 500; }
+section.tool > header .summary { color: var(--muted); font-size: 10.5px; max-width: 55%; text-align: right; }
+.badge { display: inline-block; font-size: 9.5px; font-weight: 600; padding: 1px 5px; border-radius: 3px; letter-spacing: 0.04em; text-transform: uppercase; margin-left: 2px; }
+.badge.ok   { background: var(--add-bg); color: var(--add-ink); border: 1px solid var(--add-border); }
+.badge.fail { background: var(--del-bg); color: var(--del-ink); border: 1px solid var(--del-border); }
+.badge.skip { background: var(--skip-bg); color: var(--skip-ink); border: 1px dashed #c7cfdb; }
+section.tool > .body { padding: 8px 10px; }
+section.tool.fail > header { background: var(--del-bg); }
+section.tool.fail { border-color: var(--del-border); }
+section.tool.skip > header { background: var(--panel-dark); }
+section.tool.skip { border-color: #d6dbe2; }
+.cmd { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 10.5px; color: var(--accent); background: #eef2f7; padding: 4px 6px; border-radius: 3px; margin-bottom: 6px; word-break: break-all; }
+.panes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.pane h4 { margin: 0 0 3px; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 600; }
+.pane.single { grid-column: 1 / span 2; }
+pre.shape, pre.raw {
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-size: 10.5px; line-height: 1.5; margin: 0;
+  white-space: pre; word-break: normal; overflow-x: auto;
+  padding: 6px 8px; border: 1px solid var(--line); border-radius: 4px;
+}
+pre.shape { background: var(--keep-bg); }
+pre.raw { background: var(--panel); color: var(--muted); max-height: 240px; overflow-y: auto; white-space: pre-wrap; word-break: break-word; font-size: 10px; }
+footer.doc { margin-top: 24px; border-top: 2px solid var(--accent); padding-top: 8px; color: var(--muted); font-size: 10.5px; }
+@media print {
+  @page { size: A4; margin: 12mm 10mm; }
+  .page { padding: 0; max-width: none; }
+  section.tool { break-inside: avoid; page-break-inside: avoid; }
+  .divider { break-before: auto; }
+  pre.raw { max-height: none; overflow: visible; }
+}
+</style>
+</head><body><div class='page'>
+<header class="doc">
+<h1>Cookiy CLI · response audit</h1>
+<p>Generated <code>2026-04-20T04:12:21.825158+00:00</code> · CLI <code>1.21.0</code> · server <code>https://s-api.cookiy.ai</code>.</p>
+<p>Read study (data-rich): <code>019c51ab-cb2b-7094-a59f-e9d12e18ffc9</code> · write study (scratch): <code>019d950f-2493-712e-bf9e-f3526a4effca</code> · interview <code>019d0506-2a2a-76aa-bdf2-e0c25e7a51b8</code> · survey <code>878381</code> · dynamic survey <code>449428</code>.</p>
+<p>Scope: all <code>cookiy.sh</code> commands except <code>recruit</code>. Every card shows the CLI invocation, the response shape tree, and a collapsible raw sample of the first JSON value.</p>
+<div class="legend">
+<span class="swatch ok">OK — command returned structured JSON</span>
+<span class="swatch fail">FAIL — non-zero exit or MCP error envelope</span>
+<span class="swatch skip">SKIP — gated by env var or unimplemented in CLI</span>
+</div>
+</header>
+<div class="divider"><div class="title">CLI basics</div><div class="sub">6 commands</div></div>
+<section class="tool">
+<header>
+<h2>
+<span class="cli">usage (no args)</span>
+<span class="badge ok">OK</span>
+</h2>
+<div class="summary">exit 0 · non-JSON</div>
+</header>
+<div class="body">
+<div class="panes">
+<div class="pane"><h4>Shape tree</h4><pre class="shape">text (27 lines)</pre></div>
+<div class="pane"><h4>Raw response</h4><pre class="raw">Cookiy CLI v1.21.0  (standalone Node.js client)
+
+Run in a terminal: node cookiy.js &lt;command&gt;
+
+Usage:
+  cookiy.js [--token &lt;path&gt;] [--api-url &lt;url&gt;] &lt;command&gt; ...
+
+Global options:
+  --api-url     Full JSON-RPC endpoint URL (overrides COOKIY_API_URL)
+  --token       Path to raw token file (default: ~/.cookiy/token.txt; env COOKIY_CREDENTIALS)
+
+Environment:
+  COOKIY_CREDENTIALS       Path to token file (same as --token)
+  COOKIY_API_URL           Full API endpoint URL (default: &lt;server&gt;/mcp)
+  COOKIY_API_RPC_TIMEOUT   Seconds for blocking API calls (default: 600)
+  COOKIY_SERVER_URL        API origin when endpoint URL not set (default: https://s-api.cookiy.ai)
+
+Commands:
+  save-token &lt;token&gt;          Save raw access token (validates against API first)
+  help                        Offline CLI reference
+  study list|create|status|upload|..  Includes guide|interview|run-synthetic-user|report
+  recruit start                       Qualitative or quant recruitment (auto-detects mode)
+  quant list|create|get|update|status|report|raw-response  Quantitative survey management (keyed by survey-id)
+  billing balance|checkout|price-table|transactions
+
+Examples:
+  cookiy.js save-token eyJhbGciOi...
+  cookiy.js help commands
+  cookiy.js study list --limit 10
+  cookiy.js study create --query "..."  --wait
+  cookiy.js study report generate --study-id 123 --skip-synthetic-interview --wait
+  cookiy.js study report wait --study-id 123 --timeout-ms 300000
+  cookiy.js billing transactions --limit 50</pre></div>
+</div>
+</div></section>
+<section class="tool">
+<header>
+<h2>
+<span class="cli">-h / --help</span>
+<span class="badge ok">OK</span>
+</h2>
+<div class="summary">exit 0 · non-JSON</div>
+</header>
+<div class="body">
+<div class="cmd">cookiy.sh -h</div>
+<div class="panes">
+<div class="pane"><h4>Shape tree</h4><pre class="shape">text (27 lines)</pre></div>
+<div class="pane"><h4>Raw response</h4><pre class="raw">Cookiy CLI v1.21.0  (standalone Node.js client)
+
+Run in a terminal: node cookiy.js &lt;command&gt;
+
+Usage:
+  cookiy.js [--token &lt;path&gt;] [--api-url &lt;url&gt;] &lt;command&gt; ...
+
+Global options:
+  --api-url     Full JSON-RPC endpoint URL (overrides COOKIY_API_URL)
+  --token       Path to raw token file (default: ~/.cookiy/token.txt; env COOKIY_CREDENTIALS)
+
+Environment:
+  COOKIY_CREDENTIALS       Path to token file (same as --token)
+  COOKIY_API_URL           Full API endpoint URL (default: &lt;server&gt;/mcp)
+  COOKIY_API_RPC_TIMEOUT   Seconds for blocking API calls (default: 600)
+  COOKIY_SERVER_URL        API origin when endpoint URL not set (default: https://s-api.cookiy.ai)
+
+Commands:
+  save-token &lt;token&gt;          Save raw access token (validates against API first)
+  help                        Offline CLI reference
+  study list|create|status|upload|..  Includes guide|interview|run-synthetic-user|report
+  recruit start                       Qualitative or quant recruitment (auto-detects mode)
+  quant list|create|get|update|status|report|raw-response  Quantitative survey management (keyed by survey-id)
+  billing balance|checkout|price-table|transactions
+
+Examples:
+  cookiy.js save-token eyJhbGciOi...
+  cookiy.js help commands
+  cookiy.js study list --limit 10
+  cookiy.js study create --query "..."  --wait
+  cookiy.js study report generate --study-id 123 --skip-synthetic-interview --wait
+  cookiy.js study report wait --study-id 123 --timeout-ms 300000
+  cookiy.js billing transactions --limit 50</pre></div>
+</div>
+</div></section>
+<section class="tool">
+<header>
+<h2>
+<span class="cli">--version</span>
+<span class="badge ok">OK</span>
+</h2>
+<div class="summary">exit 0 · non-JSON</div>
+</header>
+<div class="body">
+<div class="cmd">cookiy.sh --version</div>
+<div class="panes">
+<div class="pane"><h4>Shape tree</h4><pre class="shape">text (1 lines)</pre></div>
+<div class="pane"><h4>Raw response</h4><pre class="raw">1.21.0</pre></div>
+</div>
+</div></section>
+<section class="tool">
+<header>
+<h2>
+<span class="cli">help</span>
+<span class="badge ok">OK</span>
+</h2>
+<div class="summary">exit 0 · non-JSON</div>
+</header>
+<div class="body">
+<div class="cmd">cookiy.sh help</div>
+<div class="panes">
+<div class="pane"><h4>Shape tree</h4><pre class="shape">text (134 lines)</pre></div>
+<div class="pane"><h4>Raw response</h4><pre class="raw">NAME
+    cookiy.js — standalone Cookiy AI CLI (Node.js, zero dependencies)
+
+SYNOPSIS
+    cookiy.js [GLOBAL OPTION ...] &lt;command&gt; [ARG ...]
+
+VERSION
+    1.21.0
+
+DESCRIPTION
+    Standalone Node.js client for the Cookiy AI platform.
+    Run in a terminal: node cookiy.js &lt;command&gt;
+
+    Long options use kebab-case; they are sent as snake_case JSON fields (e.g. --study-id → study_id).
+    --wait passes server-side wait flags (no polling).
+    --json merges extra JSON fields into the tool request, or provides the guide patch payload.
+    Numeric sid for quant: --survey-id 12345 becomes JSON string.
+
+GLOBAL OPTIONS
+    --token &lt;path&gt;    Raw token file (default ~/.cookiy/token.txt; same as COOKIY_CREDENTIALS)
+    --api-url &lt;url&gt;   Full JSON-RPC endpoint URL (overrides COOKIY_API_URL)
+
+ENVIRONMENT
+    COOKIY_CREDENTIALS       Path to raw token file
+    COOKIY_API_URL           Full JSON-RPC endpoint URL
+    COOKIY_API_RPC_TIMEOUT   Max seconds for API calls (default 600)
+    COOKIY_SERVER_URL        API origin if endpoint URL not set
+
+DOCUMENTATION
+    references/cookiy/cli/commands.md  (if present in repo)
+
+COMMANDS
+
+help — offline CLI reference
+    Usage:   cookiy.js help
+    Note:    Prints this reference. No credentials needed.
+
+study list — list studies
+    Usage:   cookiy.js study list [--limit &lt;n&gt;] [--cursor &lt;s&gt;]
+    Flags:   --limit &lt;integer&gt;   --cursor &lt;string&gt;
+
+study create — create study from natural language
+    Usage:   cookiy.js study create --query &lt;s&gt; [--thinking &lt;s&gt;] [--attachments &lt;json-array&gt;] [--wait] [--timeout-ms &lt;n&gt;]
+    Flags:   --query &lt;string&gt; (required)
+             --thinking &lt;string&gt;
+             --attachments &lt;json-array&gt;   JSON array, e.g. '[{"s3_key":"...","description":"..."}]'.
+             --wait (server-side wait_for_guide — off by default; agents should poll study status instead)
+             --timeout-ms &lt;n&gt; (only honored when --wait is set)
+
+study status — study record and activity
+    Usage:   cookiy.js study status --study-id &lt;uuid&gt;
+    Flags:   --study-id (required)
+    Calls cookiy_activity_get which server-side merges the study record and activity summary.
+
+study guide get
+    Usage:   cookiy.js study guide get --study-id &lt;uuid&gt;
+    Flags:   --study-id (required)
+
+study guide update — apply patch to discussion guide
+    Usage:   cookiy.js study guide update --study-id &lt;uuid&gt; --base-revision &lt;s&gt; --idempotency-key &lt;s&gt; [--change-message &lt;s&gt;] --json '&lt;patch&gt;'
+    Flags:   --study-id (required)   --base-revision (required)   --idempotency-key (required)   --json (required)
+             --change-message
+
+study upload — attach media (image upload)
+    Usage:   cookiy.js study upload --content-type &lt;s&gt; (--image-data &lt;s&gt; | --image-url &lt;s&gt;)
+    Flags:   --content-type (required)   --image-data | --image-url (one required)
+
+study interview list | playback url|content
+    Usage:   cookiy.js study interview list --study-id &lt;uuid&gt; [--cursor &lt;s&gt;]
+             cookiy.js study interview playback url --study-id &lt;uuid&gt; [--interview-id &lt;uuid&gt;] [--cursor &lt;s&gt;]
+             cookiy.js study interview playback content --study-id &lt;uuid&gt; [--interview-id &lt;uuid&gt;] [--cursor &lt;s&gt;]
+    Note:    list always includes synthetic interviews in results (not configurable via CLI).
+             When --interview-id is omitted, playback returns a paginated list (default 20).
+             Use --cursor to fetch subsequent pages.
+
+study run-synthetic-user start — run synthetic user interviews
+    Usage:   cookiy.js study run-synthetic-user start --study-id &lt;uuid&gt; [--persona-count &lt;n&gt;] [--plain-text &lt;s&gt;] [--wait] [--timeout-ms &lt;n&gt;]
+    Flags:   --study-id (required)
+             --persona-count &lt;integer&gt;  Number of synthetic interviews to run
+             --plain-text &lt;string&gt;  Participant persona / profile description (maps to API interviewee_persona)
+             --wait (server-side wait — off by default; agents should poll status instead)
+             --timeout-ms &lt;n&gt; (only honored when --wait is set)
+
+recruit start — launch participant recruitment
+    Usage:   cookiy.js recruit start [--study-id &lt;uuid&gt;] [--survey-public-url &lt;url&gt;] [--confirmation-token &lt;s&gt;] [--plain-text &lt;s&gt;] [--incremental-participants &lt;n&gt;]
+    Flags:   --study-id (qualitative — required for interview studies)
+             --survey-public-url (quant — auto-sets recruit_mode=quant_survey; study-id optional)
+    Output:  Full API envelope JSON (preview includes top-level sample_size, target_group, payment_quote, derived_languages).
+    Note:    incremental_participants is auto-capped to remaining sample size capacity. If below current channel target, treated as incremental ("recruit N more").
+
+study report generate | content | link
+    Usage:   cookiy.js study report generate --study-id &lt;uuid&gt; [--skip-synthetic-interview] [--wait]
+             cookiy.js study report content --study-id &lt;uuid&gt; [--wait] [--timeout-ms &lt;n&gt;]
+             cookiy.js study report link --study-id &lt;uuid&gt;
+    generate with --wait polls report link every 10s until status=completed (or failed/timeout).
+
+quant list — list surveys
+    Usage:   cookiy.js quant list
+    Note:    Lists all surveys visible to the operator (sid, title, active, language).
+
+quant create — create survey (multi-language)
+    Usage:   cookiy.js quant create --json '&lt;obj&gt;'
+    Flags:   --json (required): JSON with survey_title, languages[], groups[], quotas[], etc.
+    Multi-lang: Set "languages":["en","zh","ja"] and use per-language maps for text fields.
+                Respondents can switch language on the survey page.
+    Schema:  See cookiy-quant-create-schema.md for full field reference.
+
+quant get — survey detail
+    Usage:   cookiy.js quant get --survey-id &lt;n&gt;
+    Flags:   --survey-id (required, numeric)
+
+quant update — patch survey
+    Usage:   cookiy.js quant update --survey-id &lt;n&gt; --json '&lt;obj&gt;'
+    Flags:   --survey-id (required, numeric)
+             --json (required): JSON with survey, groups, questions, quotas_create, quotas_update, etc.
+
+quant status — combined survey + panel recruitment status
+    Usage:   cookiy.js quant status --survey-id &lt;n&gt;
+    Flags:   --survey-id &lt;integer&gt;   Numeric LimeSurvey sid from `quant list`
+    Output:  Single JSON envelope wrapping both sides:
+             { survey_id, survey: { completed_responses, incomplete_responses, full_responses },
+               recruit: { total_bought, total_completed } }.
+             When no recruit project exists yet (recruit not started), the recruit block
+             reports zeros instead of erroring.
+
+quant report — survey report (structured JSON)
+    Usage:   cookiy.js quant report --survey-id &lt;n&gt;
+    Flags:   --survey-id (required, numeric)
+    Output:  JSON on stdout — aggregates (distributions/labels/percentages/numeric stats/
+             completion funnel) + raw data (results_json, raw_participants).
+             Raw data is auto-included; max_chars cap of 120K chars prevents context explosion.
+
+quant raw-response — raw survey responses as CSV
+    Usage:   cookiy.js quant raw-response --survey-id &lt;n&gt; [--include-incomplete]
+    Flags:   --survey-id (required, numeric)
+             --include-incomplete (bool; default false — exclude incomplete responses)
+    Output:  Raw CSV text on stdout (no JSON envelope). Output can be large —
+             redirect to a file, e.g. `cookiy.js quant raw-response --survey-id 12345 &gt; responses.csv`.
+
+billing balance
+    Usage:   cookiy.js billing balance
+    Output:  one plain-text line (balance_summary from API).
+
+billing transactions — wallet ledger
+    Usage:   cookiy.js billing transactions [--limit &lt;n&gt;] [--cursor &lt;iso8601&gt;] [--study-id &lt;uuid&gt;] [--survey-id &lt;sid&gt;]
+    Output:  pretty-printed JSON array (agent-friendly; same fields as GET /v1/billing/transactions).
+    Note:    MCP tool cookiy_billing_transactions (same JSON-RPC session as balance/checkout).
+
+billing checkout
+    Usage:   cookiy.js billing checkout --amount-usd-cents &lt;n&gt;
+    Flags:   USD integer cents (min 100); internally mapped to API amount_cents.
+
+billing pric
+…(truncated)</pre></div>
+</div>
+</div></section>
+<section class="tool">
+<header>
+<h2>
+<span class="cli">help commands (argv ignored by CLI; same body as help)</span>
+<span class="badge ok">OK</span>
+</h2>
+<div class="summary">exit 0 · non-JSON</div>
+</header>
+<div class="body">
+<div class="cmd">cookiy.sh help commands</div>
+<div class="panes">
+<div class="pane"><h4>Shape tree</h4><pre class="shape">text (134 lines)</pre></div>
+<div class="pane"><h4>Raw response</h4><pre class="raw">NAME
+    cookiy.js — standalone Cookiy AI CLI (Node.js, zero dependencies)
+
+SYNOPSIS
+    cookiy.js [GLOBAL OPTION ...] &lt;command&gt; [ARG ...]
+
+VERSION
+    1.21.0
+
+DESCRIPTION
+    Standalone Node.js client for the Cookiy AI platform.
+    Run in a terminal: node cookiy.js &lt;command&gt;
+
+    Long options use kebab-case; they are sent as snake_case JSON fields (e.g. --study-id → study_id).
+    --wait passes server-side wait flags (no polling).
+    --json merges extra JSON fields into the tool request, or provides the guide patch payload.
+    Numeric sid for quant: --survey-id 12345 becomes JSON string.
+
+GLOBAL OPTIONS
+    --token &lt;path&gt;    Raw token file (default ~/.cookiy/token.txt; same as COOKIY_CREDENTIALS)
+    --api-url &lt;url&gt;   Full JSON-RPC endpoint URL (overrides COOKIY_API_URL)
+
+ENVIRONMENT
+    COOKIY_CREDENTIALS       Path to raw token file
+    COOKIY_API_URL           Full JSON-RPC endpoint URL
+    COOKIY_API_RPC_TIMEOUT   Max seconds for API calls (default 600)
+    COOKIY_SERVER_URL        API origin if endpoint URL not set
+
+DOCUMENTATION
+    references/cookiy/cli/commands.md  (if present in repo)
+
+COMMANDS
+
+help — offline CLI reference
+    Usage:   cookiy.js help
+    Note:    Prints this reference. No credentials needed.
+
+study list — list studies
+    Usage:   cookiy.js study list [--limit &lt;n&gt;] [--cursor &lt;s&gt;]
+    Flags:   --limit &lt;integer&gt;   --cursor &lt;string&gt;
+
+study create — create study from natural language
+    Usage:   cookiy.js study create --query &lt;s&gt; [--thinking &lt;s&gt;] [--attachments &lt;json-array&gt;] [--wait] [--timeout-ms &lt;n&gt;]
+    Flags:   --query &lt;string&gt; (required)
+             --thinking &lt;string&gt;
+             --attachments &lt;json-array&gt;   JSON array, e.g. '[{"s3_key":"...","description":"..."}]'.
+             --wait (server-side wait_for_guide — off by default; agents should poll study status instead)
+             --timeout-ms &lt;n&gt; (only honored when --wait is set)
+
+study status — study record and activity
+    Usage:   cookiy.js study status --study-id &lt;uuid&gt;
+    Flags:   --study-id (required)
+    Calls cookiy_activity_get which server-side merges the study record and activity summary.
+
+study guide get
+    Usage:   cookiy.js study guide get --study-id &lt;uuid&gt;
+    Flags:   --study-id (required)
+
+study guide update — apply patch to discussion guide
+    Usage:   cookiy.js study guide update --study-id &lt;uuid&gt; --base-revision &lt;s&gt; --idempotency-key &lt;s&gt; [--change-message &lt;s&gt;] --json '&lt;patch&gt;'
+    Flags:   --study-id (required)   --base-revision (required)   --idempotency-key (required)   --json (required)
+             --change-message
+
+study upload — attach media (image upload)
+    Usage:   cookiy.js study upload --content-type &lt;s&gt; (--image-data &lt;s&gt; | --image-url &lt;s&gt;)
+    Flags:   --content-type (required)   --image-data | --image-url (one required)
+
+study interview list | playback url|content
+    Usage:   cookiy.js study interview list --study-id &lt;uuid&gt; [--cursor &lt;s&gt;]
+             cookiy.js study interview playback url --study-id &lt;uuid&gt; [--interview-id &lt;uuid&gt;] [--cursor &lt;s&gt;]
+             cookiy.js study interview playback content --study-id &lt;uuid&gt; [--interview-id &lt;uuid&gt;] [--cursor &lt;s&gt;]
+    Note:    list always includes synthetic interviews in results (not configurable via CLI).
+             When --interview-id is omitted, playback returns a paginated list (default 20).
+             Use --cursor to fetch subsequent pages.
+
+study run-synthetic-user start — run synthetic user interviews
+    Usage:   cookiy.js study run-synthetic-user start --study-id &lt;uuid&gt; [--persona-count &lt;n&gt;] [--plain-text &lt;s&gt;] [--wait] [--timeout-ms &lt;n&gt;]
+    Flags:   --study-id (required)
+             --persona-count &lt;integer&gt;  Number of synthetic interviews to run
+             --plain-text &lt;string&gt;  Participant persona / profile description (maps to API interviewee_persona)
+             --wait (server-side wait — off by default; agents should poll status instead)
+             --timeout-ms &lt;n&gt; (only honored when --wait is set)
+
+recruit start — launch participant recruitment
+    Usage:   cookiy.js recruit start [--study-id &lt;uuid&gt;] [--survey-public-url &lt;url&gt;] [--confirmation-token &lt;s&gt;] [--plain-text &lt;s&gt;] [--incremental-participants &lt;n&gt;]
+    Flags:   --study-id (qualitative — required for interview studies)
+             --survey-public-url (quant — auto-sets recruit_mode=quant_survey; study-id optional)
+    Output:  Full API envelope JSON (preview includes top-level sample_size, target_group, payment_quote, derived_languages).
+    Note:    incremental_participants is auto-capped to remaining sample size capacity. If below current channel target, treated as incremental ("recruit N more").
+
+study report generate | content | link
+    Usage:   cookiy.js study report generate --study-id &lt;uuid&gt; [--skip-synthetic-interview] [--wait]
+             cookiy.js study report content --study-id &lt;uuid&gt; [--wait] [--timeout-ms &lt;n&gt;]
+             cookiy.js study report link --study-id &lt;uuid&gt;
+    generate with --wait polls report link every 10s until status=completed (or failed/timeout).
+
+quant list — list surveys
+    Usage:   cookiy.js quant list
+    Note:    Lists all surveys visible to the operator (sid, title, active, language).
+
+quant create — create survey (multi-language)
+    Usage:   cookiy.js quant create --json '&lt;obj&gt;'
+    Flags:   --json (required): JSON with survey_title, languages[], groups[], quotas[], etc.
+    Multi-lang: Set "languages":["en","zh","ja"] and use per-language maps for text fields.
+                Respondents can switch language on the survey page.
+    Schema:  See cookiy-quant-create-schema.md for full field reference.
+
+quant get — survey detail
+    Usage:   cookiy.js quant get --survey-id &lt;n&gt;
+    Flags:   --survey-id (required, numeric)
+
+quant update — patch survey
+    Usage:   cookiy.js quant update --survey-id &lt;n&gt; --json '&lt;obj&gt;'
+    Flags:   --survey-id (required, numeric)
+             --json (required): JSON with survey, groups, questions, quotas_create, quotas_update, etc.
+
+quant status — combined survey + panel recruitment status
+    Usage:   cookiy.js quant status --survey-id &lt;n&gt;
+    Flags:   --survey-id &lt;integer&gt;   Numeric LimeSurvey sid from `quant list`
+    Output:  Single JSON envelope wrapping both sides:
+             { survey_id, survey: { completed_responses, incomplete_responses, full_responses },
+               recruit: { total_bought, total_completed } }.
+             When no recruit project exists yet (recruit not started), the recruit block
+             reports zeros instead of erroring.
+
+quant report — survey report (structured JSON)
+    Usage:   cookiy.js quant report --survey-id &lt;n&gt;
+    Flags:   --survey-id (required, numeric)
+    Output:  JSON on stdout — aggregates (distributions/labels/percentages/numeric stats/
+             completion funnel) + raw data (results_json, raw_participants).
+             Raw data is auto-included; max_chars cap of 120K chars prevents context explosion.
+
+quant raw-response — raw survey responses as CSV
+    Usage:   cookiy.js quant raw-response --survey-id &lt;n&gt; [--include-incomplete]
+    Flags:   --survey-id (required, numeric)
+             --include-incomplete (bool; default false — exclude incomplete responses)
+    Output:  Raw CSV text on stdout (no JSON envelope). Output can be large —
+             redirect to a file, e.g. `cookiy.js quant raw-response --survey-id 12345 &gt; responses.csv`.
+
+billing balance
+    Usage:   cookiy.js billing balance
+    Output:  one plain-text line (balance_summary from API).
+
+billing transactions — wallet ledger
+    Usage:   cookiy.js billing transactions [--limit &lt;n&gt;] [--cursor &lt;iso8601&gt;] [--study-id &lt;uuid&gt;] [--survey-id &lt;sid&gt;]
+    Output:  pretty-printed JSON array (agent-friendly; same fields as GET /v1/billing/transactions).
+    Note:    MCP tool cookiy_billing_transactions (same JSON-RPC session as balance/checkout).
+
+billing checkout
+    Usage:   cookiy.js billing checkout --amount-usd-cents &lt;n&gt;
+    Flags:   USD integer cents (min 100); internally mapped to API amount_cents.
+
+billing pric
+…(truncated)</pre></div>
+</div>
+</div></section>
+<section class="tool skip">
+<header>
+<h2>
+<span class="cli">save-token (skipped — CLI_AUDIT_SKIP_SAVE_TOKEN=1)</span>
+<span class="badge skip">SKIP</span>
+</h2>
+<div class="summary">exit 0 · non-JSON</div>
+</header>
+<div class="body">
+<div class="panes"><div class="pane single"><h4>Shape tree</h4><pre class="shape">(not run)</pre></div></div>
+</div></section>
+<div class="divider"><div class="title">Study lifecycle</div><div class="sub">6 commands</div></div>
+<section class="tool">
+<header>
+<h2>
+<span class="cli">study list --limit 3</span>
+<span class="tool-id">→ cookiy_study_list</span>
+<span class="badge ok">OK</span>
+</h2>
+<div class="summary">exit 0 · 1 JSON value(s)</div>
+</header>
+<div class="body">
+<div class="cmd">cookiy.sh study list --limit 3</div>
+<div class="panes">
+<div class="pane"><h4>Shape tree</h4><pre class="shape">list:
+  array[
+    studyId: string
+    projectName: string
+    createdAt: string
+  ]
+limit: number
+cursor: string
+next_cursor: string
+total: number</pre></div>
+<div class="pane"><h4>Raw response</h4><pre class="raw">{
+  "list": [
+    {
+      "studyId": "019d950f-2493-712e-bf9e-f3526a4effca",
+      "projectName": "CLI audit scratch study 1776322287",
+      "createdAt": "2026-04-16T06:51:30.835Z"
+    },
+    {
+      "studyId": "019da906-52aa-7329-9271-957f37a9d1e7",
+      "projectName": "CLI audit scratch study 1776657254",
+      "createdAt": "2026-04-20T03:54:17.130Z"
+    },
+    {
+      "studyId": "019da903-74b2-75c0-a45d-dc5d5a1616d1",
+      "projectName": "CLI audit scratch study 1776657065",
+      "createdAt": "2026-04-20T03:51:09.234Z"
+    }
+  ],
+  "limit": 3,
+  "cursor": "0",
+  "next_cursor": "3",
+  "total": 257
+}</pre></div>
+</div>
+</div></section>
+<section class="tool">
+<header>
+<h2>
+<span class="cli">study list --limit 1 (seed cursor)</span>
+<span class="tool-id">→ cookiy_study_list</span>
+<span class="badge ok">OK</span>
+</h2>
+<div class="summary">exit 0 · 1 JSON value(s)</div>
+</header>
+<div class="body">
+<div class="cmd">cookiy.sh study list --limit 1</div>
+<div class="panes">
+<div class="pane"><h4>Shape tree</h4><pre class="shape">list:
+  array[
+    studyId: string
+    projectName: string
+    createdAt: string
+  ]
+limit: number
+cursor: string
+next_cursor: string
+total: number</pre></div>
+<div class="pane"><h4>Raw response</h4><pre class="raw">{
+  "list": [
+    {
+      "studyId": "019d950f-2493-712e-bf9e-f3526a4effca",
+      "projectName": "CLI audit scratch study 1776322287",
+      "createdAt": "2026-04-16T06:51:30.835Z"
+    }
+  ],
+  "limit": 1,
+  "cursor": "0",
+  "next_cursor": "1",
+  "total": 257
+}</pre></div>
+</div>
+</div></section>
+<section class="tool">
+<header>
+<h2>
+<span class="cli">study list --limit 1 --cursor &lt;from prior&gt;</span>
+<span class="tool-id">→ cookiy_study_list</span>
+<span class="badge ok">OK</span>
+</h2>
+<div class="summary">exit 0 · 1 JSON value(s)</div>
+</header>
+<div class="body">
+<div class="cmd">cookiy.sh study list --limit 1 --cursor 1</div>
+<div class="panes">
+<div class="pane"><h4>Shape tree</h4><pre class="shape">list:
+  array[
+    studyId: string
+    projectName: string
+    createdAt: string
+  ]
+limit: number
+cursor: string
+next_cursor: string
+total: number</pre></div>
+<div class="pane"><h4>Raw response</h4><pre class="raw">{
+  "list": [
+    {
+      "studyId": "019da906-52aa-7329-9271-957f37a9d1e7",
+      "projectName": "CLI audit scratch study 1776657254",
+      "createdAt": "2026-04-20T03:54:17.130Z"
+    }
+  ],
+  "limit": 1,
+  "cursor": "1",
+  "next_cursor": "2",
+  "total": 257
+}</pre></div>
+</div>
+</div></section>
+<section class="tool">
+<header>
+<h2>
+<span class="cli">study create --query (no --wait)</span>
+<span class="tool-id">→ cookiy_study_create</span>
+<span class="badge ok">OK</span>
+</h2>
+<div class="summary">exit 0 · 1 JSON value(s)</div>
+</header>
+<div class="body">
+<div class="cmd">cookiy.sh study create --query CLI audit scratch study 1776658229</div>
+<div class="panes">
+<div class="pane"><h4>Shape tree</h4><pre class="shape">studyId: string
+status: string</pre></div>
+<div class="pane"><h4>Raw response</h4><pre class="raw">{
+  "studyId": "019da915-358b-75e3-b052-6633f922b90d",
+  "status": "QUEUED"
+}</pre></div>
+</div>
+</div></section>
+<section class="tool">
+<header>
+<h2>
+<span class="cli">study status --study-id</span>
+<span class="tool-id">→ cookiy_activity_get</span>
+<span class="badge ok">OK</span>
+</h2>
+<div class="summary">exit 0 · 1 JSON value(s)</div>
+</header>
+<div class="body">
+<div class="cmd">cookiy.sh study status --study-id 019c51ab-cb2b-7094-a59f-e9d12e18ffc9</div>
+<div class="panes">
+<div class="pane"><h4>Shape tree</h4><pre class="shape">study_id: string
+project_name: string
+created_at: string
+updated_at: string
+current_stage: string
+target_sample_size: number
+sources:
+  guide:
+    status: string
+  recruit:
+    status: string
+    completed_participants: number
+    target_participants: number
+  interviews:
+    total: number
+    completed: number
+    disqualified: number
+    in_progress: number
+    paused: number
+  synthetic_interviews:
+    target_nums: number
+    completed_nums: number</pre></div>
+<div class="pane"><h4>Raw response</h4><pre class="raw">{
+  "study_id": "019c51ab-cb2b-7094-a59f-e9d12e18ffc9",
+  "project_name": "Smart Home Speaker Purchase Decision Drivers (U.S.)",
+  "created_at": "2026-02-12T11:45:39.115Z",
+  "updated_at": "2026-04-12T09:03:10.556Z",
+  "current_stage": "recruitment_in_progress",
+  "target_sample_size": 12,
+  "sources": {
+    "guide": {
+      "status": "guide_ready"
+    },
+    "recruit": {
+      "status": "active",
+      "completed_participants": 1,
+      "target_participants": 100
+    },
+    "interviews": {
+      "total": 3,
+      "completed": 1,
+      "disqualified": 2,
+      "in_progress": 0,
+      "paused": 0
+    },
+    "synthetic_interviews": {
+      "target_nums": 1,
+      "completed_nums": 1
+    }
+  }
+}</pre></div>
+</div>
+</div></section>
+<section class="tool">
+<header>
+<h2>
+<span class="cli">study upload --image-url</span>
+<span class="tool-id">→ cookiy_media_upload</span>
+<span class="badge ok">OK</span>
+</h2>
+<div class="summary">exit 0 · 1 JSON value(s)</div>
+</header>
+<div class="body">
+<div class="cmd">cookiy.sh study upload --content-type image/png --image-url https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png</div>
+<div class="panes">
+<div class="pane"><h4>Shape tree</h4><pre class="shape">s3_key: string</pre></div>
+<div class="pane"><h4>Raw response</h4><pre class="raw">{
+  "s3_key": "20260420/019b968d-354e-73da-b19d-c420cca65be7/files/019da915-4d3c-734f-a0ed-b6dfab77306f.png"
+}</pre></div>
+</div>
+</div></section>
+<div class="divider"><div class="title">Discussion guide</div><div class="sub">2 commands</div></div>
+<section class="tool">
+<header>
+<h2>
+<span class="cli">study guide get --study-id (scratch)</span>
+<span class="tool-id">→ cookiy_guide_get</span>
+<span class="badge ok">OK</span>
+</h2>
+<div class="summary">exit 0 · 1 JSON value(s)</div>
+</header>
+<div class="body">
+<div class="cmd">cookiy.sh study guide get --study-id 019d950f-2493-712e-bf9e-f3526a4effca</div>
+<div class="panes">
+<div class="pane"><h4>Shape tree</h4><pre class="shape">revision: string
+discussion_guide:
+  core_research_questions:
+    array[
+      text: string
+    ]
+  participant_screening_criteria:
+    screening_questions:
+      array[
+        screener_question: string
+        type: string
+        options: array[object(description,correct)]
+        description: string
+        media: array[]
+      ]
+  interview_flow:
+    sections:
+      array[
+        question_list: array[object(question,type,question_depth,required_screen_share,required_in_home_visit,options,followups,media)]
+        description: string
+      ]
+  research_overview:
+    project_name: string
+    research_objective: string
+    interview_duration: number
+    interview_methodology: string
+    sample_size: number
+    mode_of_interview: string
+    target_group: string
+    external_knowledge: string</pre></div>
+<div class="pane"><h4>Raw response</h4><pre class="raw">{
+  "revision": "rev_7c24acff2faf1e89",
+  "discussion_guide": {
+    "core_research_questions": [
+      {
+        "text": ""
+      },
+      {
+        "text": ""
+      },
+      {
+        "text": ""
+      }
+    ],
+    "participant_screening_criteria": {
+      "screening_questions": [
+        {
+          "screener_question": "Are you comfortable joining a 15-minute video interview for a product research study?",
+          "type": "single_answer",
+          "options": [
+            {
+              "description": "Yes",
+              "correct": true
+            },
+            {
+              "description": "No",
+              "correct": false
+            }
+          ],
+          "description": "",
+          "media": []
+        },
+        {
+          "screener_question": "Are you comfortable joining a 15-minute video interview for a product research study?",
+          "type": "single_answer",
+          "options": [
+            {
+              "description": "Yes",
+              "correct": true
+            },
+            {
+              "description": "No",
+              "correct": false
+            }
+          ],
+          "description": "",
+          "media": []
+        }
+      ]
+    },
+    "interview_flow": {
+      "sections": [
+        {
+          "question_list": [
+            {
+              "question": "To start, can you tell me a bit about what you do day to day and what tools you use most often?",
+              "type": "free_response",
+              "question_depth": "standard",
+              "required_screen_share": false,
+              "required_in_home_visit": false,
+              "options": [],
+              "followups": [
+                {
+                  "text": "What are the top 2–3 tasks you do most frequently?"
+                }
+              ],
+              "media": []
+            }
+          ],
+          "description": "Warm-up and context"
+        }
+      ]
+    },
+    "research_overview": {
+      "project_name": "CLI audit scratch study 1776322287",
+      "research_objective": "CLI audit bump 1776657254",
+      "interview_duration": 15,
+      "interview_methodology": "one_on_one",
+      "sample_size": 12,
+      "mode_of_interview": "video",
+      "target_group": "",
+      "external_knowledge": ""
+    }
+  }
+}</pre></div>
+</div>
+</div></section>
+<section class="tool">
+<header>
+<h2>
+<span class="cli">study guide update --json (minimal patch, scratch)</span>
+<span class="tool-id">→ cookiy_guide_patch</span>
+<span class="badge ok">OK</span>
+</h2>
+<div class="summary">exit 0 · 1 JSON value(s)</div>
+</header>
+<div class="body">
+<div class="cmd">cookiy.sh study guide update --study-id 019d950f-2493-712e-bf9e-f3526a4effca --base-revision rev_7c24acff2faf1e89 --idempotency-key e14d4de5-7d85-4b43-9f34-8f1be7843eb3 --json {"research_overview.research_objective": "CLI audit bump 1776658229"} --change-message cli_audit_shapes</div>
+<div class="panes">
+<div class="pane"><h4>Shape tree</h4><pre class="shape">study_id: string
+revision: string
+base_revision: string
+idempotency_key: string
+applied: boolean</pre></div>
+<div class="pane"><h4>Raw response</h4><pre class="raw">{
+  "study_id": "019d950f-2493-712e-bf9e-f3526a4effca",
+  "revision": "rev_d5a183ff0dfa3534",
+  "base_revision": "rev_7c24acff2faf1e89",
+  "idempotency_key": "e14d4de5-7d85-4b43-9f34-8f1be7843eb3",
+  "applied": true
+}</pre></div>
+</div>
+</div></section>
+<div class="divider"><div class="title">Interviews</div><div class="sub">5 commands</div></div>
+<section class="tool">
+<header>
+<h2>
+<span class="cli">study interview list --study-id</span>
+<span class="tool-id">→ cookiy_interview_list</span>
+<span class="badge ok">OK</span>
+</h2>
+<div class="summary">exit 0 · 1 JSON value(s)</div>
+</header>
+<div class="body">
+<div class="cmd">cookiy.sh study interview list --study-id 019c51ab-cb2b-7094-a59f-e9d12e18ffc9</div>
+<div class="panes">
+<div class="pane"><h4>Shape tree</h4><pre class="shape">study_id: string
+interviews:
+  array[
+    interview_id: string
+    status: string
+    duration_seconds: number
+    is_simulation: boolean
+    created_at: string
+  ]
+total: number
+limit: number
+cursor: string
+next_cursor: null
+avg_duration_minutes: number</pre></div>
+<div class="pane"><h4>Raw response</h4><pre class="raw">{
+  "study_id": "019c51ab-cb2b-7094-a59f-e9d12e18ffc9",
+  "interviews": [
+    {
+      "interview_id": "019d80ed-9dd2-72fc-807a-800cfffc3a1b",
+      "status": "completed",
+      "duration_seconds": 0,
+      "is_simulation": true,
+      "created_at": "2026-04-12T09:03:10.552Z"
+    },
+    {
+      "interview_id": "019d0506-2a2a-76aa-bdf2-e0c25e7a51b8",
+      "status": "completed",
+      "duration_seconds": 164,
+      "is_simulation": false,
+      "created_at": "2026-03-19T07:39:09.171Z"
+    },
+    {
+      "interview_id": "019d008f-7f1f-77e2-9c29-e81c71ce282e",
+      "status": "stop",
+      "duration_seconds": 61,
+      "is_simulation": false,
+      "created_at": "2026-03-18T10:49:19.562Z"
+    },
+    {
+      "interview_id": "019c55a6-901a-77ea-bb36-5a755776c8bd",
+      "status": "stop",
+      "duration_seconds": 200,
+      "is_simulation": false,
+      "created_at": "2026-02-13T06:21:47.119Z"
+    }
+  ],
+  "total": 4,
+  "limit": 20,
+  "cursor": "0",
+  "next_cursor": null,
+  "avg_duration_minutes": 2
+}</pre></div>
+</div>
+</div></section>
+<section class="tool">
+<header>
+<h2>
+<span class="cli">study interview playback url --study-id (no interview-id)</span>
+<span class="tool-id">→ cookiy_interview_playback_get · view=url</span>
+<span class="badge ok">OK</span>
+</h2>
+<div class="summary">exit 0 · 1 JSON value(s)</div>
+</header>
+<div class="body">
+<div class="cmd">cookiy.sh study interview playback url --study-id 019c51ab-cb2b-7094-a59f-e9d12e18ffc9</div>
+<div class="panes">
+<div class="pane"><h4>Shape tree</h4><pre class="shape">study_id: string
+interviews:
+  array[
+    interview_id: string
+    playback_page_url: string
+    playback_page_expires_at: string
+  ]
+total: number</pre></div>
+<div class="pane"><h4>Raw response</h4><pre class="raw">{
+  "study_id": "019c51ab-cb2b-7094-a59f-e9d12e18ffc9",
+  "interviews": [
+    {
+      "interview_id": "019d80ed-9dd2-72fc-807a-800cfffc3a1b",
+      "playback_page_url": "https://s.cookiy.ai/public/interview-playback/019d80ed-9dd2-72fc-807a-800cfffc3a1b",
+      "playback_page_expires_at": "2026-04-21T04:10:51.388Z"
+    },
+    {
+      "interview_id": "019d0506-2a2a-76aa-bdf2-e0c25e7a51b8",
+      "playback_page_url": "https://s.cookiy.ai/public/interview-playback/019d0506-2a2a-76aa-bdf2-e0c25e7a51b8",
+      "playback_page_expires_at": "2026-04-21T04:10:51.389Z"
+    }
+  ],
+  "total": 2
+}</pre></div>
+</div>
+</div></section>
+<section class="tool">
+<header>
+<h2>
+<span class="cli">study interview playback url --study-id --interview-id</span>
+<span class="tool-id">→ cookiy_interview_playback_get · view=url</span>
+<span class="badge ok">OK</span>
+</h2>
+<div class="summary">exit 0 · 1 JSON value(s)</div>
+</header>
+<div class="body">
+<div class="cmd">cookiy.sh study interview playback url --study-id 019c51ab-cb2b-7094-a59f-e9d12e18ffc9 --interview-id 019d0506-2a2a-76aa-bdf2-e0c25e7a51b8</div>
+<div class="panes">
+<div class="pane"><h4>Shape tree</h4><pre class="shape">interview_id: string
+playback_page_url: string
+playback_page_expires_at: string</pre></div>
+<div class="pane"><h4>Raw response</h4><pre class="raw">{
+  "interview_id": "019d0506-2a2a-76aa-bdf2-e0c25e7a51b8",
+  "playback_page_url": "https://s.cookiy.ai/public/interview-playback/019d0506-2a2a-76aa-bdf2-e0c25e7a51b8",
+  "playback_page_expires_at": "2026-04-21T04:10:54.453Z"
+}</pre></div>
+</div>
+</div></section>
+<section class="tool">
+<header>
+<h2>
+<span class="cli">study interview playback content --study-id (no interview-id)</span>
+<span class="tool-id">→ cookiy_interview_playback_get · view=transcript</span>
+<span class="badge ok">OK</span>
+</h2>
+<div class="summary">exit 0 · 1 JSON value(s)</div>
+</header>
+<div class="body">
+<div class="cmd">cookiy.sh study interview playback content --study-id 019c51ab-cb2b-7094-a59f-e9d12e18ffc9</div>
+<div class="panes">
+<div class="pane"><h4>Shape tree</h4><pre class="shape">study_id: string
+interviews:
+  array[
+    interview_id: string
+    transcript:
+      array[
+        role: string
+        content: string
+        message_time: string
+      ]
+    turn_count: number
+    transcript_available: boolean
+    playback_type: string
+  ]
+total: number</pre></div>
+<div class="pane"><h4>Raw response</h4><pre class="raw">{
+  "study_id": "019c51ab-cb2b-7094-a59f-e9d12e18ffc9",
+  "interviews": [
+    {
+      "interview_id": "019d80ed-9dd2-72fc-807a-800cfffc3a1b",
+      "transcript": [
+        {
+          "role": "assistant",
+          "content": "Hello! Are you ready to start the interview?   To begin, can you tell me about a typical day at home and the devices or services you use most?",
+          "message_time": "2026-04-12T09:02:31.532Z"
+        },
+        {
+          "role": "user",
+          "content": "Hi! Yeah, I’m ready. So, mornings are pretty hectic — getting the kids ready, packing lunches, checking calendars. We use our phones a lot for reminders and calendar alerts. I also rely on a microwave for quick meals and our smart TV for background music or shows. In the evening, it’s about homework help, dinner, and winding down, usually with some streaming service. Devices like our phones or the occasional Google Nest are there, but only if they don’t add hassle.",
+          "message_time": "2026-04-12T09:02:33.204Z"
+        },
+        {
+          "role": "assistant",
+          "content": "I get the sense that your days are busy and you depend on technology to keep things moving smoothly.   In what situations at home do you find yourself relying on these devices the most?",
+          "message_time": "2026-04-12T09:02:35.586Z"
+        },
+        {
+          "role": "user",
+          "content": "Yeah, definitely busy. The times I lean on devices most are during meals—like when I'm cooking and need timers. Also, when I need quick answers, like \"what's the weather\" or \"set a reminder.\" And the kids sometimes ask the speaker to play music or a show, which can help with homework focus or calming down. But it has to be simple—no extra setup or fuss when I’m already juggling a million things.",
+          "message_time": "2026-04-12T09:02:37.069Z"
+        },
+        {
+          "role": "assistant",
+          "content": "That really clarifies how simplicity and multitasking are key for you during busy moments.   Can you share what first made you consider getting a smart home speaker?",
+          "message_time": "2026-04-12T09:02:37.709Z"
+        },
+        {
+          "role": "user",
+          "content": "Sure. It was actually last November—I was sitting at the kitchen table after the kids were asleep, and I was tired of juggling timers on the microwave and my Apple Watch while cooking. My sister had mentioned how she tells Alexa to set timers, so I thought, maybe that could help me. Then I started looking online, comparing the Echo Dot and Nest Mini because our family uses iPhones but I have a Google calendar for work. It got a little confusing, though, and thinking about the kids accidentally ordering stuff or messing with it made me pause.",
+          "message_time": "2026-04-12T09:02:38.912Z"
+        },
+        {
+          "role": "assistant",
+          "content": "I can see how convenience sparked your interest but also some concerns slowed you down.   What were the main steps you took after that initial thought about a smart speaker?",
+          "message_time": "2026-04-12T09:02:39.994Z"
+        },
+        {
+          "role": "user",
+          "content": "Right, so after that night, a couple weeks later my spouse and I were at Target, just out running errands. We stopped by the smart home aisle and tested a display unit—woke it up, tried the music demo. It felt weird talking to it in the store, and the sound wasn’t great on that little model. Then my spouse brought up a news story about devices listening in and recording stuff, and we had a quiet argument about privacy right there. We left without buying anything and later watched a couple YouTube videos about muting mics and managing voice history to figure out if it was safe enough.",
+          "message_time": "2026-04-12T09:02:41.245Z"
+        },
+        {
+          "role": "assistant",
+          "content": "It’s interesting that testing the device triggered both curiosity and privacy worries for you.   How did you decide when you felt ready or confident enough to buy a smart speaker, if at all?",
+          "message_time": "2026-04-12T09:02:42.412Z"
+        },
+        {
+          "role": "user",
+          "content": "Yeah, that day really made me rethink it. I decided I needed to be sure it wouldn’t cause more hassle or privacy risks. I’d only buy if setup was quick—like under 30 minutes—and if parental controls were solid. Also, it had to work well with our phones and calendars. I’m still on the fence, honestly. If it’s just going to be a timer or play music easy, maybe. But if it’s complicated or my kid can mess with it, I’m not sure it’s worth it yet.",
+          "message_time": "2026-04-12T09:02:43.708Z"
+        },
+        {
+          "role": "assistant",
+          "content": "You’re saying that ease of setup and control features are critical for your confidence in buying.   Who else was involved in this decision about the smart speaker in your household?",
+          "message_time": "2026-04-12T09:02:44.792Z"
+        },
+        {
+          "role": "user",
+          "content": "Mostly me and my spouse. I’m the one researching and figuring out tech stuff, but my spouse is more cautious—especially about privacy. We talk through concerns like what we read or hear in the news. The kids get involved by asking questions or wanting to try it out, which honestly adds pressure because I worry about what they might accidentally do or access. So yeah, it’s kind of a group decision, but I drive the research.",
+          "message_time": "2026-04-12T09:02:45.893Z"
+        },
+        {
+          "role": "assistant",
+          "content": "That makes total sense how your spouse’s caution and your kids’ curiosity shape the choice together.   What specific speaker brands or models did you consider or test besides Amazon Alexa/Echo and Google Nest Mini?",
+          "message_time": "2026-04-12T09:02:46.697Z"
+        },
+        {
+          "role": "user",
+          "content": "Honestly, those were the main two I looked at—the Echo Dot and the Nest Mini. I know Apple has the HomePod, but it seemed more for people really into high-quality sound, and honestly, that felt like overkill for us. Plus, I wasn’t sure how well it’d play with Google calendar or non-Apple stuff I use for work. So, I stuck mostly with the budget-friendly, popular options that I’d see in stores or online.",
+          "message_time": "2026-04-12T09:02:47.959Z"
+        },
+        {
+          "role": "assistant",
+          "content": "That makes total sense to focus on the popular, practical options.   What were the most important factors when choosing between those smart speaker options?",
+          "message_time": "2026-04-12T09:02:48.598Z"
+        },
+        {
+          "role": "user",
+          "content": "Three things stood out: first, how easily it fits with our phones and calendars—since I’m on Google but the family’s on iPhones, compatibility matters. Second, privacy controls—like being able to mute microphones and limit accidental orders, especially with the kids around. Third, sound quality, but more for clarity in mix with background noise than audiophile-level. Oh, and of course, it had to be simple to set up and use without adding more stress.",
+          "message_time": "2026-04-12T09:02:49.568Z"
+        },
+        {
+          "role": "assistant",
+          "content": "You like that compatibility, privacy, clarity, and simplicity really shape your priorities.   What trade-offs did you accept when choosing your speaker?",
+          "message_time": "2026-04-12T09:02:50.921Z"
+        },
+        {
+          "role": "user",
+          "content": "Yeah, I had to accept that I might not get perfect sound quality or a seamless Apple ecosystem experience because I’m balancing both. Also, a smaller device might not sound great but fits better in the kitchen and costs less. And I decided it was okay if setup wasn’t fancy but had to be quick and straightforwar
+…(truncated)</pre></div>
+</div>
+</div></section>
+<section class="tool">
+<header>
+<h2>
+<span class="cli">study interview playback content --study-id --interview-id</span>
+<span class="tool-id">→ cookiy_interview_playback_get · view=transcript</span>
+<span class="badge ok">OK</span>
+</h2>
+<div class="summary">exit 0 · 1 JSON value(s)</div>
+</header>
+<div class="body">
+<div class="cmd">cookiy.sh study interview playback content --study-id 019c51ab-cb2b-7094-a59f-e9d12e18ffc9 --interview-id 019d0506-2a2a-76aa-bdf2-e0c25e7a51b8</div>
+<div class="panes">
+<div class="pane"><h4>Shape tree</h4><pre class="shape">interview_id: string
+transcript:
+  array[
+    role: string
+    content: string
+    message_time: string
+  ]
+turn_count: number
+transcript_available: boolean
+playback_type: string</pre></div>
+<div class="pane"><h4>Raw response</h4><pre class="raw">{
+  "interview_id": "019d0506-2a2a-76aa-bdf2-e0c25e7a51b8",
+  "transcript": [
+    {
+      "role": "assistant",
+      "content": "Hi, thanks for participating. Before we begin, to ensure the survey runs smoothly, please make sure that you: have a stable internet connection, stay away from TVs, loud background noise, and places where multiple conversations are happening, allow microphone and camera access if prompted, keep your device steady in bright place and your face clearly visible if video is required, avoid one-word answers so we can better understand your feedback. Ready to start?",
+      "message_time": "2026-03-19T07:36:55.000Z"
+    },
+    {
+      "role": "user",
+      "content": "Yes.",
+      "message_time": "2026-03-19T07:37:00.000Z"
+    },
+    {
+      "role": "assistant",
+      "content": "To get us started, could you describe a bit about what a typical day at home looks like for you and the devices you use most often?",
+      "message_time": "2026-03-19T07:37:00.000Z"
+    },
+    {
+      "role": "user",
+      "content": "Hi.",
+      "message_time": "2026-03-19T07:37:19.000Z"
+    },
+    {
+      "role": "user",
+      "content": "work every day for... and then I I use AI tools to look for... and to to do coding. And then when I come back home, I started.",
+      "message_time": "2026-03-19T07:37:34.000Z"
+    },
+    {
+      "role": "user",
+      "content": "A holiday summer holiday",
+      "message_time": "2026-03-19T07:37:37.000Z"
+    },
+    {
+      "role": "assistant",
+      "content": "It sounds like AI tools and coding are a big part of your professional routine. Who else lives in your household, and who usually takes the lead on setting up new technology?",
+      "message_time": "2026-03-19T07:37:40.000Z"
+    },
+    {
+      "role": "user",
+      "content": "Well,",
+      "message_time": "2026-03-19T07:37:55.000Z"
+    },
+    {
+      "role": "user",
+      "content": "Welcome to... Yes. My partner",
+      "message_time": "2026-03-19T07:38:00.000Z"
+    },
+    {
+      "role": "user",
+      "content": "I mean, like, it's not about who takes charge. It's just we see fancy things. And if we think it's reasonable, we get it.",
+      "message_time": "2026-03-19T07:38:11.000Z"
+    },
+    {
+      "role": "assistant",
+      "content": "It seems like you and your partner both jump in when something interesting and practical catches your eye. What specifically prompted both of you to start thinking about adding a smart speaker to your home?",
+      "message_time": "2026-03-19T07:38:11.000Z"
+    },
+    {
+      "role": "user",
+      "content": "Just, uh, I see the demo at the shopping store. Like, you know, and all that.",
+      "message_time": "2026-03-19T07:38:32.000Z"
+    },
+    {
+      "role": "assistant",
+      "content": "Thinking about the most recent time you bought or seriously considered buying a smart home speaker, can you walk me through how that decision unfolded from the moment the idea",
+      "message_time": "2026-03-19T07:38:44.000Z"
+    },
+    {
+      "role": "assistant",
+      "content": "Thinking about the most recent time you bought or seriously considered buying a smart home speaker, can you walk me through how that decision unfolded from the moment the idea",
+      "message_time": "2026-03-19T07:38:44.000Z"
+    },
+    {
+      "role": "assistant",
+      "content": "Thinking about the most recent time you bought or seriously considered buying a smart home speaker, can you walk me through how that decision unfolded from the moment the idea",
+      "message_time": "2026-03-19T07:38:44.000Z"
+    },
+    {
+      "role": "user",
+      "content": "Okay. Let's end the interview.",
+      "message_time": "2026-03-19T07:38:44.000Z"
+    },
+    {
+      "role": "user",
+      "content": "That's end of the interview.",
+      "message_time": "2026-03-19T07:38:46.000Z"
+    },
+    {
+      "role": "assistant",
+      "content": "I understand you'd like to stop here. I appreciate your time today—are we fine to wrap up now?",
+      "message_time": "2026-03-19T07:38:46.000Z"
+    },
+    {
+      "role": "user",
+      "content": "Yes.",
+      "message_time": "2026-03-19T07:38:54.000Z"
+    },
+    {
+      "role": "assistant",
+      "content": "Thank you so much for sharing your valuable insights with us today. Your participation really means a lot to our research. If you have any questions later, please don't hesitate to reach out. Take care!",
+      "message_time": "2026-03-19T07:39:06.000Z"
+    }
+  ],
+  "turn_count": 20,
+  "transcript_available": true,
+  "playback_type": "recording"
+}</pre></div>
+</div>
+</div></section>
+<div class="divider"><div class="title">Synthetic users</div><div class="sub">1 command</div></div>
+<section class="tool">
+<header>
+<h2>
+<span class="cli">study run-synthetic-user start (no --wait, scratch)</span>
+<span class="tool-id">→ cookiy_simulated_interview_generate</span>
+<span class="badge ok">OK</span>
+</h2>
+<div class="summary">exit 0 · 1 JSON value(s)</div>
+</header>
+<div class="body">
+<div class="cmd">cookiy.sh study run-synthetic-user start --study-id 019d950f-2493-712e-bf9e-f3526a4effca --persona-count 1</div>
+<div class="panes">
+<div class="pane"><h4>Shape tree</h4><pre class="shape">study_id: string
+status: string
+batch_target: number
+batch_completed: number</pre></div>
+<div class="pane"><h4>Raw response</h4><pre class="raw">{
+  "study_id": "019d950f-2493-712e-bf9e-f3526a4effca",
+  "status": "queued",
+  "batch_target": 1,
+  "batch_completed": 0
+}</pre></div>
+</div>
+</div></section>
+<div class="divider"><div class="title">Report</div><div class="sub">5 commands</div></div>
+<section class="tool">
+<header>
+<h2>
+<span class="cli">study report generate --skip-synthetic-interview (no --wait, scratch)</span>
+<span class="tool-id">→ cookiy_report_generate</span>
+<span class="badge ok">OK</span>
+</h2>
+<div class="summary">exit 0 · 1 JSON value(s)</div>
+</header>
+<div class="body">
+<div class="cmd">cookiy.sh study report generate --study-id 019d950f-2493-712e-bf9e-f3526a4effca --skip-synthetic-interview</div>
+<div class="panes">
+<div class="pane"><h4>Shape tree</h4><pre class="shape">study_id: string
+generation_request_id: string
+report_status: string</pre></div>
+<div class="pane"><h4>Raw response</h4><pre class="raw">{
+  "study_id": "019d950f-2493-712e-bf9e-f3526a4effca",
+  "generation_request_id": "019da915-bb61-75e8-b19b-0c6b8e079f97",
+  "report_status": "report_requested"
+}</pre></div>
+</div>
+</div></section>
+<section class="tool">
+<header>
+<h2>
+<span class="cli">study report content --study-id</span>
+<span class="tool-id">→ cookiy_report_content_get</span>
+<span class="badge ok">OK</span>
+</h2>
+<div class="summary">exit 0 · 1 JSON value(s)</div>
+</header>
+<div class="body">
+<div class="cmd">cookiy.sh study report content --study-id 019c51ab-cb2b-7094-a59f-e9d12e18ffc9</div>
+<div class="panes">
+<div class="pane"><h4>Shape tree</h4><pre class="shape">study_id: string
+report_id: null
+generated_at: null
+title: null
+markdown: null
+report_status: string</pre></div>
+<div class="pane"><h4>Raw response</h4><pre class="raw">{
+  "study_id": "019c51ab-cb2b-7094-a59f-e9d12e18ffc9",
+  "report_id": null,
+  "generated_at": null,
+  "title": null,
+  "markdown": null,
+  "report_status": "report_not_requested"
+}</pre></div>
+</div>
+</div></section>
+<section class="tool">
+<header>
+<h2>
+<span class="cli">study report content --study-id --wait true --timeout-ms</span>
+<span class="tool-id">→ cookiy_report_content_get</span>
+<span class="badge ok">OK</span>
+</h2>
+<div class="summary">exit 0 · 1 JSON value(s)</div>
+</header>
+<div class="body">
+<div class="cmd">cookiy.sh study report content --study-id 019c51ab-cb2b-7094-a59f-e9d12e18ffc9 --wait true --timeout-ms 8000</div>
+<div class="panes">
+<div class="pane"><h4>Shape tree</h4><pre class="shape">study_id: string
+report_id: null
+generated_at: null
+title: null
+markdown: null
+report_status: string</pre></div>
+<div class="pane"><h4>Raw response</h4><pre class="raw">{
+  "study_id": "019c51ab-cb2b-7094-a59f-e9d12e18ffc9",
+  "report_id": null,
+  "generated_at": null,
+  "title": null,
+  "markdown": null,
+  "report_status": "report_not_requested"
+}</pre></div>
+</div>
+</div></section>
+<section class="tool">
+<header>
+<h2>
+<span class="cli">study report link --study-id</span>
+<span class="tool-id">→ cookiy_report_share_link_get</span>
+<span class="badge ok">OK</span>
+</h2>
+<div class="summary">exit 0 · 1 JSON value(s)</div>
+</header>
+<div class="body">
+<div class="cmd">cookiy.sh study report link --study-id 019c51ab-cb2b-7094-a59f-e9d12e18ffc9</div>
+<div class="panes">
+<div class="pane"><h4>Shape tree</h4><pre class="shape">study_id: string
+report_status: string
+share_url: null
+share_password: null</pre></div>
+<div class="pane"><h4>Raw response</h4><pre class="raw">{
+  "study_id": "019c51ab-cb2b-7094-a59f-e9d12e18ffc9",
+  "report_status": "report_not_requested",
+  "share_url": null,
+  "share_password": null
+}</pre></div>
+</div>
+</div></section>
+<section class="tool">
+<header>
+<h2>
+<span class="cli">study report wait --study-id</span>
+<span class="tool-id">→ cookiy_report_status + cookiy_report_share_link_get</span>
+<span class="badge ok">OK</span>
+</h2>
+<div class="summary">exit 0 · 1 JSON value(s)</div>
+</header>
+<div class="body">
+<div class="cmd">cookiy.sh study report wait --study-id 019c51ab-cb2b-7094-a59f-e9d12e18ffc9 --timeout-ms 8000</div>
+<div class="panes">
+<div class="pane"><h4>Shape tree</h4><pre class="shape">study_id: string
+report_status: string
+share_url: null
+share_password: null</pre></div>
+<div class="pane"><h4>Raw response</h4><pre class="raw">{
+  "study_id": "019c51ab-cb2b-7094-a59f-e9d12e18ffc9",
+  "report_status": "report_not_requested",
+  "share_url": null,
+  "share_password": null
+}</pre></div>
+</div>
+</div></section>
+<div class="divider"><div class="title">Quantitative survey</div><div class="sub">8 commands</div></div>
+<section class="tool">
+<header>
+<h2>
+<span class="cli">quant list</span>
+<span class="tool-id">→ cookiy_quant_survey_list</span>
+<span class="badge ok">OK</span>
+</h2>
+<div class="summary">exit 0 · 1 JSON value(s)</div>
+</header>
+<div class="body">
+<div class="cmd">cookiy.sh quant list</div>
+<div class="panes">
+<div class="pane"><h4>Shape tree</h4><pre class="shape">surveys:
+  array[
+    survey_id: number
+    title: string
+    active: string
+  ]
+count: number</pre></div>
+<div class="pane"><h4>Raw response</h4><pre class="raw">{
+  "surveys": [
+    {
+      "survey_id": 539425,
+      "title": "Americans' Visions of the AI Future",
+      "active": "Y"
+    },
+    {
+      "survey_id": 825972,
+      "title": "Creative Flow Lab: How You Collaborate With AI (2026)",
+      "active": "Y"
+    },
+    {
+      "survey_id": 732677,
+      "title": "AI Tools User Experience Survey",
+      "active": "Y"
+    },
+    {
+      "survey_id": 595735,
+      "title": "CLI audit survey 1776657254 (patched)",
+      "active": "Y"
+    },
+    {
+      "survey_id": 543375,
+      "title": "AI Tools User Experience",
+      "active": "Y"
+    },
+    {
+      "survey_id": 327369,
+      "title": "产品体验快速调研（模板）",
+      "active": "Y"
+    },
+    {
+      "survey_id": 611795,
+      "title": "Quick Product Experience Survey (template)",
+      "active": "Y"
+    },
+    {
+      "survey_id": 394797,
+      "title": "Love, Relationship Needs, and Real-Life Examples Survey",
+      "active": "Y"
+    },
+    {
+      "survey_id": 416944,
+      "title": "Love, Relationship Needs, and Real-Life Examples Survey v2",
+      "active": "Y"
+    },
+    {
+      "survey_id": 273997,
+      "title": "What draws you to someone — as a friend or partner?",
+      "active": "Y"
+    },
+    {
+      "survey_id": 645845,
+      "title": "CLI audit survey 1776420834 (patched)",
+      "active": "Y"
+    },
+    {
+      "survey_id": 482854,
+      "title": "CLI audit survey 1776424167 (patched)",
+      "active": "Y"
+    },
+    {
+      "survey_id": 887249,
+      "title": "CLI audit survey 1776432871 (patched)",
+      "active": "Y"
+    },
+    {
+      "survey_id": 242794,
+      "title": "CLI audit survey 1776436695 (patched)",
+      "active": "Y"
+    },
+    {
+      "survey_id": 674188,
+      "title": "CLI audit survey 1776347217 (patched)",
+      "active": "Y"
+    },
+    {
+      "survey_id": 153848,
+      "title": "CLI audit survey 1776348276 (patched)",
+      "active": "Y"
+    },
+    {
+      "survey_id": 559567,
+      "title": "CLI audit survey 1776412967 (patched)",
+      "active": "Y"
+    },
+    {
+      "survey_id": 732711,
+      "title": "Route A smoke v2",
+      "active": "N"
+    },
+    {
+      "survey_id": 782754,
+      "title": "template debug",
+      "active": "N"
+    },
+    {
+      "survey_id": 988284,
+      "title": "Cookiy Quant Showcase — B2B Research Stack Evaluation (2026)",
+      "active": "Y"
+    },
+    {
+      "survey_id": 878381,
+      "title": "New title",
+      "active": "Y"
+    },
+    {
+      "survey_id": 841933,
+      "title": "Mac mini, Clawbot trend, setup (US)",
+      "active": "Y"
+    },
+    {
+      "survey_id": 159368,
+      "title": "CLI quant test (updated)",
+      "active": "Y"
+    },
+    {
+      "survey_id": 812126,
+      "title": "CLI audit survey 1776414833 (patched)",
+      "active": "Y"
+    },
+    {
+      "survey_id": 143942,
+      "title": "AI Budgeting Assistant Landing Page Clarity Survey",
+      "active": "Y"
+    },
+    {
+      "survey_id": 383912,
+      "title": "AI Tool Usage Test Survey",
+      "active": "Y"
+    },
+    {
+      "survey_id": 331167,
+      "title": "Patch Regression — Title Updated",
+      "active": "Y"
+    },
+    {
+      "survey_id": 348814,
+      "title": "CLI quant flow - display title",
+      "active": "Y"
+    },
+    {
+      "survey_id": 772735,
+      "title": "Tacit Knowledge &amp; Expertise — Global Survey",
+      "active": "Y"
+    },
+    {
+      "survey_id": 346464,
+      "title": "CLI audit survey 1776345316",
+      "active": "Y"
+    },
+    {
+      "survey_id": 739374,
+      "title": "CLI audit survey 1776345616",
+      "active": "Y"
+    },
+    {
+      "survey_id": 838148,
+      "title": "CLI audit survey 1776345805 (patched)",
+      "active": "Y"
+    },
+    {
+      "survey_id": 726338,
+      "title": "CLI audit survey 1776346179 (patched)",
+      "active": "Y"
+    },
+    {
+      "survey_id": 896911,
+      "title": "AI Tools &amp; Productivity — Comprehensive Research Survey (2026)",
+      "active": "Y"
+    },
+    {
+      "survey_id": 961285,
+      "title": "CLI audit survey 1776657065 (patched)",
+      "active": "Y"
+    },
+    {
+      "survey_id": 219585,
+      "title": "AI Tools &amp; Productivity — Comprehensive Research Survey (2026)",
+      "active": "Y"
+    },
+    {
+      "survey_id": 169228,
+      "title": "cpu的发展历史",
+      "active": "Y"
+    },
+    {
+      "survey_id": 319239,
+      "title": "US Workplace Community App - Needs &amp; Behavior Survey",
+      "active": "Y"
+    },
+    {
+      "survey_id": 281874,
+      "title": "PWNED-BY-B",
+      "active": "Y"
+    },
+    {
+      "survey_id": 657814,
+      "title": "Professional Networking App — User Pain Points Survey",
+      "active": "Y"
+    },
+    {
+      "survey_id": 595624,
+      "title": "US Bluetooth Headphones Market Survey",
+      "active": "Y"
+    },
+    {
+      "survey_id": 846249,
+      "title": "UK AI Code Agent Usage Survey",
+      "active": "Y"
+    },
+    {
+      "survey_id": 939797,
+      "title": "AI assistants for professional knowledge work",
+      "active": "Y"
+    },
+    {
+      "survey_id": 335265,
+      "title": "AI at work — quant-only wave (2026)",
+      "active": "Y"
+    },
+    {
+      "survey_id": 158534,
+      "title": "The Inner Life — Work, Love, Stress &amp; Meaning (2026)",
+      "active": "Y"
+    },
+    {
+      "survey_id": 113711,
+      "title": "Gen Z Date Activities: What Actually Works?",
+      "active": "Y"
+    },
+    {
+      "survey_id": 748491,
+      "title": "Quick test — visibility check",
+      "active": "Y"
+    }
+  ],
+  "count": 47
+}</pre></div>
+</div>
+</div></section>
+<section class="tool">
+<header>
+<h2>
+<span class="cli">quant create --json</span>
+<span class="tool-id">→ cookiy_quant_survey_create</span>
+<span class="badge ok">OK</span>
+</h2>
+<div class="summary">exit 0 · 1 JSON value(s)</div>
+</header>
+<div class="body">
+<div class="cmd">cookiy.sh quant create --json (payload)</div>
+<div class="panes">
+<div class="pane"><h4>Shape tree</h4><pre class="shape">survey_id: number
+title: string
+language: string
+active: string
+survey_public_url: string
+survey_format: string
+creation_summary_markdown: string</pre></div>
+<div class="pane"><h4>Raw response</h4><pre class="raw">{
+  "survey_id": 449428,
+  "title": "CLI audit survey 1776658229",
+  "language": "en",
+  "active": "Y",
+  "survey_public_url": "https://ls-dev.cookiy.ai/index.php/survey/index/sid/449428/lang/en",
+  "survey_format": "G",
+  "creation_summary_markdown": "## CLI audit survey 1776658229\n\n**Language:** en\n\n### G1\n\n**1. `Q1`** (List (radio)): Pick one\n  - `A1` A\n  - `A2` B\n"
+}</pre></div>
+</div>
+</div></section>
+<section class="tool">
+<header>
+<h2>
+<span class="cli">quant get --survey-id</span>
+<span class="tool-id">→ cookiy_quant_survey_detail</span>
+<span class="badge ok">OK</span>
+</h2>
+<div class="summary">exit 0 · 1 JSON value(s)</div>
+</header>
+<div class="body">
+<div class="cmd">cookiy.sh quant get --survey-id 449428</div>
+<div class="panes">
+<div class="pane"><h4>Shape tree</h4><pre class="shape">survey_id: number
+title: string
+survey_format: string
+language: string
+survey_public_url: string
+creation_summary_markdown: string</pre></div>
+<div class="pane"><h4>Raw response</h4><pre class="raw">{
+  "survey_id": 449428,
+  "title": "CLI audit survey 1776658229",
+  "survey_format": "G",
+  "language": "en",
+  "survey_public_url": "https://ls-dev.cookiy.ai/index.php/survey/index/sid/449428/lang/en",
+  "creation_summary_markdown": "## CLI audit survey 1776658229\n\n**Language:** en\n\n### G1\n\n**1. `Q1`** (List (radio)): Pick one\n  - `A1` A\n  - `A2` B\n"
+}</pre></div>
+</div>
+</div></section>
+<section class="tool">
+<header>
+<h2>
+<span class="cli">quant update --json</span>
+<span class="tool-id">→ cookiy_quant_survey_patch</span>
+<span class="badge ok">OK</span>
+</h2>
+<div class="summary">exit 0 · 1 JSON value(s)</div>
+</header>
+<div class="body">
+<div class="cmd">cookiy.sh quant update --survey-id 449428 --json {"survey": {"title": "CLI audit survey 1776658229 (patched)"}}</div>
+<div class="panes">
+<div class="pane"><h4>Shape tree</h4><pre class="shape">survey_id: number
+survey_updated: boolean</pre></div>
+<div class="pane"><h4>Raw response</h4><pre class="raw">{
+  "survey_id": 449428,
+  "survey_updated": true
+}</pre></div>
+</div>
+</div></section>
+<section class="tool">
+<header>
+<h2>
+<span class="cli">quant status --survey-id</span>
+<span class="tool-id">→ cookiy_quant_survey_status</span>
+<span class="badge ok">OK</span>
+</h2>
+<div class="summary">exit 0 · 1 JSON value(s)</div>
+</header>
+<div class="body">
+<div class="cmd">cookiy.sh quant status --survey-id 449428</div>
+<div class="panes">
+<div class="pane"><h4>Shape tree</h4><pre class="shape">survey_id: number
+survey:
+  completed_responses: number
+  incomplete_responses: number
+  full_responses: number
+recruit:
+  status: string
+  total_bought: number
+  total_completed: number</pre></div>
+<div class="pane"><h4>Raw response</h4><pre class="raw">{
+  "survey_id": 449428,
+  "survey": {
+    "completed_responses": 0,
+    "incomplete_responses": 0,
+    "full_responses": 0
+  },
+  "recruit": {
+    "status": "not_configured",
+    "total_bought": 0,
+    "total_completed": 0
+  }
+}</pre></div>
+</div>
+</div></section>
+<section class="tool">
+<header>
+<h2>
+<span class="cli">quant report --survey-id</span>
+<span class="tool-id">→ cookiy_quant_survey_report</span>
+<span class="badge ok">OK</span>
+</h2>
+<div class="summary">exit 0 · 1 JSON value(s)</div>
+</header>
+<div class="body">
+<div class="cmd">cookiy.sh quant report --survey-id 449428</div>
+<div class="panes">
+<div class="pane"><h4>Shape tree</h4><pre class="shape">survey_id: number
+completion_status: string
+response_row_count: number
+completion_funnel: null
+question_summaries:
+  array[]</pre></div>
+<div class="pane"><h4>Raw response</h4><pre class="raw">{
+  "survey_id": 449428,
+  "completion_status": "complete",
+  "response_row_count": 0,
+  "completion_funnel": null,
+  "question_summaries": []
+}</pre></div>
+</div>
+</div></section>
+<section class="tool">
+<header>
+<h2>
+<span class="cli">quant raw-response --survey-id</span>
+<span class="tool-id">→ cookiy_quant_survey_raw_responses</span>
+<span class="badge ok">OK</span>
+</h2>
+<div class="summary">exit 0 · non-JSON</div>
+</header>
+<div class="body">
+<div class="cmd">cookiy.sh quant raw-response --survey-id 939797</div>
+<div class="panes">
+<div class="pane"><h4>Shape tree</h4><pre class="shape">text (139 lines)</pre></div>
+<div class="pane"><h4>Raw response</h4><pre class="raw">﻿"id";"submitdate";"lastpage";"startlanguage";"seed";"startdate";"datestamp";"role";"aiUse";"trust[R1]";"trust[R2]";"trust[R3]";"trust[R4]";"nps";"blocker";"wish";"RID"
+"1";"2026-04-13 04:54:17";"3";"en";"441407321";"2026-04-13 04:53:03";"2026-04-13 04:54:17";"A5";"A4";"S3";"S3";"S4";"S2";"9";"It is bias";"Nothing ";"69dc76a8-087a-326a-414d-c86d73d67920_01998b3b-9186-72a4-a6c8-6ffe0ee41d53_019d852e-093b-746d-9c0b-e2243c7c074b"
+"2";"2026-04-13 04:56:03";"3";"en";"7753758";"2026-04-13 04:54:43";"2026-04-13 04:56:03";"A5";"A4";"S3";"S2";"S1";"S1";"0";"I don't use at work";"I don't use at work";"69dc770e-cd54-ca80-0c44-0b10909dbb66_01998b3b-9186-72a4-a6c8-6ffe0ee41d53_019d852e-093b-746d-9c0b-e2243c7c074b"
+"3";"2026-04-13 04:56:07";"3";"en";"1389204302";"2026-04-13 04:54:57";"2026-04-13 04:56:07";"A5";"A4";"S1";"S1";"S1";"S1";"0";"DON'T TRUST IT ";"NONE ";"69dc771c-e38b-f133-8f4d-22d79a970034_01998b3b-9186-72a4-a6c8-6ffe0ee41d53_019d852e-093b-746d-9c0b-e2243c7c074b"
+"4";"2026-04-13 04:56:05";"3";"en";"61406814";"2026-04-13 04:54:58";"2026-04-13 04:56:05";"A2";"A3";"S1";"S1";"S1";"S1";"0";"Robot takeover ";"Nothing ";"69dc771d-782a-afe5-9306-8f1a222b61e2_01998b3b-9186-72a4-a6c8-6ffe0ee41d53_019d852e-093b-746d-9c0b-e2243c7c074b"
+"5";"2026-04-13 04:56:57";"3";"en";"342309420";"2026-04-13 04:55:00";"2026-04-13 04:56:57";"A5";"A3";"S5";"S5";"S4";"S4";"0";"It is interfering with authentic writing and work skills.";"Let's AI generated content and more realistic wording.";"69dc771f-c3ff-aa32-1b9e-26cdc3988bde_01998b3b-9186-72a4-a6c8-6ffe0ee41d53_019d852e-093b-746d-9c0b-e2243c7c074b"
+"6";"2026-04-13 04:55:36";"3";"en";"789587765";"2026-04-13 04:55:01";"2026-04-13 04:55:36";"A3";"A3";"S3";"S4";"S3";"S3";"5";"";"Write during the ifjs";"69dc7720-0040-e6dc-3ad1-4d7d602e6ee3_01998b3b-9186-72a4-a6c8-6ffe0ee41d53_019d852e-093b-746d-9c0b-e2243c7c074b"
+"7";"2026-04-13 04:56:22";"3";"en";"1285855868";"2026-04-13 04:55:07";"2026-04-13 04:56:22";"A5";"A4";"S2";"S2";"S3";"S3";"5";"Cause it USE WATER";"None";"69dc7726-672a-cdcf-c5ac-b89f67bf6e63_01998b3b-9186-72a4-a6c8-6ffe0ee41d53_019d852e-093b-746d-9c0b-e2243c7c074b"
+"8";"2026-04-13 04:55:49";"3";"en";"1921058274";"2026-04-13 04:55:08";"2026-04-13 04:55:49";"A5";"A4";"S3";"S3";"S3";"S3";"5";"No e";"Nodn
+No";"69dc7726-24dc-0467-456a-9d8cbf0989f1_01998b3b-9186-72a4-a6c8-6ffe0ee41d53_019d852e-093b-746d-9c0b-e2243c7c074b"
+"11";"2026-04-13 04:59:00";"3";"en";"545148840";"2026-04-13 04:55:29";"2026-04-13 04:59:00";"A2";"A1";"S5";"S4";"S4";"S5";"5";"It could be Morse so much I the fact he has to go ";"It could help do much ";"69dc773c-e396-1fd9-625d-ddf25fe21d76_01998b3b-9186-72a4-a6c8-6ffe0ee41d53_019d852e-093b-746d-9c0b-e2243c7c074b"
+"12";"2026-04-13 04:57:27";"3";"en";"32146688";"2026-04-13 04:55:36";"2026-04-13 04:57:27";"A2";"A1";"S5";"S5";"S4";"S5";"10";"Security problems ";"Faster response time ";"69dc7741-ff47-cc61-d789-2668f4c71dd0_01998b3b-9186-72a4-a6c8-6ffe0ee41d53_019d852e-093b-746d-9c0b-e2243c7c074b"
+"13";"2026-04-13 04:56:28";"3";"en";"797503201";"2026-04-13 04:55:41";"2026-04-13 04:56:28";"A4";"A1";"S5";"S5";"S4";"S5";"8";"Data security ";"Nothing ";"69dc7746-47cd-36e1-7e2e-54421a2f621a_01998b3b-9186-72a4-a6c8-6ffe0ee41d53_019d852e-093b-746d-9c0b-e2243c7c074b"
+"14";"2026-04-13 04:56:58";"3";"en";"1537320943";"2026-04-13 04:55:48";"2026-04-13 04:56:58";"A3";"A2";"S4";"S4";"S4";"S4";"7";"usually wrong and cant always do my job";"learning and listening";"69dc7746-c9d5-388e-f547-ae7fffb37dfe_01998b3b-9186-72a4-a6c8-6ffe0ee41d53_019d852e-093b-746d-9c0b-e2243c7c074b"
+"15";"2026-04-13 05:03:12";"3";"en";"829821166";"2026-04-13 04:55:58";"2026-04-13 05:03:12";"A4";"A1";"S5";"S5";"S5";"S5";"10";"The single biggest reason I would stop. Using an AI assistant would have to. Be Google search engines furthermore therefore overall. ";"One improvement to AI assistants job would. Have to be Google search engines furthermore. ";"69dc7756-4145-a27a-8cfe-ba576c270e6e_01998b3b-9186-72a4-a6c8-6ffe0ee41d53_019d852e-093b-746d-9c0b-e2243c7c074b"
+"16";"2026-04-13 04:58:03";"3";"en";"1852661192";"2026-04-13 04:56:03";"2026-04-13 04:58:03";"A1";"A1";"S5";"S5";"S4";"S5";"10";"If it won't doing what I needed.";"More on top of things getting more things done.";"69dc775c-2148-dc46-38e1-a8ec5f1cba90_01998b3b-9186-72a4-a6c8-6ffe0ee41d53_019d852e-093b-746d-9c0b-e2243c7c074b"
+"17";"2026-04-13 04:59:34";"3";"en";"1412918152";"2026-04-13 04:56:53";"2026-04-13 04:59:34";"A5";"A2";"S3";"S2";"S3";"S2";"8";"Because I don’t like using that type of feature";"Don’t know";"69dc778f-c4ca-4204-6862-666cda04248f_01998b3b-9186-72a4-a6c8-6ffe0ee41d53_019d852e-093b-746d-9c0b-e2243c7c074b"
+"19";"2026-04-13 04:58:18";"3";"en";"276234737";"2026-04-13 04:57:04";"2026-04-13 04:58:18";"A5";"A4";"S3";"S3";"S3";"S3";"0";"Never used it ";"None ";"69dc7799-5181-2b58-e496-4b15ef1ea5fe_01998b3b-9186-72a4-a6c8-6ffe0ee41d53_019d852e-093b-746d-9c0b-e2243c7c074b"
+"20";"2026-04-13 04:58:35";"3";"en";"1166705443";"2026-04-13 04:57:07";"2026-04-13 04:58:35";"A2";"A1";"S4";"S4";"S5";"S3";"9";"nothing";"it is perfect";"69dc779d-a824-6856-020b-295a7322ca11_01998b3b-9186-72a4-a6c8-6ffe0ee41d53_019d852e-093b-746d-9c0b-e2243c7c074b"
+"21";"2026-04-13 04:59:08";"3";"en";"749230952";"2026-04-13 04:57:09";"2026-04-13 04:59:08";"A5";"A1";"S5";"S4";"S4";"S4";"5";"If internet Went out ";"Paid suscript";"69dc77a0-de8f-09fa-952a-bdf30a5c9512_01998b3b-9186-72a4-a6c8-6ffe0ee41d53_019d852e-093b-746d-9c0b-e2243c7c074b"
+"22";"2026-04-13 04:58:27";"3";"en";"836637027";"2026-04-13 04:57:12";"2026-04-13 04:58:27";"A4";"A1";"S2";"S4";"S3";"S4";"8";"Inaccurate results.";"Nothing to improve.";"69dc77a1-56e2-3357-74af-6a5d05e0f617_01998b3b-9186-72a4-a6c8-6ffe0ee41d53_019d852e-093b-746d-9c0b-e2243c7c074b"
+"23";"2026-04-13 04:58:24";"3";"en";"115306446";"2026-04-13 04:57:13";"2026-04-13 04:58:24";"A5";"A4";"S1";"S1";"S1";"S1";"0";"Untrained";"To not exist";"69dc77a3-68cf-6bd0-2a52-9a487081abe6_01998b3b-9186-72a4-a6c8-6ffe0ee41d53_019d852e-093b-746d-9c0b-e2243c7c074b"
+"24";"2026-04-13 04:58:43";"3";"en";"1392183380";"2026-04-13 04:57:21";"2026-04-13 04:58:43";"A5";"A4";"S1";"S1";"S1";"S1";"0";"I never started ";"Nothing ";"69dc77ab-2a9d-fe5d-7c75-5020d54ebef6_01998b3b-9186-72a4-a6c8-6ffe0ee41d53_019d852e-093b-746d-9c0b-e2243c7c074b"
+"25";"2026-04-13 05:01:43";"3";"en";"649130450";"2026-04-13 04:57:23";"2026-04-13 05:01:43";"A5";"A4";"S3";"S2";"S2";"S2";"10";"Manager doesn't allow it ";"Not sure ";"69dc77ae-4b92-3e3f-af2e-3bf2c76c3aaa_01998b3b-9186-72a4-a6c8-6ffe0ee41d53_019d852e-093b-746d-9c0b-e2243c7c074b"
+"28";"2026-04-13 04:58:53";"3";"en";"1534613047";"2026-04-13 04:57:42";"2026-04-13 04:58:53";"A5";"A2";"S5";"S5";"S5";"S5";"8";"If my information is being used";"None";"69dc77c1-a3e2-baa5-0f54-e8825ec01fe2_01998b3b-9186-72a4-a6c8-6ffe0ee41d53_019d852e-093b-746d-9c0b-e2243c7c074b"
+"29";"2026-04-13 04:58:43";"3";"en";"772021748";"2026-04-13 04:58:06";"2026-04-13 04:58:43";"A3";"A2";"S3";"S4";"S2";"S4";"5";"By hell out of the living room was treated like a little bit of a ";"Beck 6tu IDK what to do it tomorrow and I'm going to ";"69dc77d9-c39b-50b2-4cb8-8f786897b0d1_01998b3b-9186-72a4-a6c8-6ffe0ee41d53_019d852e-093b-746d-9c0b-e2243c7c074b"
+"31";"2026-04-13 04:59:20";"3";"en";"1718550812";"2026-04-13 04:58:09";"2026-04-13 04:59:20";"A5";"A4";"S3";"S3";"S3";"S3";"5";"N/A";"N/A";"69dc77dc-77ff-2fdd-d832-b3406c54f7a3_01998b3b-9186-72a4-a6c8-6ffe0ee41d53_019d852e-093b-746d-9c0b-e2243c7c074b"
+"32";"2026-04-13 05:00:06";"3";"en";"1682934478";"2026-04-13 04:58:13";"2026-04-13 05:00:06";"A5";"A2";"S4";"S4";"S4";"S4";"0";"Hackers like doing to me now";"Prevent hackers ";"69dc77d1-da41-0092-1afc-eaf249da6dbb_01998b3b-9186-72a4-a6c8-6ffe0ee41d53_019d852e-093b-746d-9c0b-e2243c7c074b"
+"33";"2026-04-13 05:00:38";"3";"en";"1207580201";"2026-04-13 04:58:16";"2026-04-13 05:00:37";"A5";"A2";"S3";"S1";"S2";"S1";"0";"Takes my job ";"Not over shadowing ";"69dc7777-395c-08d5-1a25-e48ab29c27ca_01998b3b-9186-72a4-a6c8-6ffe0ee41d53_019d852
+…(truncated)</pre></div>
+</div>
+</div></section>
+<section class="tool">
+<header>
+<h2>
+<span class="cli">quant raw-response --survey-id --include-incomplete</span>
+<span class="tool-id">→ cookiy_quant_survey_raw_responses</span>
+<span class="badge ok">OK</span>
+</h2>
+<div class="summary">exit 0 · non-JSON</div>
+</header>
+<div class="body">
+<div class="cmd">cookiy.sh quant raw-response --survey-id 939797 --include-incomplete</div>
+<div class="panes">
+<div class="pane"><h4>Shape tree</h4><pre class="shape">text (158 lines)</pre></div>
+<div class="pane"><h4>Raw response</h4><pre class="raw">﻿"id";"submitdate";"lastpage";"startlanguage";"seed";"startdate";"datestamp";"role";"aiUse";"trust[R1]";"trust[R2]";"trust[R3]";"trust[R4]";"nps";"blocker";"wish";"RID"
+"1";"2026-04-13 04:54:17";"3";"en";"441407321";"2026-04-13 04:53:03";"2026-04-13 04:54:17";"A5";"A4";"S3";"S3";"S4";"S2";"9";"It is bias";"Nothing ";"69dc76a8-087a-326a-414d-c86d73d67920_01998b3b-9186-72a4-a6c8-6ffe0ee41d53_019d852e-093b-746d-9c0b-e2243c7c074b"
+"2";"2026-04-13 04:56:03";"3";"en";"7753758";"2026-04-13 04:54:43";"2026-04-13 04:56:03";"A5";"A4";"S3";"S2";"S1";"S1";"0";"I don't use at work";"I don't use at work";"69dc770e-cd54-ca80-0c44-0b10909dbb66_01998b3b-9186-72a4-a6c8-6ffe0ee41d53_019d852e-093b-746d-9c0b-e2243c7c074b"
+"3";"2026-04-13 04:56:07";"3";"en";"1389204302";"2026-04-13 04:54:57";"2026-04-13 04:56:07";"A5";"A4";"S1";"S1";"S1";"S1";"0";"DON'T TRUST IT ";"NONE ";"69dc771c-e38b-f133-8f4d-22d79a970034_01998b3b-9186-72a4-a6c8-6ffe0ee41d53_019d852e-093b-746d-9c0b-e2243c7c074b"
+"4";"2026-04-13 04:56:05";"3";"en";"61406814";"2026-04-13 04:54:58";"2026-04-13 04:56:05";"A2";"A3";"S1";"S1";"S1";"S1";"0";"Robot takeover ";"Nothing ";"69dc771d-782a-afe5-9306-8f1a222b61e2_01998b3b-9186-72a4-a6c8-6ffe0ee41d53_019d852e-093b-746d-9c0b-e2243c7c074b"
+"5";"2026-04-13 04:56:57";"3";"en";"342309420";"2026-04-13 04:55:00";"2026-04-13 04:56:57";"A5";"A3";"S5";"S5";"S4";"S4";"0";"It is interfering with authentic writing and work skills.";"Let's AI generated content and more realistic wording.";"69dc771f-c3ff-aa32-1b9e-26cdc3988bde_01998b3b-9186-72a4-a6c8-6ffe0ee41d53_019d852e-093b-746d-9c0b-e2243c7c074b"
+"6";"2026-04-13 04:55:36";"3";"en";"789587765";"2026-04-13 04:55:01";"2026-04-13 04:55:36";"A3";"A3";"S3";"S4";"S3";"S3";"5";"";"Write during the ifjs";"69dc7720-0040-e6dc-3ad1-4d7d602e6ee3_01998b3b-9186-72a4-a6c8-6ffe0ee41d53_019d852e-093b-746d-9c0b-e2243c7c074b"
+"7";"2026-04-13 04:56:22";"3";"en";"1285855868";"2026-04-13 04:55:07";"2026-04-13 04:56:22";"A5";"A4";"S2";"S2";"S3";"S3";"5";"Cause it USE WATER";"None";"69dc7726-672a-cdcf-c5ac-b89f67bf6e63_01998b3b-9186-72a4-a6c8-6ffe0ee41d53_019d852e-093b-746d-9c0b-e2243c7c074b"
+"8";"2026-04-13 04:55:49";"3";"en";"1921058274";"2026-04-13 04:55:08";"2026-04-13 04:55:49";"A5";"A4";"S3";"S3";"S3";"S3";"5";"No e";"Nodn
+No";"69dc7726-24dc-0467-456a-9d8cbf0989f1_01998b3b-9186-72a4-a6c8-6ffe0ee41d53_019d852e-093b-746d-9c0b-e2243c7c074b"
+"9";;"1";"en";"1362853263";"2026-04-13 04:55:24";"2026-04-13 04:55:55";"A5";"A4";;;;;;;;"69dc7736-e038-e353-506f-48a22c3e8aa5_01998b3b-9186-72a4-a6c8-6ffe0ee41d53_019d852e-093b-746d-9c0b-e2243c7c074b"
+"10";;"-1";"en";"989438565";"2026-04-13 04:55:24";"2026-04-13 04:55:24";;;;;;;;;;"69dc771b-eb2f-3a77-fbda-2e5d16e437bc_01998b3b-9186-72a4-a6c8-6ffe0ee41d53_019d852e-093b-746d-9c0b-e2243c7c074b"
+"11";"2026-04-13 04:59:00";"3";"en";"545148840";"2026-04-13 04:55:29";"2026-04-13 04:59:00";"A2";"A1";"S5";"S4";"S4";"S5";"5";"It could be Morse so much I the fact he has to go ";"It could help do much ";"69dc773c-e396-1fd9-625d-ddf25fe21d76_01998b3b-9186-72a4-a6c8-6ffe0ee41d53_019d852e-093b-746d-9c0b-e2243c7c074b"
+"12";"2026-04-13 04:57:27";"3";"en";"32146688";"2026-04-13 04:55:36";"2026-04-13 04:57:27";"A2";"A1";"S5";"S5";"S4";"S5";"10";"Security problems ";"Faster response time ";"69dc7741-ff47-cc61-d789-2668f4c71dd0_01998b3b-9186-72a4-a6c8-6ffe0ee41d53_019d852e-093b-746d-9c0b-e2243c7c074b"
+"13";"2026-04-13 04:56:28";"3";"en";"797503201";"2026-04-13 04:55:41";"2026-04-13 04:56:28";"A4";"A1";"S5";"S5";"S4";"S5";"8";"Data security ";"Nothing ";"69dc7746-47cd-36e1-7e2e-54421a2f621a_01998b3b-9186-72a4-a6c8-6ffe0ee41d53_019d852e-093b-746d-9c0b-e2243c7c074b"
+"14";"2026-04-13 04:56:58";"3";"en";"1537320943";"2026-04-13 04:55:48";"2026-04-13 04:56:58";"A3";"A2";"S4";"S4";"S4";"S4";"7";"usually wrong and cant always do my job";"learning and listening";"69dc7746-c9d5-388e-f547-ae7fffb37dfe_01998b3b-9186-72a4-a6c8-6ffe0ee41d53_019d852e-093b-746d-9c0b-e2243c7c074b"
+"15";"2026-04-13 05:03:12";"3";"en";"829821166";"2026-04-13 04:55:58";"2026-04-13 05:03:12";"A4";"A1";"S5";"S5";"S5";"S5";"10";"The single biggest reason I would stop. Using an AI assistant would have to. Be Google search engines furthermore therefore overall. ";"One improvement to AI assistants job would. Have to be Google search engines furthermore. ";"69dc7756-4145-a27a-8cfe-ba576c270e6e_01998b3b-9186-72a4-a6c8-6ffe0ee41d53_019d852e-093b-746d-9c0b-e2243c7c074b"
+"16";"2026-04-13 04:58:03";"3";"en";"1852661192";"2026-04-13 04:56:03";"2026-04-13 04:58:03";"A1";"A1";"S5";"S5";"S4";"S5";"10";"If it won't doing what I needed.";"More on top of things getting more things done.";"69dc775c-2148-dc46-38e1-a8ec5f1cba90_01998b3b-9186-72a4-a6c8-6ffe0ee41d53_019d852e-093b-746d-9c0b-e2243c7c074b"
+"17";"2026-04-13 04:59:34";"3";"en";"1412918152";"2026-04-13 04:56:53";"2026-04-13 04:59:34";"A5";"A2";"S3";"S2";"S3";"S2";"8";"Because I don’t like using that type of feature";"Don’t know";"69dc778f-c4ca-4204-6862-666cda04248f_01998b3b-9186-72a4-a6c8-6ffe0ee41d53_019d852e-093b-746d-9c0b-e2243c7c074b"
+"18";;"1";"en";"413669076";"2026-04-13 04:57:00";"2026-04-13 04:57:21";"A2";"A2";;;;;;;;"69dc7796-82d1-0482-ca19-9190a8950daf_01998b3b-9186-72a4-a6c8-6ffe0ee41d53_019d852e-093b-746d-9c0b-e2243c7c074b"
+"19";"2026-04-13 04:58:18";"3";"en";"276234737";"2026-04-13 04:57:04";"2026-04-13 04:58:18";"A5";"A4";"S3";"S3";"S3";"S3";"0";"Never used it ";"None ";"69dc7799-5181-2b58-e496-4b15ef1ea5fe_01998b3b-9186-72a4-a6c8-6ffe0ee41d53_019d852e-093b-746d-9c0b-e2243c7c074b"
+"20";"2026-04-13 04:58:35";"3";"en";"1166705443";"2026-04-13 04:57:07";"2026-04-13 04:58:35";"A2";"A1";"S4";"S4";"S5";"S3";"9";"nothing";"it is perfect";"69dc779d-a824-6856-020b-295a7322ca11_01998b3b-9186-72a4-a6c8-6ffe0ee41d53_019d852e-093b-746d-9c0b-e2243c7c074b"
+"21";"2026-04-13 04:59:08";"3";"en";"749230952";"2026-04-13 04:57:09";"2026-04-13 04:59:08";"A5";"A1";"S5";"S4";"S4";"S4";"5";"If internet Went out ";"Paid suscript";"69dc77a0-de8f-09fa-952a-bdf30a5c9512_01998b3b-9186-72a4-a6c8-6ffe0ee41d53_019d852e-093b-746d-9c0b-e2243c7c074b"
+"22";"2026-04-13 04:58:27";"3";"en";"836637027";"2026-04-13 04:57:12";"2026-04-13 04:58:27";"A4";"A1";"S2";"S4";"S3";"S4";"8";"Inaccurate results.";"Nothing to improve.";"69dc77a1-56e2-3357-74af-6a5d05e0f617_01998b3b-9186-72a4-a6c8-6ffe0ee41d53_019d852e-093b-746d-9c0b-e2243c7c074b"
+"23";"2026-04-13 04:58:24";"3";"en";"115306446";"2026-04-13 04:57:13";"2026-04-13 04:58:24";"A5";"A4";"S1";"S1";"S1";"S1";"0";"Untrained";"To not exist";"69dc77a3-68cf-6bd0-2a52-9a487081abe6_01998b3b-9186-72a4-a6c8-6ffe0ee41d53_019d852e-093b-746d-9c0b-e2243c7c074b"
+"24";"2026-04-13 04:58:43";"3";"en";"1392183380";"2026-04-13 04:57:21";"2026-04-13 04:58:43";"A5";"A4";"S1";"S1";"S1";"S1";"0";"I never started ";"Nothing ";"69dc77ab-2a9d-fe5d-7c75-5020d54ebef6_01998b3b-9186-72a4-a6c8-6ffe0ee41d53_019d852e-093b-746d-9c0b-e2243c7c074b"
+"25";"2026-04-13 05:01:43";"3";"en";"649130450";"2026-04-13 04:57:23";"2026-04-13 05:01:43";"A5";"A4";"S3";"S2";"S2";"S2";"10";"Manager doesn't allow it ";"Not sure ";"69dc77ae-4b92-3e3f-af2e-3bf2c76c3aaa_01998b3b-9186-72a4-a6c8-6ffe0ee41d53_019d852e-093b-746d-9c0b-e2243c7c074b"
+"26";;"1";"en";"1001093211";"2026-04-13 04:57:34";"2026-04-13 04:59:32";"A5";"A1";;;;;;;;"69dc77b8-3bc4-9e18-00cd-f1e02986581d_01998b3b-9186-72a4-a6c8-6ffe0ee41d53_019d852e-093b-746d-9c0b-e2243c7c074b"
+"27";;"-1";"en";"1111873639";"2026-04-13 04:57:34";"2026-04-13 04:57:34";;;;;;;;;;"69dc77b8-d52b-2f64-46d1-4745ad6bf539_01998b3b-9186-72a4-a6c8-6ffe0ee41d53_019d852e-093b-746d-9c0b-e2243c7c074b"
+"28";"2026-04-13 04:58:53";"3";"en";"1534613047";"2026-04-13 04:57:42";"2026-04-13 04:58:53";"A5";"A2";"S5";"S5";"S5";"S5";"8";"If my information is being used";"None";"69dc77c1-a3e2-baa5-0f54-e8825ec01fe2_01998b3b-9186-72a4-a6c8-6ffe0ee41d53_019d852e-093b-746d-9c0b-e2243c7c074b"
+"29";"2026-04-13 04:58:43";"3";"en";"772021748";"2026-04-13 04:58:06";"2026-04-13 04:58:43";"A3";"A2";"S3";"S4";"S2";"S4";"5";"By hell out of the living room wa
+…(truncated)</pre></div>
+</div>
+</div></section>
+<div class="divider"><div class="title">Billing</div><div class="sub">6 commands</div></div>
+<section class="tool">
+<header>
+<h2>
+<span class="cli">billing balance</span>
+<span class="tool-id">→ cookiy_balance_get</span>
+<span class="badge ok">OK</span>
+</h2>
+<div class="summary">exit 0 · 1 JSON value(s)</div>
+</header>
+<div class="body">
+<div class="cmd">cookiy.sh billing balance</div>
+<div class="panes">
+<div class="pane"><h4>Shape tree</h4><pre class="shape">balance_summary: string</pre></div>
+<div class="pane"><h4>Raw response</h4><pre class="raw">{
+  "balance_summary": "$198.40"
+}</pre></div>
+</div>
+</div></section>
+<section class="tool">
+<header>
+<h2>
+<span class="cli">billing checkout --amount-usd-cents</span>
+<span class="tool-id">→ cookiy_billing_cash_checkout</span>
+<span class="badge ok">OK</span>
+</h2>
+<div class="summary">exit 0 · 1 JSON value(s)</div>
+</header>
+<div class="body">
+<div class="cmd">cookiy.sh billing checkout --amount-usd-cents 1000</div>
+<div class="panes">
+<div class="pane"><h4>Shape tree</h4><pre class="shape">payment_required: boolean
+amount_cents: number
+formatted_amount: string
+checkout_url: string
+checkout_id: string</pre></div>
+<div class="pane"><h4>Raw response</h4><pre class="raw">{
+  "payment_required": true,
+  "amount_cents": 1000,
+  "formatted_amount": "$10.00",
+  "checkout_url": "https://checkout.stripe.com/c/pay/cs_live_b1sgcECN8ZRtR8OwUGydD8VzpNLZYbDwKanjc1i55smgtiE9POT2L8tRL4#fidnandhYHdWcXxpYCc%2FJ2FgY2RwaXEnKSdkdWxOYHwnPyd1blppbHNgWjA0VGwzdjFBQkZWb0p2VlNpUXxscl08UWFJSkdSfXNqTmBsN3NtMWFLX2FLRldnT299MnB9VTFuYUl0MU1OVkxyQGJnUkpSf0BvNH1oZmdIXHE0SWl1dkNXNTU0ajYzU0EwMicpJ2N3amhWYHdzYHcnP3F3cGApJ2dkZm5id2pwa2FGamlqdyc%2FJyZjY2NjY2MnKSdpZHxqcHFRfHVgJz8naHBpcWxabHFgaCcpJ2BrZGdpYFVpZGZgbWppYWB3dic%2FcXdwYHgl",
+  "checkout_id": "cs_live_b1sgcECN8ZRtR8OwUGydD8VzpNLZYbDwKanjc1i55smgtiE9POT2L8tRL4"
+}</pre></div>
+</div>
+</div></section>
+<section class="tool">
+<header>
+<h2>
+<span class="cli">billing price-table</span>
+<span class="tool-id">→ cookiy_billing_price_table</span>
+<span class="badge ok">OK</span>
+</h2>
+<div class="summary">exit 0 · 1 JSON value(s)</div>
+</header>
+<div class="body">
+<div class="cmd">cookiy.sh billing price-table</div>
+<div class="panes">
+<div class="pane"><h4>Shape tree</h4><pre class="shape">items:
+  array[
+    action: string
+    price: string
+  ]</pre></div>
+<div class="pane"><h4>Raw response</h4><pre class="raw">{
+  "items": [
+    {
+      "action": "Recruit one qualitative participant",
+      "price": "$9.99"
+    },
+    {
+      "action": "Recruit one survey (quantitative) participant",
+      "price": "$0.50"
+    },
+    {
+      "action": "Generate a report",
+      "price": "$0.30"
+    },
+    {
+      "action": "Generate a discussion guide",
+      "price": "$0.20"
+    },
+    {
+      "action": "conduct a synthetic user interview",
+      "price": "$0.20"
+    }
+  ]
+}</pre></div>
+</div>
+</div></section>
+<section class="tool">
+<header>
+<h2>
+<span class="cli">billing transactions --limit 5</span>
+<span class="tool-id">→ cookiy_billing_transactions</span>
+<span class="badge ok">OK</span>
+</h2>
+<div class="summary">exit 0 · 1 JSON value(s)</div>
+</header>
+<div class="body">
+<div class="cmd">cookiy.sh billing transactions --limit 5</div>
+<div class="panes">
+<div class="pane"><h4>Shape tree</h4><pre class="shape">array[
+  amount_cents: number
+  type: string
+  created_at: string
+  quantity: number
+  study_id: string
+  project_name: string
+  description: string
+]</pre></div>
+<div class="pane"><h4>Raw response</h4><pre class="raw">[
+  {
+    "amount_cents": -30,
+    "type": "report",
+    "created_at": "2026-04-20T04:11:06.970Z",
+    "quantity": 1,
+    "study_id": "019d950f-2493-712e-bf9e-f3526a4effca",
+    "project_name": "CLI audit scratch study 1776322287",
+    "description": "Report generation for \"CLI audit scratch study 1776322287\" · 1 report · $0.30"
+  },
+  {
+    "amount_cents": -20,
+    "type": "synthetic",
+    "created_at": "2026-04-20T04:11:03.863Z",
+    "quantity": 1,
+    "study_id": "019d950f-2493-712e-bf9e-f3526a4effca",
+    "project_name": "CLI audit scratch study 1776322287",
+    "description": "Synthetic interviews for \"CLI audit scratch study 1776322287\" · 1 persona · $0.20",
+    "product_id": "019da915-e07f-731b-8284-8b753561aaa2"
+  },
+  {
+    "amount_cents": -20,
+    "type": "discussion_guide",
+    "created_at": "2026-04-20T04:10:32.723Z",
+    "quantity": 1,
+    "study_id": "019da915-358b-75e3-b052-6633f922b90d",
+    "project_name": "CLI audit scratch study 1776658229",
+    "description": "Discussion guide generation · 1 guide · $0.20",
+    "product_id": "019da915-358b-75e3-b052-6633f922b90d"
+  },
+  {
+    "amount_cents": -20,
+    "type": "synthetic",
+    "created_at": "2026-04-20T03:54:49.587Z",
+    "quantity": 1,
+    "study_id": "019d950f-2493-712e-bf9e-f3526a4effca",
+    "project_name": "CLI audit scratch study 1776322287",
+    "description": "Synthetic interviews for \"CLI audit scratch study 1776322287\" · 1 persona · $0.20",
+    "product_id": "019da907-00f6-7132-aa3d-6d86de6890ea"
+  },
+  {
+    "amount_cents": -20,
+    "type": "discussion_guide",
+    "created_at": "2026-04-20T03:54:17.136Z",
+    "quantity": 1,
+    "study_id": "019da906-52aa-7329-9271-957f37a9d1e7",
+    "project_name": "CLI audit scratch study 1776657254",
+    "description": "Discussion guide generation · 1 guide · $0.20",
+    "product_id": "019da906-52aa-7329-9271-957f37a9d1e7"
+  }
+]</pre></div>
+</div>
+</div></section>
+<section class="tool">
+<header>
+<h2>
+<span class="cli">billing transactions --study-id</span>
+<span class="tool-id">→ cookiy_billing_transactions</span>
+<span class="badge ok">OK</span>
+</h2>
+<div class="summary">exit 0 · 1 JSON value(s)</div>
+</header>
+<div class="body">
+<div class="cmd">cookiy.sh billing transactions --limit 5 --study-id 019c51ab-cb2b-7094-a59f-e9d12e18ffc9</div>
+<div class="panes">
+<div class="pane"><h4>Shape tree</h4><pre class="shape">array[
+  amount_cents: number
+  type: string
+  created_at: string
+  quantity: number
+  study_id: string
+  project_name: string
+  product_id: string
+]</pre></div>
+<div class="pane"><h4>Raw response</h4><pre class="raw">[
+  {
+    "amount_cents": -20,
+    "type": "synthetic",
+    "created_at": "2026-04-12T09:02:12.594Z",
+    "quantity": 1,
+    "study_id": "019c51ab-cb2b-7094-a59f-e9d12e18ffc9",
+    "project_name": "Smart Home Speaker Purchase Decision Drivers (U.S.)",
+    "product_id": "019c51ab-cb2b-7094-a59f-e9d12e18ffc9"
+  }
+]</pre></div>
+</div>
+</div></section>
+<section class="tool">
+<header>
+<h2>
+<span class="cli">billing transactions --survey-id</span>
+<span class="tool-id">→ cookiy_billing_transactions</span>
+<span class="badge ok">OK</span>
+</h2>
+<div class="summary">exit 0 · 1 JSON value(s)</div>
+</header>
+<div class="body">
+<div class="cmd">cookiy.sh billing transactions --limit 5 --survey-id 878381</div>
+<div class="panes">
+<div class="pane"><h4>Shape tree</h4><pre class="shape">array[]</pre></div>
+<div class="pane"><h4>Raw response</h4><pre class="raw">[]</pre></div>
+</div>
+</div></section>
+<footer class="doc">38 OK · 0 FAIL · 1 SKIP · source: <code>cli_audit_shapes.py</code></footer>
+</div></body></html>

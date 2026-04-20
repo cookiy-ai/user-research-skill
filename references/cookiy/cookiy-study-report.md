@@ -10,14 +10,6 @@ Trigger report generation. Re-generates if a report already exists. Synthetic in
 cookiy study report generate --study-id <uuid> [--skip-synthetic-interview]
 ```
 
-### report wait
-
-Wait until the report has been generated.
-
-```
-cookiy study report wait --study-id <uuid>
-```
-
 ### report link
 
 Get the public URL for the report.
