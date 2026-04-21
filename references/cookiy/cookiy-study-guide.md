@@ -15,6 +15,17 @@ before showing to the user.
 cookiy study guide get --study-id <uuid>
 ```
 
+### study guide wait
+
+Block until the discussion/interview guide has finished generating (polls `study status` every 15s).
+Exits non-zero on timeout.
+
+```
+cookiy study guide wait --study-id <uuid> [--timeout-ms <n>]
+```
+
+`--timeout-ms` defaults to `120000` (2 minutes).
+
 ### study guide update
 
 Partially update (patch) the discussion/interview guide. The patch is merged into the JSON returned
