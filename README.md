@@ -54,7 +54,7 @@ Use it for **general-purpose research** (design research plans, interview guides
 ### Codex / Cursor / OpenClaw / Other Agents
 
 ```bash
-npx skills add cookiy-ai/user-research-skill -g -y
+npx cookiy-ai
 ```
 
 Or follow your agent's skill installation instructions to install manually.
