@@ -25,4 +25,6 @@ Recruit real participants for qual studies (interviews) or quant surveys.
 
 Recruitment takes hours to days. Use `study status` for qual studies or `quant status` for quant surveys to check progress.
 
+If launch fails, no balance is deducted.
+
 ### Error: 409 — sample size already reached. Proceed to report instead.
