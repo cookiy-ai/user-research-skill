@@ -79,6 +79,15 @@ Guide and report generation expose a `wait` subcommand (see the relevant sub-ref
 
 ---
 
+## Interview Status
+
+- **In Process** — participant in the room, interview running
+- **Pause** — participant temporarily left
+- **Complete** — finished, passed quality check
+- **Not Qualify** — failed quality check
+
+---
+
 ## Sub-References
 
 Only read these when you need to perform the specific operation:
