@@ -31,7 +31,7 @@ Review Guide  ──→  (optional) show/edit the guide
 Fetch existing studies.
 
 ```
-scripts/cookiy.sh study list [--limit <n>] [--cursor <s>]
+cookiy study list [--limit <n>] [--cursor <s>]
 ```
 
 ### study create
@@ -39,7 +39,7 @@ scripts/cookiy.sh study list [--limit <n>] [--cursor <s>]
 Create a new study. It automatically creates the discussion/interview guide (generated asynchronously).
 
 ```
-scripts/cookiy.sh study create --query <s> [--thinking <s>] [--attachments <s>]
+cookiy study create --query <s> [--thinking <s>] [--attachments <s>]
 ```
 
 | Flag | Required | Purpose |
@@ -54,7 +54,7 @@ Upload an image and get an s3 key back. The key can be used in `study create --a
 guide update payloads.
 
 ```
-scripts/cookiy.sh study upload --content-type <s> (--image-data <s> | --image-url <s>)
+cookiy study upload --content-type <s> (--image-data <s> | --image-url <s>)
 ```
 
 | Flag | Required | Purpose |
@@ -68,14 +68,16 @@ Check the current stage of a study (guide generation, recruitment, interviews, e
 whenever you need to know what's happening before taking the next step.
 
 ```
-scripts/cookiy.sh study status --study-id <uuid>
+cookiy study status --study-id <uuid>
 ```
 
 ---
 
 ## Waiting on Async Operations
 
-Guide and report generation expose a `wait` subcommand (see the relevant sub-reference) to block until complete. Use it to poll-wait until the operation completes. For all other progress checks, use `study status`.
+Guide and report generation expose a `wait` subcommand (see the relevant sub-reference) that
+polls `study status` every 15s and blocks until the operation completes. Use it when you need to
+wait-then-act. For all other progress checks, call `study status` yourself.
 
 ---
 

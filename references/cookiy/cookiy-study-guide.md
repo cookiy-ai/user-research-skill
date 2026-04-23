@@ -12,16 +12,19 @@ Get the full discussion/interview guide. Returns JSON — convert it to a human-
 before showing to the user.
 
 ```
-scripts/cookiy.sh study guide get --study-id <uuid>
+cookiy study guide get --study-id <uuid>
 ```
 
 ### study guide wait
 
-Wait until the discussion/interview guide has been generated for the study.
+Block until the discussion/interview guide has finished generating (polls `study status` every 15s).
+Exits non-zero on timeout.
 
 ```
-scripts/cookiy.sh study guide wait --study-id <uuid>
+cookiy study guide wait --study-id <uuid> [--timeout-ms <n>]
 ```
+
+`--timeout-ms` defaults to `120000` (2 minutes).
 
 ### study guide update
 
@@ -29,7 +32,7 @@ Partially update (patch) the discussion/interview guide. The patch is merged int
 by `study guide get`.
 
 ```
-scripts/cookiy.sh study guide update --study-id <uuid> --base-revision <s> --idempotency-key <s> [--change-message <s>] --json '<patch>'
+cookiy study guide update --study-id <uuid> --base-revision <s> --idempotency-key <s> [--change-message <s>] --json '<patch>'
 ```
 
 | Flag | Required | Purpose |
