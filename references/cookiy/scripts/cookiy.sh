@@ -115,17 +115,17 @@ die_no_access() {
 Sign in:  $url"
 }
 
-# Inspect any JSON body for auth-error indicators (status_code 401/403 or
-# error.code UNAUTHORIZED/FORBIDDEN).  If detected, call die_no_access so
+# Inspect any JSON body for auth-error indicators (status_code 401 or
+# error.code UNAUTHORIZED/AUTH_REQUIRED).  If detected, call die_no_access so
 # the user always sees the sign-in URL regardless of which layer returned
 # the auth failure (HTTP, JSON-RPC, or tool result).
 check_auth_error() {
   local body="$1"
   local sc code
   sc="$(echo "$body" | jq -r 'if type == "object" then (.status_code // empty) else empty end' 2>/dev/null)" || return 0
-  case "$sc" in 401|403) die_no_access ;; esac
+  case "$sc" in 401) die_no_access ;; esac
   code="$(echo "$body" | jq -r 'if type == "object" then (.error.code // empty) else empty end' 2>/dev/null)" || return 0
-  case "$code" in UNAUTHORIZED|FORBIDDEN|AUTH_REQUIRED) die_no_access ;; esac
+  case "$code" in UNAUTHORIZED|AUTH_REQUIRED) die_no_access ;; esac
 }
 
 # --- save-token command ----------------------------------------------------
@@ -149,26 +149,11 @@ run_save_token() {
   api_end="${API_URL_OPT:-${COOKIY_API_URL:-${COOKIY_MCP_URL:-}}}"
   api_end="${api_end:-${raw_server%/}/mcp}"
 
-  # Verify token works before writing
-  local resp http body
-  resp="$(curl -sS --max-time "$TIMEOUT" -w '\n%{http_code}' -X POST "$api_end" \
-    -H "Content-Type: application/json" \
-    -H "Accept: application/json, text/event-stream" \
-    -H "Authorization: Bearer $at" \
-    -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":\"2025-03-26\",\"capabilities\":{},\"clientInfo\":{\"name\":\"cookiy-cli-sh\",\"version\":\"1.0.0\"}}}")" \
-    || die "Token verify failed (curl error). Check your network and try again."
-  http="$(echo "$resp" | tail -n1)"
-  body="$(echo "$resp" | sed '$d')"
-  [[ "$http" == "200" ]] || die "Token verify HTTP $http — token may be invalid or expired. Sign in again at: $(resolve_login_url)"
-  if echo "$body" | jq -e '.error' >/dev/null 2>&1; then
-    die "Token verify error: $(echo "$body" | jq -c .error)"
-  fi
-
   mkdir -p "$(dirname "$TOKEN_PATH")"
   printf '%s' "$at" > "$TOKEN_PATH"
   chmod 600 "$TOKEN_PATH" 2>/dev/null || true
 
-  echo "Token verified and saved to $TOKEN_PATH" >&2
+  echo "Token saved to $TOKEN_PATH" >&2
 }
 
 # --- token file & URL resolution ------------------------------------------
@@ -215,7 +200,7 @@ post_jsonrpc() {
   http="$(printf '%s' "$resp" | tail -n1)"
   body="$(printf '%s' "$resp" | sed '$d')"
   if [[ "$http" != "200" ]]; then
-    if [[ "$http" == "401" || "$http" == "403" ]]; then
+    if [[ "$http" == "401" ]]; then
       die_no_access
     fi
     echo "HTTP $http — POST $API_ENDPOINT" >&2
