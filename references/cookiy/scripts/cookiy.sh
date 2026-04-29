@@ -293,7 +293,7 @@ invoke() {
   fi
 }
 
-# Poll study status until guide generation leaves "guide_generation_in_progress"
+# Poll study status until guide generation leaves an in-progress state
 # or the deadline passes; print the last observed sources.guide object.
 wait_for_guide() {
   local study_id="$1"
@@ -306,7 +306,16 @@ wait_for_guide() {
     resp="$(invoke cookiy_activity_get "$args")" || return 1
     guide="$(echo "$resp" | jq -c '.sources.guide // {}')"
     status="$(echo "$resp" | jq -r '.sources.guide.status // ""')"
-    [[ "$status" != "guide_generation_in_progress" ]] && break
+    case "$status" in
+      queued|running|guide_generation_queued|guide_generation_in_progress|"") ;;
+      failed|guide_generation_failed)
+        echo "$guide"
+        return 1
+        ;;
+      *)
+        break
+        ;;
+    esac
     if [[ $(date +%s) -ge $deadline ]]; then timed_out=1; break; fi
     sleep 15
   done
@@ -314,20 +323,38 @@ wait_for_guide() {
   [[ $timed_out -eq 0 ]]
 }
 
-# Poll study status until report generation leaves "report_generation_in_progress"
-# or the deadline passes, then print the report share link.
+# Poll study status until the report is ready or the deadline passes, then
+# print the report share link.
 # Returns 1 on timeout or invoke failure.
 wait_for_report_then_link() {
   local study_id="$1"
   local timeout_ms="${2:-300000}"
   local deadline=$(( $(date +%s) + (timeout_ms + 999) / 1000 ))
   local args="{\"study_id\":\"$(json_escape "$study_id")\"}"
-  local resp status
+  local resp report status
+  report='{}'
   while :; do
     resp="$(invoke cookiy_activity_get "$args")" || return 1
+    report="$(echo "$resp" | jq -c '.sources.report // {}')"
     status="$(echo "$resp" | jq -r '.sources.report.status // ""')"
-    [[ "$status" != "report_generation_in_progress" ]] && break
-    if [[ $(date +%s) -ge $deadline ]]; then return 1; fi
+    case "$status" in
+      report_ready)
+        break
+        ;;
+      report_failed)
+        echo "$report" >&2
+        return 1
+        ;;
+      report_not_requested|report_requested|report_generation_in_progress|"") ;;
+      *)
+        echo "$report" >&2
+        return 1
+        ;;
+    esac
+    if [[ $(date +%s) -ge $deadline ]]; then
+      echo "$report" >&2
+      return 1
+    fi
     sleep 15
   done
   invoke cookiy_report_share_link_get "$args"
@@ -531,8 +558,9 @@ study guide wait — poll study status until guide generation is no longer in pr
     Usage:   cookiy.sh study guide wait --study-id <uuid> [--timeout-ms <n>]
     Flags:   --study-id (required)   --timeout-ms <n> (default 120000)
     Output:  The last observed sources.guide object from study status (JSON).
-    Behavior: Polls every 15s while sources.guide.status == "guide_generation_in_progress".
-             Exits 0 when the status transitions to any other value; exits 1 on timeout.
+    Behavior: Polls every 15s while sources.guide.status is queued/running
+             (also accepts legacy guide_generation_* states). Exits 0 when
+             ready; exits 1 on failed or timeout.
 
 study upload — attach media (image upload)
     Usage:   cookiy.sh study upload --content-type <s> (--image-data <s> | --image-url <s>)
@@ -565,8 +593,10 @@ study report generate | content | link | wait
              cookiy.sh study report link --study-id <uuid>
              cookiy.sh study report wait --study-id <uuid> [--timeout-ms <n>]
     wait polls study status every 15s while
-         sources.report.status == "report_generation_in_progress", then prints the
-         report share link. Exits 1 on timeout (default 300000ms).
+         sources.report.status is report_not_requested/report_requested
+         (also accepts legacy report_generation_in_progress), then prints the
+         report share link once status is report_ready. Exits 1 on failed or
+         timeout (default 300000ms).
 
 quant list — list surveys
     Usage:   cookiy.sh quant list
