@@ -364,14 +364,26 @@ build_json() {
   ARG_JSON_RAW=""
   ARG_POSITIONALS=""
 
+  # Flags that may legitimately appear without a value (they default to JSON
+  # `true`). Keep this aligned with the boolean handler in the per-key case
+  # below. Any flag NOT listed here MUST be followed by an actual value;
+  # otherwise we die instead of silently substituting the literal string
+  # "true" — which previously slipped through to the server as a 4-char
+  # placeholder for required string fields like base_revision /
+  # idempotency_key (see fix history).
+  local boolean_flags=" include_raw skip_synthetic_interview include_incomplete "
+
   while [[ $# -gt 0 ]]; do
     if [[ "$1" == --* ]]; then
       local key="${1#--}"
       key="${key//-/_}"
+      local val
       if [[ $# -gt 1 && "${2:0:2}" != "--" ]]; then
-        local val="$2"; shift 2
+        val="$2"; shift 2
+      elif [[ "$boolean_flags" == *" $key "* ]]; then
+        val="true"; shift
       else
-        local val="true"; shift
+        die "--${key//_/-} requires a value (got next flag or end of args)"
       fi
       # Special flags: never forwarded as tool JSON fields
       if [[ "$key" == "json" ]]; then ARG_JSON_RAW="$val"; continue; fi
@@ -449,6 +461,21 @@ require_non_empty_string_value() {
   local key="$1" msg="$2"
   require_key "$key" "$msg"
   if echo "$BUILT_JSON" | grep -qE "\"$key\"[[:space:]]*:[[:space:]]*\"\"(,|})"; then
+    die "$msg"
+  fi
+}
+
+# Require a string-typed key in BUILT_JSON to have at least N characters.
+# Mirrors zod `.min(N)` validators on the server so users get a clear local
+# error instead of a 400 invalid_*_body round-trip. Only inspects the value
+# inside the matched `"key":"..."` segment; numeric/bool/array values are
+# left to other validators.
+require_min_string_length() {
+  local key="$1" min_len="$2" msg="$3"
+  require_non_empty_string_value "$key" "$msg"
+  local val
+  val="$(printf '%s' "$BUILT_JSON" | sed -n 's/.*"'"$key"'"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)"
+  if (( ${#val} < min_len )); then
     die "$msg"
   fi
 }
@@ -728,8 +755,14 @@ study)
         update)
           build_json "study_id base_revision idempotency_key change_message" "${gtail[@]+"${gtail[@]}"}"
           require_key study_id "study guide update requires --study-id"
-          require_key base_revision "study guide update requires --base-revision"
-          require_key idempotency_key "study guide update requires --idempotency-key"
+          # Server zod requires base_revision and idempotency_key both to be
+          # non-empty strings of length >= 8. Catch trivially-bad values
+          # client-side so the user sees a clear error from cookiy.sh
+          # instead of a 400 invalid_discussion_guide_patch_body round-trip.
+          require_min_string_length base_revision 8 \
+            "study guide update requires --base-revision <string of length >= 8>"
+          require_min_string_length idempotency_key 8 \
+            "study guide update requires --idempotency-key <string of length >= 8>"
           [[ -n "$ARG_JSON_RAW" ]] || die "study guide update requires --json '<patch>'"
           # Inject patch key: strip trailing }, append ,"patch":...}
           BUILT_JSON="${BUILT_JSON%\}},\"patch\":$ARG_JSON_RAW}"
