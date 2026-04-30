@@ -39,3 +39,9 @@ or a response containing a login URL — handle it like this:
 ```
 scripts/cookiy.sh save-token <access_token>
 ```
+
+---
+
+## Additional Information
+
+For any issues, contact support@cookiy.com.
