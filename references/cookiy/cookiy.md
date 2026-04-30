@@ -1,9 +1,28 @@
 # Cookiy AI — End-to-End User Research via CLI
 
 Cookiy AI automates the full user research lifecycle — both qualitative (via AI-moderated
-interviews) and quantitative (via user surveys). All operations go through the
-[`scripts/cookiy.sh`](scripts/cookiy.sh) CLI (scripts folder is located under the same directory
-as this file). This is the only supported integration path — do not use alternative methods.
+interviews) and quantitative (via user surveys). All operations go through the global `cookiy`
+CLI. This is the only supported integration path — do not use alternative methods.
+
+---
+
+## Installation
+
+`cookiy` is distributed as an npm package and invoked as a global command.
+
+```
+npm install -g cookiy-cli
+```
+
+After install, run `cookiy <command>` from anywhere.
+
+## Upgrade
+
+```
+npm update -g cookiy-cli
+```
+
+If a command reports a version mismatch or unknown flag, upgrade first and retry.
 
 ---
 
@@ -37,7 +56,7 @@ or a response containing a login URL — handle it like this:
 **save-token** — Store an access token obtained from browser sign-in.
 
 ```
-scripts/cookiy.sh save-token <access_token>
+cookiy save-token <access_token>
 ```
 
 ---
