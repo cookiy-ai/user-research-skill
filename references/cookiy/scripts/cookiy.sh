@@ -85,6 +85,7 @@ Commands:
   recruit start                       Qualitative or quant recruitment (auto-detects mode)
   quant list|create|get|update|status|report|raw-response  Quantitative survey management (keyed by survey-id)
   billing balance|checkout|price-table|transactions
+  user info                           Current logged-in user details and limits
 
 Examples:
   cookiy.sh save-token eyJhbGciOi...
@@ -590,7 +591,7 @@ quant update — patch survey
 
 quant status — combined survey + panel recruitment status
     Usage:   cookiy.sh quant status --survey-id <n>
-    Flags:   --survey-id <integer>   Numeric LimeSurvey sid from `quant list`
+    Flags:   --survey-id <integer>   Numeric LimeSurvey sid from \`quant list\`
     Output:  Single JSON envelope wrapping both sides:
              { survey_id, survey: { completed_responses, incomplete_responses, full_responses },
                recruit: { total_bought, total_completed } }.
@@ -627,6 +628,10 @@ billing checkout
 billing price-table
     Usage:   cookiy.sh billing price-table
     Output:  Current pricing table for all Cookiy operations (fetched from server).
+
+user info
+    Usage:   cookiy.sh user info
+    Output:  Information about the currently logged-in user, including limitations.
 
 BOOLEAN FLAGS (values: true | false | 1 | 0 | yes | no | on | off)
     --include-raw   --skip-synthetic-interview   --include-incomplete
@@ -922,6 +927,19 @@ billing)
       invoke cookiy_billing_transactions "$BUILT_JSON"
       ;;
     *) die "billing balance|checkout|price-table|transactions" ;;
+  esac
+  ;;
+
+user)
+  sub="${TAIL[0]:-}"
+  utail=("${TAIL[@]:1}")
+
+  case "$sub" in
+    info)
+      [[ ${#utail[@]} -eq 0 ]] || die "user info takes no arguments"
+      invoke cookiy_user_info_get '{}'
+      ;;
+    *) die "user info" ;;
   esac
   ;;
 

@@ -20,6 +20,19 @@ or a response containing a login URL — handle it like this:
 
 ---
 
+## User Limits
+
+Once per session before non-auth operations, run `scripts/cookiy.sh user info` and check limits.
+
+If a failure or request is limit-related, tell the user immediately and mention they can contact
+support@cookiy.com to upgrade to enterprise.
+
+Before creating a study from a detailed research plan, compare the planned interview duration with
+the user's duration limit, if present. If the plan exceeds the limit, notify the user before
+creation and ask whether to adjust the interview questions or study content.
+
+---
+
 ## Modules
 
 | Module | Reference | Covers |
