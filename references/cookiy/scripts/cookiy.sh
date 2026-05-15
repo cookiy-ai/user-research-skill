@@ -84,6 +84,7 @@ Commands:
   study list|create|status|upload|..  Includes guide|interview|run-synthetic-user|report
   recruit start                       Qualitative or quant recruitment (auto-detects mode)
   quant list|create|get|update|status|report|raw-response  Quantitative survey management (keyed by survey-id)
+  user info                           Current user API metadata
   billing balance|checkout|price-table|transactions
 
 Examples:
@@ -93,6 +94,7 @@ Examples:
   cookiy.sh study create --query "..."
   cookiy.sh study report generate --study-id 123 --skip-synthetic-interview
   cookiy.sh study report wait --study-id 123 --timeout-ms 300000
+  cookiy.sh user info
   cookiy.sh billing transactions --limit 50
 EOF
 }
@@ -503,6 +505,11 @@ help — offline CLI reference
     Usage:   cookiy.sh help
     Note:    Prints this reference. No credentials needed.
 
+user info — current user API metadata
+    Usage:   cookiy.sh user info
+    Output:  JSON with limitations[]. MCP-only users receive CLI limitations;
+             SaaS and all-kind users receive an empty array.
+
 study list — list studies
     Usage:   cookiy.sh study list [--limit <n>] [--cursor <s>]
     Flags:   --limit <integer>   --cursor <string>
@@ -688,6 +695,19 @@ resolve_api_endpoint
 # === COMMANDS ==============================================================
 
 case "$CMD" in
+
+user)
+  sub="${TAIL[0]:-}"
+  utail=("${TAIL[@]:1}")
+
+  case "$sub" in
+    info)
+      [[ ${#utail[@]} -eq 0 ]] || die "user info takes no arguments"
+      invoke cookiy_user_info_get '{}'
+      ;;
+    *) die "user info" ;;
+  esac
+  ;;
 
 study)
   sub="${TAIL[0]:-}"
