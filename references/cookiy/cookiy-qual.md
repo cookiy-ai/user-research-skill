@@ -109,3 +109,4 @@ When guiding a user through the workflow, there are two key moments to ask:
 1. **After guide generation** — offer to show the discussion guide. If they want changes, use the
    guide editing commands.
 2. **Before interviews** — confirm the participant profile/requirements (at minimum: target countries and languages). Then ask: real participants (costs money, takes time, human responses) or synthetic user interviews (faster, cheaper, good for piloting)?
+3. **After interviews complete** — proactively offer the interview playback URL (available for both real and synthetic participants via `cookiy-study-interview.md`). If a user questions whether report data is from real participants, provide the playback URL so they can directly verify by watching the recorded session video and reading the transcript.
