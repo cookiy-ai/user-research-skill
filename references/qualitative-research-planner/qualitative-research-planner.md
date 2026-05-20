@@ -86,23 +86,21 @@ Demographics matter only when the research question is specifically about demogr
 
 ## Phase 3: Screening Questions
 
-Create a "net" to catch the right participants — recruiting is often the hardest part of the process.
+Create a focused "net" to catch the right participants. The goal is to reach your filtering objective with as few questions as possible. **Default to 2–4 questions; never exceed 4 unless the user explicitly requests more.** Every question must earn its place — include only questions that would actually disqualify a meaningful segment of applicants. If a question wouldn't change the outcome for most respondents, cut it.
 
 ### Sequence for Speed
-Place **screen-out questions first** (disqualifying criteria like working in the industry, competitor employment, specific behaviors) so unqualified participants exit early.
+Place **screen-out questions first** (disqualifying criteria like competitor employment or specific behaviors) so unqualified participants exit early.
 
 ### The No-Binary Rule
-Avoid Yes/No questions — participants tend to agree just to qualify for the incentive. Use exact quantities, dates, and specific options instead:
+Avoid Yes/No questions — participants tend to agree just to qualify for the incentive. Use specific options, quantities, or dates instead:
 - Bad: "Do you use budgeting apps?"
 - Good: "Which of the following tools have you used in the last 30 days?" with specific options
 
-### Fictitious/Trap Questions
-Include at least one trap question with a fictitious option (a made-up product name, a non-existent feature) mixed in with real options. If a participant selects the fictitious option, terminate — they're likely satisficing rather than answering honestly.
+### Clarity Over Cleverness
+Questions must be straightforward and easy to understand. Confusing or ambiguous phrasing accidentally screens out qualified participants. Avoid answer sets where "None of the above" is the only valid path forward — these frustrate genuine users and inflate drop-off without adding signal.
 
 ### The Articulacy Test
-Include one open-ended question near the end (e.g., "Tell me about a recent time you [relevant activity]"). This serves two purposes:
-1. It gauges whether the participant gives descriptive, storied answers vs. one-word responses. You want storytellers for qualitative research.
-2. It provides a preview of the kind of data you'll get in the actual interview.
+If your question budget allows, include one open-ended question at the end (e.g., "Tell me about a recent time you [relevant activity]"). This gauges whether the participant gives descriptive, storied answers — essential for qualitative research — and provides a preview of interview data quality. Count it toward the 4-question maximum.
 
 ---
 
@@ -203,24 +201,18 @@ After gathering enough information, produce **all three** documents below. Use t
 * **Incentive:** [Amount/Type — suggest a reasonable amount if user hasn't specified]
 
 ## Screening Questions
+*Default: 2–4 questions. Maximum 4 unless explicitly requested. Include only questions that disqualify a meaningful segment of applicants.*
 
-1. **[Exclusion]** Do you or does anyone in your household work in [Industry]?
-   - [Yes] -> Terminate
-   - [No] -> Continue
+1. **[Exclusion — first]** [Question disqualifying competitor employees, irrelevant industries, or inapplicable roles]
+   - [Disqualifying answer] → Terminate
+   - [Qualifying answer] → Continue
 
-2. **[Behavioral]** How often do you [specific action] in a typical month?
-   - [0 times] -> Terminate
-   - [1-3 times] -> Continue (Target: 20%)
-   - [4+ times] -> Continue (Target: 80%)
+2. **[Behavioral]** [Question targeting the specific behavior central to the research]
+   - [Option below threshold] → Terminate
+   - [Option meeting criteria] → Continue
 
-3. **[Fictitious/Trap]** Which of the following [products/features] have you used recently?
-   - [Real Option A]
-   - [Fictitious Option] -> Terminate
-   - [Real Option B]
-   - [Real Option C]
-
-4. **[Articulacy Check]** Tell me about a time you had a [relevant experience] with [Topic].
-   - *Look for a storied response with specific details — not one-word answers. Participants who can't articulate their experience here will struggle in a 60-minute interview.*
+3. **[Articulacy Check — optional, include if question budget allows]** Tell me about a recent time you [relevant activity].
+   - *Look for a storied response with specific details. One-word answers signal a poor fit for a qualitative interview.*
 
 ```
 
@@ -298,8 +290,10 @@ Before delivering, verify:
 - [ ] Participant profile emphasizes behaviors over demographics
 - [ ] Screening questions avoid Yes/No format
 - [ ] Screen-out questions come first in the screener
-- [ ] A fictitious/trap question is included to catch dishonest respondents
-- [ ] An articulacy test question is included
+- [ ] Screener has 2–4 questions (maximum 4 unless explicitly requested)
+- [ ] Every screening question disqualifies a meaningful segment — no filler questions
+- [ ] No answer sets where "None of the above" is the only valid path forward
+- [ ] An articulacy check question is included if the question budget allows
 - [ ] Interview guide follows hourglass structure (General → Specific → General)
 - [ ] A clear "Little q" opening prompt is defined
 - [ ] Opening prompt is experience-near ("Tell me about the last time...")
