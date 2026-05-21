@@ -15,7 +15,9 @@ Recruit real participants for qual studies (interviews) or quant surveys.
 - `--plain-text` (required): real participant profile/requirements (e.g. country, language, age/sex, job). Infer from context; if unavailable, ask the user.
 - `--incremental-participants`: required for quant surveys. For qual studies, omit to recruit up to the study's target sample size; can be called multiple times to recruit incrementally.
 
-**IMPORTANT:** Show the preview from the response (including payment quote) to the user. **Always wait for explicit confirmation before calling Step 2.**
+**IMPORTANT:** Show the preview from the response (including the payment quote and pool size) to the user. **Always wait for explicit confirmation before calling Step 2.**
+
+**Pool size** — the preview also reports a coarse estimate of how many eligible participants match the targeting, from `Very limited` to `Very large`. Show it to the user: a low pool size means the targeting is likely too narrow to fill the requested participants — suggest broadening `--plain-text`.
 
 ### Step 2 — Confirm (once user confirmed)
 
