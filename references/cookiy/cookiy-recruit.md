@@ -23,19 +23,19 @@ Recruit real participants for qual studies (interviews) or quant surveys.
 - `cost_cents`, `shortfall_cents` — payment quote: total cost, and any balance shortfall
 - `incremental_participants`, `total_participants_after` — participants added now, and the cumulative total after launch
 - `pool_size_label` — coarse "volume" band of the eligible participant pool on the recruit panel that matches the criteria. **Always explain it — see below.**
-- `remaining_capacity` — how many more participants the study can still recruit
+- `pool_size_range` — the headcount range for that band (e.g. `10,000–99,999`); surface it alongside the label
 - `confirmation_token` — pass to Step 2
 - `status_message` — human-readable summary
 
 **Explaining `pool_size_label`**
 
-The label is a coarse volume band (`Very limited` → `Very large`), not an exact headcount. Always translate it for the user — the raw label on its own is not actionable:
+`pool_size_label` is a coarse volume band (`Very limited` → `Very large`), not an exact headcount; `pool_size_range` gives the matching headcount range. Surface both — the label on its own is not actionable — and pair them with the guidance for that band:
 
-- `Very limited` — fewer than 100 people. Pool is very small; recruitment will likely stall or under-deliver. Loosen the criteria or cut the target count.
-- `Low` — 100 to 999 people. Small pool; may fill slowly or only partially. Consider broadening the criteria.
-- `Moderate` — 1,000 to 9,999 people. Workable pool; recruitment should fill, though a large batch may still take time.
-- `Large` — 10,000 to 99,999 people. Plenty of participants; fills quickly.
-- `Very large` — 100,000 people or more. Very deep pool; no supply concern.
+- `Very limited` — pool is very small; recruitment will likely stall or under-deliver. Loosen the criteria or cut the target count.
+- `Low` — small pool; may fill slowly or only partially. Consider broadening the criteria.
+- `Moderate` — workable pool; recruitment should fill, though a large batch may still take time.
+- `Large` — plenty of participants; fills quickly.
+- `Very large` — very deep pool; no supply concern.
 
 ### Step 2 — Confirm (once user confirmed)
 
