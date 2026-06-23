@@ -8,6 +8,47 @@
 
 ---
 
+## Creators are talking about us 🎬
+
+> **900K+ views** and **5,000+ comments** across creators putting this skill to work.
+
+<table>
+  <tr>
+    <td width="50%">
+
+https://github.com/user-attachments/assets/5f4b31e8-4cfe-4c96-bae2-511a1636c9c5
+
+<sub><b>@maxjohnscn</b> · 106K views · 1,608 likes · 3,051 comments</sub>
+
+</td>
+    <td width="50%">
+
+https://github.com/user-attachments/assets/04fbc50c-d57e-4cf9-9f5d-246d5d55fc72
+
+<sub><b>@maxjohnscn</b> · 57.7K views · 1,176 likes · 1,314 comments</sub>
+
+</td>
+  </tr>
+  <tr>
+    <td width="50%">
+
+https://github.com/user-attachments/assets/f5bf50b6-34e8-4747-bc48-6420fc62333e
+
+<sub><b>@rishiexplainsai</b> · 142K views · 494 likes · 634 comments</sub>
+
+</td>
+    <td width="50%">
+
+https://github.com/user-attachments/assets/78b2964d-e100-4ea1-b19d-3b51fab3ae1d
+
+<sub><b>@carrie.researcher</b> · 610K views · 14,093 likes · 111 comments</sub>
+
+</td>
+  </tr>
+</table>
+
+---
+
 ## What is this?
 
 An AI agent skill that enables any AI platform to **plan, run, and synthesize user research** — both qualitative (interviews) and quantitative (surveys) — without leaving the conversation.
