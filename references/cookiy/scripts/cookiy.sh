@@ -295,7 +295,7 @@ invoke() {
 }
 
 # Poll study status until guide generation leaves "guide_generation_in_progress"
-# or the deadline passes; print the last observed sources.guide object.
+# or the deadline passes; on success print the full guide-get response.
 wait_for_guide() {
   local study_id="$1"
   local timeout_ms="${2:-120000}"
@@ -307,12 +307,19 @@ wait_for_guide() {
     resp="$(invoke cookiy_activity_get "$args")" || return 1
     guide="$(echo "$resp" | jq -c '.sources.guide // {}')"
     status="$(echo "$resp" | jq -r '.sources.guide.status // ""')"
+    if [[ "$status" == "guide_generation_failed" || "$status" == "failed" ]]; then
+      echo "$guide"
+      return 1
+    fi
     [[ "$status" != "guide_generation_in_progress" ]] && break
     if [[ $(date +%s) -ge $deadline ]]; then timed_out=1; break; fi
     sleep 15
   done
-  echo "$guide"
-  [[ $timed_out -eq 0 ]]
+  if [[ $timed_out -ne 0 ]]; then
+    echo "$guide"
+    return 1
+  fi
+  invoke cookiy_guide_get "$args"
 }
 
 # Poll study status until report generation leaves "report_generation_in_progress"
@@ -341,7 +348,8 @@ wait_for_report_then_link() {
 # Numeric keys: limit, amount_usd_cents, persona_count, incremental_participants,
 #   max_chars, top_values_per_question, sample_open_text_values
 # survey_id: digits only → JSON number (LimeSurvey sid); otherwise string
-# Boolean keys: include_raw, include_incomplete (interview list always sends include_simulation=true)
+# Boolean keys: include_raw, skip_synthetic_interview, include_incomplete
+# (study interview list → cookiy_interview_list: only study_id + optional cursor; no include_simulation)
 # The rest are strings.
 # Sets global: BUILT_JSON, ARG_JSON_RAW, ARG_POSITIONALS
 
@@ -528,10 +536,10 @@ study guide update — apply patch to discussion guide
     Flags:   --study-id (required)   --base-revision (required)   --idempotency-key (required)   --json (required)
              --change-message
 
-study guide wait — poll study status until guide generation is no longer in progress
+study guide wait — poll until guide generation completes, then return guide get JSON
     Usage:   cookiy.sh study guide wait --study-id <uuid> [--timeout-ms <n>]
     Flags:   --study-id (required)   --timeout-ms <n> (default 120000)
-    Output:  The last observed sources.guide object from study status (JSON).
+    Output:  The same JSON shape as study guide get.
     Behavior: Polls every 15s while sources.guide.status == "guide_generation_in_progress".
              Exits 0 when the status transitions to any other value; exits 1 on timeout.
 
@@ -757,7 +765,6 @@ study)
         list)
           build_json "study_id cursor" "${itail[@]+"${itail[@]}"}"
           require_key study_id "study interview list requires --study-id"
-          json_set include_simulation true
           invoke cookiy_interview_list "$BUILT_JSON"
           ;;
         playback)
