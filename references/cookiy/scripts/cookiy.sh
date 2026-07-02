@@ -304,7 +304,10 @@ wait_for_guide() {
   local resp guide status timed_out=0
   guide='{}'
   while :; do
-    resp="$(invoke cookiy_activity_get "$args")" || return 1
+    resp="$(invoke cookiy_activity_get "$args")" || {
+      [[ -n "${resp:-}" ]] && echo "$resp"
+      return 1
+    }
     guide="$(echo "$resp" | jq -c '.sources.guide // {}')"
     status="$(echo "$resp" | jq -r '.sources.guide.status // ""')"
     if [[ "$status" == "guide_generation_failed" || "$status" == "failed" ]]; then
@@ -331,11 +334,18 @@ wait_for_report_then_link() {
   local deadline=$(( $(date +%s) + (timeout_ms + 999) / 1000 ))
   local args="{\"study_id\":\"$(json_escape "$study_id")\"}"
   local resp status
+  resp='{}'
   while :; do
-    resp="$(invoke cookiy_activity_get "$args")" || return 1
+    resp="$(invoke cookiy_activity_get "$args")" || {
+      [[ -n "${resp:-}" ]] && echo "$resp"
+      return 1
+    }
     status="$(echo "$resp" | jq -r '.sources.report.status // ""')"
     [[ "$status" != "report_generation_in_progress" ]] && break
-    if [[ $(date +%s) -ge $deadline ]]; then return 1; fi
+    if [[ $(date +%s) -ge $deadline ]]; then
+      echo "$resp"
+      return 1
+    fi
     sleep 15
   done
   invoke cookiy_report_share_link_get "$args"
