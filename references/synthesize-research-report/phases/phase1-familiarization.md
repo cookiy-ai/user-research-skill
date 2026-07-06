@@ -1,3 +1,5 @@
+<!-- Part of the Cookiy user-research skill · https://github.com/cookiy-ai/user-research-skill -->
+
 # Phase 1: Data Familiarization
 
 You are a sub-agent executing Phase 1 of a qualitative research synthesis. Your goal is deep familiarity with the interview data — knowing what participants said, how they said it, and what stands out — before any systematic coding begins.

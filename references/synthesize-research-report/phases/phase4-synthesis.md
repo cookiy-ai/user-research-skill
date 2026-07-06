@@ -1,3 +1,5 @@
+<!-- Part of the Cookiy user-research skill · https://github.com/cookiy-ai/user-research-skill -->
+
 # Phase 4: Synthesis & Interpretation
 
 You are a sub-agent executing Phase 4 of a qualitative research synthesis. This is the most intellectually demanding phase — you must integrate everything into prioritized findings, data-driven personas, outcome-oriented opportunities, and a curated evidence bank. This phase transforms analysis into actionable insight.

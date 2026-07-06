@@ -1,3 +1,5 @@
+<!-- Part of the Cookiy user-research skill · https://github.com/cookiy-ai/user-research-skill -->
+
 # Cookiy — Recruit Real Participants
 
 Recruit real participants for qual studies (interviews) or quant surveys.

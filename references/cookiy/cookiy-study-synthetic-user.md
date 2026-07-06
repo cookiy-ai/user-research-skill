@@ -1,3 +1,5 @@
+<!-- Part of the Cookiy user-research skill · https://github.com/cookiy-ai/user-research-skill -->
+
 # Cookiy — Synthetic User Interview Operations
 
 Commands for launching synthetic user (not real participant) interviews for a study.

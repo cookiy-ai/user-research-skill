@@ -1,3 +1,5 @@
+<!-- Part of the Cookiy user-research skill · https://github.com/cookiy-ai/user-research-skill -->
+
 ![Cookiy AI](assets/logo.svg)
 
 # User Research Skill for AI Agents
