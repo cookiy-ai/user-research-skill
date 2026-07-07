@@ -1,3 +1,4 @@
+# Local artifacts excluded from the published skill
 # Python
 __pycache__/
 *.py[cod]

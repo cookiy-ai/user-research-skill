@@ -1,4 +1,6 @@
 name: Release skill.zip
+# Packages SKILL.md + references into user-research-cookiy-skill.zip and
+# republishes the "latest" release on every push to main.
 
 on:
   push:

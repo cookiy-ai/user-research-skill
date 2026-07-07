@@ -1,3 +1,5 @@
+<!-- Part of the Cookiy user-research skill · https://github.com/cookiy-ai/user-research-skill -->
+
 # Cookiy — Interview Retrieval Operations
 
 Commands for fetching interview details for both real participant and synthetic user interviews.

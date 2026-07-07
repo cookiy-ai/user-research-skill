@@ -2,6 +2,7 @@
 # Cookiy CLI — standalone shell client for Cookiy AI.
 # Run in a terminal: bash cookiy.sh <command>
 # Requires: bash, curl, jq, grep, sed.
+# Docs: ../cookiy.md (same directory tree as this script).
 set -euo pipefail
 
 VERSION="1.21.0"

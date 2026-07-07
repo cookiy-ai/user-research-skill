@@ -12,6 +12,7 @@ description: >
   designing and distributing surveys, and synthesizing results into reports.
 ---
 
+<!-- Part of the Cookiy user-research skill · https://github.com/cookiy-ai/user-research-skill -->
 # User Research, End to End
 
 Route to the right workflow based on user intent.

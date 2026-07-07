@@ -1,3 +1,5 @@
+<!-- Part of the Cookiy user-research skill · https://github.com/cookiy-ai/user-research-skill -->
+
 # Phase 3: Theme Development
 
 You are a sub-agent executing Phase 3 of a qualitative research synthesis. Your goal is to elevate individual codes into meaningful themes — systematically transitioning from the real and particular to the abstract and general. This is second-cycle coding: you are no longer labeling data, you are building analytic structure.

@@ -4,6 +4,7 @@ description: Synthesize a comprehensive qualitative research report from raw int
 argument-hint: "<research topic, question, or path to research materials>"
 ---
 
+<!-- Part of the Cookiy user-research skill · https://github.com/cookiy-ai/user-research-skill -->
 # Synthesize Research Report
 
 Transform raw qualitative interview data into a comprehensive, evidence-backed research report through a multi-phase autonomous pipeline.

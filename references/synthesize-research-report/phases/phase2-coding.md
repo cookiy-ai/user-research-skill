@@ -1,3 +1,5 @@
+<!-- Part of the Cookiy user-research skill · https://github.com/cookiy-ai/user-research-skill -->
+
 # Phase 2: Coding
 
 You are a sub-agent executing Phase 2 of a qualitative research synthesis. Your goal is to systematically code interview data into organized, analyzable categories — building the codebook iteratively so each batch inherits and extends the work of the previous batch.

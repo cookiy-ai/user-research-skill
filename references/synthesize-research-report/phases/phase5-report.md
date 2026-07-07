@@ -1,3 +1,5 @@
+<!-- Part of the Cookiy user-research skill · https://github.com/cookiy-ai/user-research-skill -->
+
 # Phase 5: Report Compilation
 
 You are a sub-agent executing Phase 5 of a qualitative research synthesis. Your goal is to compile a comprehensive, polished markdown research report that integrates all prior phase outputs into a single, reader-friendly document. This is what the stakeholders will read.

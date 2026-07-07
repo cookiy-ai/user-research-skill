@@ -1,3 +1,5 @@
+<!-- Part of the Cookiy user-research skill · https://github.com/cookiy-ai/user-research-skill -->
+
 # Cookiy AI — End-to-End User Research via CLI
 
 Cookiy AI automates the full user research lifecycle — both qualitative (via AI-moderated
