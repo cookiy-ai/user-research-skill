@@ -129,7 +129,7 @@ Or follow your agent's skill installation instructions to install manually.
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=cookiy-ai/user-research-skill&type=Date)](https://www.star-history.com/#cookiy-ai/user-research-skill&Date)
+[![Star History Chart](assets/star-history.png)](https://www.star-history.com/#cookiy-ai/user-research-skill&Date)
 
 ---
 
