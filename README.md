@@ -10,7 +10,7 @@
 
 > ### 👋 New here? Start at [**Cookiy.ai**](https://cookiy.ai)
 >
-> This repo is the **skill for AI agents** (Claude Code, Cowork, etc.). If you want to experience the full product yourself, head to our official website — **[Cookiy.ai](https://cookiy.ai) is built for humans**, and it's the easiest way to try it. ✨
+> This repo is the **skill for AI agents** (Claude Code, CodeX, Cursor, etc.). If you want to experience the full product yourself, head to our official website — **[Cookiy.ai](https://cookiy.ai) is built for humans**, and it's the easiest way to try it. ✨
 >
 > Once you log in on the website, the **web app and this CLI skill are fully connected** — studies, participants, and results stay in sync across both.
 
