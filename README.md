@@ -2,7 +2,9 @@
 
 ![Cookiy AI](assets/logo.svg)
 
-# User Research Skill for AI Agents
+# Cookiy AI — Open-Source User Research Skill for AI Agents
+
+**Cookiy AI User Research Skill** is the open-source, MIT-licensed agent skill powered by the world's first agentic AI user researcher. Plan, run, and synthesize real user research — qualitative interviews and quantitative surveys — without leaving your AI agent.
 
 **The human layer in the AI stack** — give any AI agent direct access to real human opinions, experiences, and decision-making.
 
