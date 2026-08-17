@@ -28,6 +28,12 @@ Create a survey.
 scripts/cookiy.sh quant create --json '<obj>'
 ```
 
+If creation returns `QUANT_SURVEY_LOGIC_INVALID`, the survey remains inactive.
+Do not retry the same JSON or describe the survey as successfully created. Report every item in
+`error.details.errors` to the user, including its language, scope, group/question ID, and each
+`issues[]` entry's `message`, `token`, and `expression`. Explain the concrete correction needed,
+revise the survey JSON with the user, and only then retry `quant create`.
+
 ### quant get
 
 Get survey detail.
