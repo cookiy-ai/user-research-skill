@@ -28,7 +28,9 @@ curl() {
       body='{"jsonrpc":"2.0","result":{}}'
       ;;
     *'"name":"cookiy_quant_survey_admin_link"'*)
-      body='{"jsonrpc":"2.0","id":2,"result":{"content":[],"isError":false,"structuredContent":{"ok":true,"data":{"survey_id":191329,"admin_login_url":"https://ls.test/index.php?cookiyBridge=loginAs"},"error":null}}}'
+      # Shape captured from a running backend: adminLink returns the URL and
+      # its TTL, and no survey_id. An earlier fixture invented one.
+      body='{"jsonrpc":"2.0","id":2,"result":{"content":[],"isError":false,"structuredContent":{"ok":true,"data":{"admin_login_url":"https://ls.test/index.php?cookiyBridge=loginAs&token=abc","token_ttl_seconds":120},"error":null}}}'
       ;;
     *)
       body='{"jsonrpc":"2.0","id":0,"error":{"message":"unexpected test request"}}'
@@ -46,8 +48,8 @@ output="$(
 )"
 
 printf '%s' "$output" | jq -e '
-  .survey_id == 191329
-  and .admin_login_url == "https://ls.test/index.php?cookiyBridge=loginAs"
+  .admin_login_url == "https://ls.test/index.php?cookiyBridge=loginAs&token=abc"
+  and .token_ttl_seconds == 120
 ' >/dev/null
 
 grep -F '"name":"cookiy_quant_survey_admin_link"' \
