@@ -21,6 +21,7 @@ Any field marked **I18nText** accepts a plain string (base language) or a per-la
 | `groups` | `Group[]` | yes | — | |
 | `languages` | `string[]` | no | `["en"]` | First = base. LimeSurvey locale codes, e.g. `en`, `zh-Hans`, `zh-Hant-HK`, `ja`. |
 | `survey_format` | enum | no | `"G"` | Presentation mode: `"G"` group-by-group, `"A"` all on one page, `"S"` one question per page. Updatable. |
+| `activate` | boolean | no | `true` | Native validation always runs. Set `false` to keep a validated `active=N` draft for LimeSurvey admin preview/editing; native activation validates again. |
 
 ---
 
