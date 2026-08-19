@@ -597,7 +597,13 @@ quant create — create survey (multi-language)
     Flags:   --json (required): JSON with survey_title, languages[], groups[], quotas[], etc.
     Multi-lang: Set "languages":["en","zh","ja"] and use per-language maps for text fields.
                 Respondents can switch language on the survey page.
-    Schema:  See cookiy-quant-create-schema.md for full field reference.
+    Schema:  See cookiy-quant-schema.md for full field reference.
+
+quant admin-link — open survey in native LimeSurvey admin UI
+    Usage:   cookiy.sh quant admin-link --survey-id <n>
+    Flags:   --survey-id (required, numeric)
+    Note:    Use LimeSurvey Preview for inactive drafts. Native activation is
+             blocked until persisted survey logic passes validation.
 
 quant get — survey detail
     Usage:   cookiy.sh quant get --survey-id <n>
@@ -868,6 +874,11 @@ quant)
       require_key survey_id "quant get requires --survey-id (numeric sid from quant list)"
       invoke cookiy_quant_survey_detail "$BUILT_JSON"
       ;;
+    admin-link|admin_link)
+      build_json "survey_id" "${qtail[@]+"${qtail[@]}"}"
+      require_key survey_id "quant admin-link requires --survey-id (numeric sid from quant create)"
+      invoke cookiy_quant_survey_admin_link "$BUILT_JSON"
+      ;;
     update)
       build_json "survey_id" "${qtail[@]+"${qtail[@]}"}"
       merge_raw_json
@@ -894,7 +905,7 @@ quant)
       echo "$rr_out" | jq -r '.raw_results.raw // empty'
       ;;
     *)
-      die "quant list|create|get|update|status|report|raw-response"
+      die "quant list|create|get|admin-link|update|status|report|raw-response"
       ;;
   esac
   ;;

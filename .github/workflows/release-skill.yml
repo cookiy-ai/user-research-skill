@@ -19,6 +19,9 @@ jobs:
       - name: Test CLI structured error passthrough
         run: bash tests/quant-create-error-output.sh
 
+      - name: Test quant draft preview command
+        run: bash tests/quant-draft-preview.sh
+
       - name: Build user-research-cookiy-skill.zip
         run: zip -r user-research-cookiy-skill.zip SKILL.md references
 

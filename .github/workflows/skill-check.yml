@@ -1,0 +1,23 @@
+name: Skill check
+
+on:
+  pull_request:
+    paths:
+      - 'SKILL.md'
+      - 'references/**'
+      - 'tests/**'
+      - '.github/workflows/skill-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test quant create error contract
+        run: bash tests/quant-create-error-output.sh
+      - name: Test quant draft preview lifecycle
+        run: bash tests/quant-draft-preview.sh
