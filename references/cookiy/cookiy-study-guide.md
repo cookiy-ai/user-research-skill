@@ -14,58 +14,50 @@ Get the full discussion/interview guide. Returns JSON — convert it to a human-
 before showing to the user.
 
 ```
-scripts/cookiy.sh study guide get --study-id <uuid>
-```
-
-### study guide wait
-
-Wait until the discussion/interview guide has been generated for the study.
-
-```
-scripts/cookiy.sh study guide wait --study-id <uuid>
+cookiy study guide get --study-id <uuid>
 ```
 
 ### study guide update
 
-Partially update (patch) the discussion/interview guide. The patch is merged into the JSON returned
-by `study guide get`.
+Patch the `discussion_guide` document returned by `study guide get`, using its latest `revision`.
 
 ```
-scripts/cookiy.sh study guide update --study-id <uuid> --base-revision <s> --idempotency-key <s> [--change-message <s>] --json '<patch>'
+cookiy study guide update --study-id <uuid> --base-revision <n> --json '<patch>'
 ```
 
 | Flag | Required | Purpose |
 |------|----------|---------|
-| `--base-revision` | yes | The `revision` field from the `study guide get` response |
-| `--idempotency-key` | yes | Client-generated unique key (generate one yourself) |
-| `--change-message` | no | Human-readable description of the change |
+| `--base-revision` | yes | The latest numeric `revision` from `study guide get` |
 | `--json` | yes | Incremental patch JSON to merge into the original. See patch guide below. |
+
+Updates use `base_revision` for optimistic concurrency. No idempotency key is needed. After a
+timeout or revision conflict, get the latest guide and inspect it before deciding whether to update
+again.
 
 ---
 
 ## JSON Patch Guide
 
-### Core Idea
-
-A patch is a **partial JSON object** merged into the original:
-- Provided keys are **updated / overwritten**
-- Missing keys are **unchanged**
+Patch only fields inside `discussion_guide`; do not submit the full GET response. Objects are merged,
+provided values replace existing values, and omitted fields stay unchanged.
 
 ### Updating Nested Fields
 
 Standard:
+
 ```json
 {
-  "research_overview": {
-    "interview_topic": "Updated Topic"
+  "meta": {
+    "project_name": "Coffee purchase habits"
   }
 }
 ```
 
 Dot notation (auto-expanded):
+
 ```json
 {
-  "research_overview.interview_topic": "Updated Topic"
+  "meta.project_name": "Coffee purchase habits"
 }
 ```
 
@@ -74,55 +66,6 @@ Dot notation (auto-expanded):
 - Arrays are **fully replaced**, not merged. There is no automatic append.
 - To modify an array: read the existing array, modify it in memory, then submit the **full updated
   array** in the patch.
-
-### Example
-
-**Original:**
-```json
-{
-  "interview_flow": {
-    "sections": [
-      {
-        "description": "Warm-up",
-        "question_list": [
-          { "question": "Q1", "type": "free_response", "followups": [], "media": [] }
-        ]
-      }
-    ]
-  }
-}
-```
-
-**Correct — append Q2 (send full array):**
-```json
-{
-  "interview_flow": {
-    "sections": [
-      {
-        "description": "Warm-up",
-        "question_list": [
-          { "question": "Q1", "type": "free_response", "followups": [], "media": [] },
-          { "question": "Q2 New", "type": "free_response", "followups": [], "media": [] }
-        ]
-      }
-    ]
-  }
-}
-```
-
-**Wrong — overwrites the array with only Q2:**
-```json
-{
-  "question_list": [
-    { "question": "Q2 New", "type": "free_response", "followups": [], "media": [] }
-  ]
-}
-```
-
-### Rules Summary
-
-> Merge objects, replace arrays.
-
-- Use partial objects for updates
-- Dot notation is supported
-- Arrays are **replace-only** — always send the full array when modifying
+- Preserve the IDs and required fields of existing sections, questions, and media. Use the actual
+  document returned by GET as the schema reference.
+- Do not use dotted numeric paths to edit individual array entries.

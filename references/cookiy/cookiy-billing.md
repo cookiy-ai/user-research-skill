@@ -6,13 +6,14 @@
 
 Single wallet balance. Payments deduct from it; top-ups add to it.
 
-- **Balance sufficient:** action completes instantly.
+- **Balance sufficient:** the paid operation can proceed.
 - **Balance short:** auto-charges saved card. If that also fails, the wallet must be topped up manually first.
 - **Refunds:** not self-service — contact support.
 
 ## Handling 402 / Insufficient Balance
 
-Many operations cost money (recruit, synthetic interview, report generation, discussion guide generation). If any CLI command returns a 402 or indicates insufficient balance:
+Paid operations can fail with `INSUFFICIENT_BALANCE` in stderr JSON (HTTP 402). Use the error's
+`details` for the payment quote and balance shortfall:
 
 1. Show the user the payment information and minimum amount needed from the error response.
 2. After the user confirms how much to charge, run `billing checkout` to get a checkout URL.
@@ -25,7 +26,7 @@ Many operations cost money (recruit, synthetic interview, report generation, dis
 List wallet transaction history. Optionally filter by study or survey.
 
 ```
-scripts/cookiy.sh billing transactions [--limit <n>] [--cursor <iso8601>] [--study-id <uuid>] [--survey-id <sid>]
+cookiy billing transactions [--limit <n>] [--cursor <iso8601>] [--study-id <uuid>] [--survey-id <sid>]
 ```
 
 ### billing price-table
@@ -33,7 +34,7 @@ scripts/cookiy.sh billing transactions [--limit <n>] [--cursor <iso8601>] [--stu
 Get current pricing for all operations.
 
 ```
-scripts/cookiy.sh billing price-table
+cookiy billing price-table
 ```
 
 ### billing balance
@@ -41,7 +42,7 @@ scripts/cookiy.sh billing price-table
 Get current wallet balance.
 
 ```
-scripts/cookiy.sh billing balance
+cookiy billing balance
 ```
 
 ### billing checkout
@@ -49,5 +50,5 @@ scripts/cookiy.sh billing balance
 Get a Stripe checkout URL to top up the wallet. Amount must be a whole dollar (no cents), minimum $10.
 
 ```
-scripts/cookiy.sh billing checkout --amount-usd-cents <n>
+cookiy billing checkout --amount-usd-cents <n>
 ```
