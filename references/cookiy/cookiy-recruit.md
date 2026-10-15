@@ -31,6 +31,8 @@ Recruit real participants for qual studies (interviews) or quant surveys.
 
 Recruitment takes hours to days. Use `study status` for qual studies or `quant status` for quant surveys to check progress.
 
+If launch fails, no balance is deducted.
+
 ### Recruitment Capacity Errors
 
 For recruitment-capacity errors, check the error details and study status before choosing the next step. Reaching the recruitment limit does not mean interviews are complete.

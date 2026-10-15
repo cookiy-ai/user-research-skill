@@ -6,7 +6,7 @@
 
 Single wallet balance. Payments deduct from it; top-ups add to it.
 
-- **Balance sufficient:** the paid operation can proceed.
+- **Balance sufficient:** pay directly from your wallet; no top-up needed.
 - **Balance short:** auto-charges saved card. If that also fails, the wallet must be topped up manually first.
 - **Refunds:** not self-service — contact support.
 
