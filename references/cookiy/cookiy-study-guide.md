@@ -70,9 +70,9 @@ Dot notation (auto-expanded):
 ### Example
 
 Read `study guide get` first. Preserve all existing sections, questions and fields (including IDs,
-media and any `visibility_rule`). For new interview questions, omit `id` to let the server generate
-UUIDv7 IDs; explicit valid new UUIDv7 IDs are also accepted. GET the guide after saving and preserve
-the returned IDs in later edits. This example starts with one section containing Q1.
+media and any `visibility_rule`). Omit `id` for every new interview question; the server generates
+UUIDv7 IDs. After saving, GET the guide and preserve the returned IDs in later edits.
+This example starts with one section containing Q1.
 
 **Original — `discussion_guide` excerpt from GET:**
 
