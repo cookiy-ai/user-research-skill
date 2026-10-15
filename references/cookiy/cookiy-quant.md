@@ -38,7 +38,7 @@ cookiy quant get --survey-id <n>
 
 ### quant update
 
-Update `survey_title` or `survey_format` using a subset of the create schema. Omitted fields remain unchanged. This command cannot modify groups or questions; recreate the survey to change them.
+Update basic survey fields (e.g. title, format). Groups/questions cannot be modified after creation. The JSON is a subset of the create schema — provided keys overwrite, missing keys unchanged.
 
 ```
 cookiy quant update --survey-id <n> --json '<obj>'
@@ -62,7 +62,7 @@ cookiy quant report --survey-id <n>
 
 ### quant raw-response
 
-Print raw survey responses directly as CSV text. Excludes incomplete responses by default; use `--include-incomplete` to include them. Output can be large — redirect to a file when needed.
+Raw survey responses as CSV. Excludes incomplete by default. Output can be large — better redirect to a file.
 
 ```
 cookiy quant raw-response --survey-id <n> [--include-incomplete]

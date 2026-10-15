@@ -38,8 +38,7 @@ cookiy study list [--limit <n>] [--cursor <s>]
 
 ### study create
 
-Create a study and wait for its discussion/interview guide. The JSON response includes `studyId`,
-`revision`, `discussion_guide`, and `study_detail_webpage_url`.
+Create a new study with a ready discussion/interview guide.
 
 ```
 cookiy study create --query <s>
@@ -61,7 +60,6 @@ cookiy study upload --content-type <s> (--image-data <s> | --image-url <s>)
 |------|----------|---------|
 | `--content-type` | yes | MIME type (e.g. `image/jpeg`) |
 | `--image-data` | one of these | Base64 data **without** the `data:` prefix |
-| `--image-url` | one of these | URL of the image to upload |
 
 ### study status
 
@@ -76,14 +74,13 @@ cookiy study status --study-id <uuid>
 
 ## Waiting on Async Operations
 
-For report generation, use [`study report wait`](cookiy-study-report.md). For recruitment and
-interview progress, use `study status`.
+Report generation exposes a `wait` subcommand (see the relevant sub-reference) to block until complete. Use it to poll-wait until the operation completes. For all other progress checks, use `study status`.
 
 ---
 
 ## Interview Status
 
-- **In Process** — participant in the room, interview running
+- **In Process** — new or ongoing interview
 - **Pause** — participant temporarily left
 - **Complete** — finished, passed quality check
 - **Not Qualify** — failed quality check

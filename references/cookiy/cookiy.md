@@ -4,31 +4,15 @@
 
 Cookiy AI automates the full user research lifecycle — both qualitative (via AI-moderated
 interviews) and quantitative (via user surveys). Use the installed `cookiy` command from
-`@cookiyai/cookiy-cli` for all platform operations. `cookiy-cli` is an alias for the same command.
+`@cookiyai/cookiy-cli` for all platform operations.
 
 ## Setup
 
-Requires Node.js 18+. If the old unscoped package is installed, remove it first:
-
-```bash
-npm uninstall -g cookiy-cli
-```
-
-Install the CLI and check its version:
+Requires Node.js 18+. If `cookiy` is unavailable, install it:
 
 ```bash
 npm install -g @cookiyai/cookiy-cli
-cookiy --version
 ```
-
-Use `cookiy <command> --help` for command options.
-
-## Command Output
-
-- Successful REST commands print the response `data` to stdout, without the outer `{ok, data}`
-  envelope. JSON results stay JSON; `quant raw-response` prints CSV text.
-- API and network errors exit with code 1 and print error JSON to stderr. Read `code`, `message`,
-  `details`, and `login_url` when present. Local argument or missing-token errors may be plain text.
 
 ---
 
@@ -37,10 +21,11 @@ Use `cookiy <command> --help` for command options.
 The CLI needs a saved access token. If any command returns an auth error — no token, expired token,
 or a response containing a login URL — handle it like this:
 
-1. Show the login URL from the CLI error output or help and ask the user to sign in and return the
-   access token.
-2. Run `cookiy save-token <access_token>` to save it.
-3. Re-run the command that originally failed.
+1. Tell the user they need to sign in. The login URL is shown in the CLI error output. Include this
+   URL in your message so the user can open it directly, and ask them to copy the access token back
+   to you once logged in.
+2. Use the `save-token` CLI command to save it.
+3. Automatically re-run the command that originally failed.
 
 ---
 
@@ -64,6 +49,18 @@ creation and ask whether to adjust the interview questions or study content.
 | Qualitative Research | [`cookiy-qual.md`](cookiy-qual.md) | Study creation, discussion guides, real participant recruitment, synthetic user interviews, reports — the full interview study workflow |
 | Quantitative Research | [`cookiy-quant.md`](cookiy-quant.md) | Survey form creation, real participant recruitment, report — the full survey workflow |
 | Billing | [`cookiy-billing.md`](cookiy-billing.md) | Payment (costs) and billing related guidance and operations |
+
+---
+
+## CLI Commands
+
+### Auth
+
+**save-token** — Store an access token obtained from browser sign-in.
+
+```
+cookiy save-token <access_token>
+```
 
 ---
 
