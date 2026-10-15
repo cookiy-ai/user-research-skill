@@ -70,8 +70,9 @@ Dot notation (auto-expanded):
 ### Example
 
 Read `study guide get` first. Preserve all existing sections, questions and fields (including IDs,
-media and any `visibility_rule`); assign a new UUIDv7 to each new question. This example starts
-with one section containing Q1.
+media and any `visibility_rule`). For new interview questions, omit `id` to let the server generate
+UUIDv7 IDs; explicit valid new UUIDv7 IDs are also accepted. GET the guide after saving and preserve
+the returned IDs in later edits. This example starts with one section containing Q1.
 
 **Original — `discussion_guide` excerpt from GET:**
 
@@ -104,7 +105,7 @@ with one section containing Q1.
         "additional_video_mode": "none",
         "questions": [
           { "id": "018f0f13-7b5a-7c2e-8f6a-222222222222", "question": "How do you buy coffee?", "followup_intensity": "standard", "followup_examples": [], "allow_keyboard_input": false, "media": [] },
-          { "id": "018f0f13-7b5a-7c2e-8f6a-333333333333", "question": "What matters when choosing coffee?", "followup_intensity": "standard", "followup_examples": [], "allow_keyboard_input": false, "media": [] }
+          { "question": "What matters when choosing coffee?", "followup_intensity": "standard", "followup_examples": [], "allow_keyboard_input": false, "media": [] }
         ]
       }
     ]
@@ -123,7 +124,7 @@ with one section containing Q1.
         "description": "Warm-up",
         "additional_video_mode": "none",
         "questions": [
-          { "id": "018f0f13-7b5a-7c2e-8f6a-333333333333", "question": "What matters when choosing coffee?", "followup_intensity": "standard", "followup_examples": [], "allow_keyboard_input": false, "media": [] }
+          { "question": "What matters when choosing coffee?", "followup_intensity": "standard", "followup_examples": [], "allow_keyboard_input": false, "media": [] }
         ]
       }
     ]
