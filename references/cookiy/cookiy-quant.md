@@ -5,7 +5,7 @@
 **Workflow:**
 1. Read [`cookiy-quant-schema.md`](cookiy-quant-schema.md), then co-design the survey questions with the user
 2. Confirm the supported survey languages with the user
-3. `quant create` — creates and activates the survey immediately. Make sure the design is finalised before this step
+3. `cookiy quant create` — creates and activates the survey by default. Make sure the design is finalised before this step
 4. Recruit participants → get report
 
 ---
@@ -17,7 +17,7 @@
 List surveys.
 
 ```
-scripts/cookiy.sh quant list
+cookiy quant list
 ```
 
 ### quant create
@@ -25,7 +25,7 @@ scripts/cookiy.sh quant list
 Create a survey.
 
 ```
-scripts/cookiy.sh quant create --json '<obj>'
+cookiy quant create --json '<obj>'
 ```
 
 ### quant get
@@ -33,7 +33,7 @@ scripts/cookiy.sh quant create --json '<obj>'
 Get survey detail.
 
 ```
-scripts/cookiy.sh quant get --survey-id <n>
+cookiy quant get --survey-id <n>
 ```
 
 ### quant update
@@ -41,7 +41,7 @@ scripts/cookiy.sh quant get --survey-id <n>
 Update basic survey fields (e.g. title, format). Groups/questions cannot be modified after creation. The JSON is a subset of the create schema — provided keys overwrite, missing keys unchanged.
 
 ```
-scripts/cookiy.sh quant update --survey-id <n> --json '<obj>'
+cookiy quant update --survey-id <n> --json '<obj>'
 ```
 
 ### quant status
@@ -49,7 +49,7 @@ scripts/cookiy.sh quant update --survey-id <n> --json '<obj>'
 Show overall survey status including recruitment progress.
 
 ```
-scripts/cookiy.sh quant status --survey-id <n>
+cookiy quant status --survey-id <n>
 ```
 
 ### quant report
@@ -57,7 +57,7 @@ scripts/cookiy.sh quant status --survey-id <n>
 Fetch per-question response statistics. Returns JSON with a `question_summaries` field — present it visually or as text per the user's request.
 
 ```
-scripts/cookiy.sh quant report --survey-id <n>
+cookiy quant report --survey-id <n>
 ```
 
 ### quant raw-response
@@ -65,7 +65,7 @@ scripts/cookiy.sh quant report --survey-id <n>
 Raw survey responses as CSV. Excludes incomplete by default. Output can be large — better redirect to a file.
 
 ```
-scripts/cookiy.sh quant raw-response --survey-id <n> [--include-incomplete]
+cookiy quant raw-response --survey-id <n> [--include-incomplete]
 ```
 
 ---

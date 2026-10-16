@@ -10,9 +10,9 @@ Recruit real participants for qual studies (interviews) or quant surveys.
 
 ### Step 1 — Preview (omit `--confirmation-token`)
 
-**Qual study:** `recruit start --study-id <uuid> --plain-text <s> [--incremental-participants <n>]`
+**Qual study:** `cookiy recruit start --study-id <uuid> --plain-text <s> [--incremental-participants <n>]`
 
-**Quant survey:** `recruit start --survey-public-url <url> --plain-text <s> --incremental-participants <n>`
+**Quant survey:** `cookiy recruit start --survey-public-url <url> --plain-text <s> --incremental-participants <n>`
 
 - `--plain-text` (required): real participant profile/requirements (e.g. country, language, age/sex, job). Infer from context; if unavailable, ask the user.
 - `--incremental-participants`: required for quant surveys. For qual studies, omit to recruit up to the study's target sample size; can be called multiple times to recruit incrementally.
@@ -25,12 +25,14 @@ Recruit real participants for qual studies (interviews) or quant surveys.
 
 ### Step 2 — Confirm (once user confirmed)
 
-**Qual:** `recruit start --study-id <uuid> --confirmation-token <token>`
+**Qual:** `cookiy recruit start --study-id <uuid> --confirmation-token <token>`
 
-**Quant:** `recruit start --confirmation-token <token>`
+**Quant:** `cookiy recruit start --survey-public-url <url> --confirmation-token <token>`
 
 Recruitment takes hours to days. Use `study status` for qual studies or `quant status` for quant surveys to check progress.
 
 If launch fails, no balance is deducted.
 
-### Error: 409 — sample size already reached. Proceed to report instead.
+### Recruitment Capacity Errors
+
+For recruitment-capacity errors, check the error details and study status before choosing the next step. Reaching the recruitment limit does not mean interviews are complete.

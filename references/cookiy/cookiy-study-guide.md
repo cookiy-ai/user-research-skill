@@ -14,31 +14,21 @@ Get the full discussion/interview guide. Returns JSON — convert it to a human-
 before showing to the user.
 
 ```
-scripts/cookiy.sh study guide get --study-id <uuid>
-```
-
-### study guide wait
-
-Wait until the discussion/interview guide has been generated for the study.
-
-```
-scripts/cookiy.sh study guide wait --study-id <uuid>
+cookiy study guide get --study-id <uuid>
 ```
 
 ### study guide update
 
-Partially update (patch) the discussion/interview guide. The patch is merged into the JSON returned
-by `study guide get`.
+Partially update (patch) the discussion/interview guide. The patch is merged into the
+`discussion_guide` returned by `study guide get`.
 
 ```
-scripts/cookiy.sh study guide update --study-id <uuid> --base-revision <s> --idempotency-key <s> [--change-message <s>] --json '<patch>'
+cookiy study guide update --study-id <uuid> --base-revision <n> --json '<patch>'
 ```
 
 | Flag | Required | Purpose |
 |------|----------|---------|
 | `--base-revision` | yes | The `revision` field from the `study guide get` response |
-| `--idempotency-key` | yes | Client-generated unique key (generate one yourself) |
-| `--change-message` | no | Human-readable description of the change |
 | `--json` | yes | Incremental patch JSON to merge into the original. See patch guide below. |
 
 ---
@@ -54,18 +44,20 @@ A patch is a **partial JSON object** merged into the original:
 ### Updating Nested Fields
 
 Standard:
+
 ```json
 {
-  "research_overview": {
-    "interview_topic": "Updated Topic"
+  "meta": {
+    "project_name": "Coffee purchase habits"
   }
 }
 ```
 
 Dot notation (auto-expanded):
+
 ```json
 {
-  "research_overview.interview_topic": "Updated Topic"
+  "meta.project_name": "Coffee purchase habits"
 }
 ```
 
@@ -77,15 +69,23 @@ Dot notation (auto-expanded):
 
 ### Example
 
-**Original:**
+Read `study guide get` first. Preserve all existing sections, questions and fields (including IDs,
+media and any `visibility_rule`); assign a fresh UUIDv7 to each new entity.
+After saving, GET the guide to verify the update.
+This example starts with one section containing Q1.
+
+**Original — `discussion_guide` excerpt from GET:**
+
 ```json
 {
   "interview_flow": {
     "sections": [
       {
+        "id": "018f0f13-7b5a-7c2e-8f6a-111111111111",
         "description": "Warm-up",
-        "question_list": [
-          { "question": "Q1", "type": "free_response", "followups": [], "media": [] }
+        "additional_video_mode": "none",
+        "questions": [
+          { "id": "018f0f13-7b5a-7c2e-8f6a-222222222222", "question": "How do you buy coffee?", "followup_intensity": "standard", "followup_examples": [], "allow_keyboard_input": false, "media": [] }
         ]
       }
     ]
@@ -93,16 +93,19 @@ Dot notation (auto-expanded):
 }
 ```
 
-**Correct — append Q2 (send full array):**
+**Correct — append Q2 (send the full updated array as the patch):**
+
 ```json
 {
   "interview_flow": {
     "sections": [
       {
+        "id": "018f0f13-7b5a-7c2e-8f6a-111111111111",
         "description": "Warm-up",
-        "question_list": [
-          { "question": "Q1", "type": "free_response", "followups": [], "media": [] },
-          { "question": "Q2 New", "type": "free_response", "followups": [], "media": [] }
+        "additional_video_mode": "none",
+        "questions": [
+          { "id": "018f0f13-7b5a-7c2e-8f6a-222222222222", "question": "How do you buy coffee?", "followup_intensity": "standard", "followup_examples": [], "allow_keyboard_input": false, "media": [] },
+          { "id": "018f0f13-7b5a-7c2e-8f6a-333333333333", "question": "What matters when choosing coffee?", "followup_intensity": "standard", "followup_examples": [], "allow_keyboard_input": false, "media": [] }
         ]
       }
     ]
@@ -110,12 +113,22 @@ Dot notation (auto-expanded):
 }
 ```
 
-**Wrong — overwrites the array with only Q2:**
+**Wrong — sending only Q2 replaces the array and removes Q1:**
+
 ```json
 {
-  "question_list": [
-    { "question": "Q2 New", "type": "free_response", "followups": [], "media": [] }
-  ]
+  "interview_flow": {
+    "sections": [
+      {
+        "id": "018f0f13-7b5a-7c2e-8f6a-111111111111",
+        "description": "Warm-up",
+        "additional_video_mode": "none",
+        "questions": [
+          { "id": "018f0f13-7b5a-7c2e-8f6a-333333333333", "question": "What matters when choosing coffee?", "followup_intensity": "standard", "followup_examples": [], "allow_keyboard_input": false, "media": [] }
+        ]
+      }
+    ]
+  }
 }
 ```
 
@@ -123,6 +136,6 @@ Dot notation (auto-expanded):
 
 > Merge objects, replace arrays.
 
-- Use partial objects for updates
-- Dot notation is supported
-- Arrays are **replace-only** — always send the full array when modifying
+- Use partial objects for updates.
+- Dot notation is supported.
+- Arrays are **replace-only** — always send the full array when modifying.
