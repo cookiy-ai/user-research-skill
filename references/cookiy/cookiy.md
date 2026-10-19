@@ -21,11 +21,11 @@ npm install -g @cookiyai/cookiy-cli
 The CLI needs a saved access token. If any command returns an auth error — no token, expired token,
 or a response containing a login URL — handle it like this:
 
-1. Tell the user they need to sign in. The login URL is shown in the CLI error output. Include this
-   URL in your message so the user can open it directly, and ask them to copy the access token back
-   to you once logged in.
-2. Use the `save-token` CLI command to save it.
-3. Automatically re-run the command that originally failed.
+1. Tell the user they need to sign in and provide the login URL from the CLI error output.
+2. Have the user save their token locally with `save-token`, or use an explicitly authorized
+   secure local handoff. Do not ask them to paste the token into chat or expose it in tool logs.
+3. Resume within the existing authorization and budget. For a failed write, check the resource
+   state before retrying; do not automatically repeat a charged operation or recruitment launch.
 
 ---
 
@@ -65,5 +65,18 @@ cookiy save-token <access_token>
 ---
 
 ## Additional Information
+
+### Failure handling
+
+- Keep the CLI version, timestamp with timezone, redacted command, exit code, and stderr.
+  Include HTTP status, error code, and request ID when the installed CLI provides them.
+- Distinguish input errors (400/422), authentication (401), permissions (403), conflicts (409),
+  limits/rate limiting (429), service failures (5xx), and network/timeouts. Do not treat a
+  generic service failure as proof that the user's parameters are invalid.
+- After a failed or timed-out write, read the resource back before deciding whether to retry.
+  Do not automatically repeat a charged operation or recruitment launch: a failed response
+  does not prove that the operation had no effect. Preserve existing confirmation gates.
+- Share request IDs with support. Never share access tokens, credential files, raw internal
+  error pages, or complete sensitive links; do not bypass the CLI to troubleshoot.
 
 For any issues, contact support@cookiy.com.

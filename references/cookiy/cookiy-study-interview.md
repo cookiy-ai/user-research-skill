@@ -21,6 +21,12 @@ cookiy study interview list --study-id <uuid> [--cursor <s>]
 Get the playback URL of a specific interview. If `--interview-id` is not provided, returns playback
 URLs for all interviews under the study.
 
+The URL opens an interview detail page; obtaining it does not verify media playback.
+Both real and synthetic interviews have transcripts. Synthetic interviews have no audio or
+video recording, so media playback is not applicable. For a real interview, separately verify
+that a recording is available and actually plays. Missing media alone does not identify a
+synthetic interview; use the explicit simulation flag from interview metadata.
+
 ```
 cookiy study interview playback url --study-id <uuid> [--interview-id <uuid>]
 ```
