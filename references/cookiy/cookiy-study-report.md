@@ -35,10 +35,3 @@ Get the report as markdown.
 ```
 cookiy study report content --study-id <uuid>
 ```
-
-Generation completion is not a content-quality check. Compare the report with the included
-interviews: verify actual sample counts, simulation provenance, methodology, and supporting
-quotes. Synthetic material must be identified as AI simulation and cannot establish real-user
-or market findings. Preserve conditional statements and distinguish self-reported expectations
-from measured effects. Report unsupported claims as quality issues; do not silently regenerate
-a paid report to replace the evidence.
