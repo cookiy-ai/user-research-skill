@@ -3,7 +3,7 @@
 # Cookiy — Quantitative Research (User Survey)
 
 **Workflow:**
-1. Read [`cookiy-quant-schema.md`](cookiy-quant-schema.md), then co-design the survey questions with the user
+1. Read [`cookiy-quant-schema.md`](cookiy-quant-schema.md), then co-design the survey questions with the user. If only some people should answer, open with screening questions and mark the disqualifying answers with `screen_out_answers` ([Screening](cookiy-quant-schema.md#screening)) — `relevance` alone lets them complete the survey and count as recruited
 2. Confirm the supported survey languages with the user
 3. `cookiy quant create` — creates and activates the survey by default. Make sure the design is finalised before this step
 4. Recruit participants → get report

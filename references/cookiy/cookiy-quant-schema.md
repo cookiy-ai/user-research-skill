@@ -31,7 +31,7 @@ Any field marked **I18nText** accepts a plain string (base language) or a per-la
 | `title` | I18nText | yes | |
 | `questions` | `Question[]` | yes | |
 | `description` | I18nText | no | |
-| `relevance` | string | no | LimeSurvey Expression Manager. Default `"1"` (always show). e.g. `Q1 == 'A1'` |
+| `relevance` | string | no | LimeSurvey Expression Manager. Default `"1"` (always show). e.g. `Q1 == 'A1'`. Only shows or hides the group — see [Screening](#screening). |
 
 ---
 
@@ -39,12 +39,13 @@ Any field marked **I18nText** accepts a plain string (base language) or a per-la
 
 | Field | Type | Req | Notes |
 |-------|------|-----|-------|
-| `code` | string | yes | Unique within survey. `^[A-Za-z][A-Za-z0-9]*$`. |
+| `code` | string | yes | Unique within survey. `^[A-Za-z][A-Za-z0-9]*$`. `RID` is reserved. |
 | `type` | enum | yes | See types below |
 | `text` | I18nText | yes | For `equation`, outer `{…}` may be omitted. |
 | `help` | I18nText | no | |
 | `mandatory` | boolean | no | Default `false` |
-| `relevance` | string | no | Expression Manager. Default `"1"`. |
+| `relevance` | string | no | Expression Manager. Default `"1"`. Only shows or hides the question. |
+| `screen_out_answers` | `string[]` | no | Answer codes that disqualify the respondent. See [Screening](#screening). |
 | `allow_other` | boolean | no | `list_radio` only — adds free-text "Other" option |
 | `options` | `Option[]` | cond | Required for `list_radio`, `list_dropdown`, `multiple_choice`, `ranking`. Min 2. |
 | `array_subrows` | `Subrow[]` | cond | Required for `array_flexible`. Min 2. |
@@ -82,7 +83,19 @@ Any field marked **I18nText** accepts a plain string (base language) or a per-la
 
 - `allow_other` → `list_radio` only
 - `options`/`array_subrows`/`array_scale` only on their respective types
-- `code` must be unique within the survey
+- `code` must be unique within the survey; `RID` is reserved for the recruitment participant id
+- `screen_out_answers` → `list_radio`, `list_dropdown`, `multiple_choice` (option codes, including the auto `A1`, `A2`…) or `yes_no` (`Y` / `N`); the question must have `mandatory: true`; it cannot list every answer
+
+---
+
+## Screening
+
+When only some people may take the survey, ask the screening questions first and put the disqualifying answer codes in `screen_out_answers`. A respondent who gives any of them leaves the survey as soon as they submit that page and goes back to the recruitment panel as **screened out**: they do not count toward the participants you recruit and pay for, and they are not in the report.
+
+- **Relevance is not screening.** Hiding the rest of the survey with `relevance` sends the respondent straight to the end, and reaching the end is a completed response — counted and paid for like any other.
+- For `multiple_choice`, list the options whose selection disqualifies, e.g. a "None of these" option. Picking a disqualifying option disqualifies even when a qualifying one is also ticked.
+- To screen in on a single-choice question, list every other answer. The free-text "Other" answer (`allow_other`) cannot be listed and never disqualifies, so leave `allow_other` off such a question.
+- Screening must be set when the survey is created; `quant update` cannot change questions.
 
 ---
 
@@ -111,22 +124,35 @@ Any field marked **I18nText** accepts a plain string (base language) or a per-la
 }
 ```
 
-**Conditional logic:**
+**Screening and conditional logic:**
 ```json
 {
   "survey_title": "Product Research",
   "groups": [
     {
       "title": "Screening",
-      "questions": [{
-        "code": "S1", "type": "yes_no",
-        "text": "Have you used our product in the last 30 days?",
-        "mandatory": true
-      }]
+      "questions": [
+        {
+          "code": "S1", "type": "yes_no",
+          "text": "Have you used our product in the last 30 days?",
+          "mandatory": true,
+          "screen_out_answers": ["N"]
+        },
+        {
+          "code": "S2", "type": "multiple_choice",
+          "text": "Which industries do you work in?",
+          "mandatory": true,
+          "options": [
+            { "label": "Retail" },
+            { "label": "Finance" },
+            { "code": "NONE", "label": "None of these" }
+          ],
+          "screen_out_answers": ["NONE"]
+        }
+      ]
     },
     {
       "title": "Feedback",
-      "relevance": "S1 == 'Y'",
       "questions": [
         {
           "code": "Q1", "type": "numeric",
