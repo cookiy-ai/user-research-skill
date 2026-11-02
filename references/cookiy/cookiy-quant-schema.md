@@ -96,6 +96,7 @@ When only some people may take the survey, ask the screening questions first and
 - For `multiple_choice`, list the options whose selection disqualifies, e.g. a "None of these" option. Picking a disqualifying option disqualifies even when a qualifying one is also ticked.
 - To screen in on a single-choice question, list every other answer. The free-text "Other" answer (`allow_other`) cannot be listed and never disqualifies, so leave `allow_other` off such a question.
 - Screening must be set when the survey is created; `quant update` cannot change questions.
+- To confirm it, read the `creation_summary_markdown` that `quant create` returns: each screening question has a `Screens out:` line. `quant get` does not show screening.
 
 ---
 
