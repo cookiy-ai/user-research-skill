@@ -74,7 +74,7 @@ Any field marked **I18nText** accepts a plain string (base language) or a per-la
 
 | Field | Type | Req | Notes |
 |-------|------|-----|-------|
-| `code` | string | no (Option: auto A1, A2…) / yes (Subrow, Scale) | Unique within the question ignoring case (an explicit code must not repeat an auto one). Options of `list_radio`, `list_dropdown`, `ranking` and Scale codes: letters and digits only. |
+| `code` | string | no (Option: auto A1, A2…) / yes (Subrow, Scale) | ASCII letters and digits only, unique within the question ignoring case (an explicit code must not repeat an auto one). |
 | `label` | I18nText | yes | |
 
 ---
