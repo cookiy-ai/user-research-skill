@@ -74,7 +74,7 @@ Any field marked **I18nText** accepts a plain string (base language) or a per-la
 
 | Field | Type | Req | Notes |
 |-------|------|-----|-------|
-| `code` | string | no (Option: auto A1, A2…) / yes (Subrow, Scale) | Letters and digits only, unique within the question ignoring case (an explicit code must not repeat an auto one). Not `time` for a `multiple_choice` option or a subrow. |
+| `code` | string | no (Option: auto A1, A2…) / yes (Subrow, Scale) | Unique within the question ignoring case (an explicit code must not repeat an auto one). Options of `list_radio`, `list_dropdown`, `ranking` and Scale codes: letters and digits only. |
 | `label` | I18nText | yes | |
 
 ---
@@ -84,7 +84,7 @@ Any field marked **I18nText** accepts a plain string (base language) or a per-la
 - `allow_other` → `list_radio` only
 - `options`/`array_subrows`/`array_scale` only on their respective types
 - Question `code` must be unique within the survey ignoring case; `RID` (any case) is reserved for the recruitment participant id
-- `screen_out_answers` → `list_radio`, `list_dropdown`, `multiple_choice` (option codes, including the auto `A1`, `A2`…) or `yes_no` (`Y` / `N`); the question must have `mandatory: true`; it cannot list every answer or the same code twice; a screening question cannot have two option codes that are equal numbers (`1` and `01`)
+- `screen_out_answers` → `list_radio`, `list_dropdown`, `multiple_choice` (option codes, including the auto `A1`, `A2`…) or `yes_no` (`Y` / `N`); the question must have `mandatory: true`; it cannot list every answer or the same code twice; on `list_radio` / `list_dropdown` a listed code cannot equal an unlisted one as a number (`01` and `1`)
 
 ---
 
