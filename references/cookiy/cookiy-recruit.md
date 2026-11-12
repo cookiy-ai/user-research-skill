@@ -16,6 +16,7 @@ Recruit real participants for qual studies (interviews) or quant surveys.
 
 - `--plain-text` (required): real participant profile/requirements (e.g. country, language, age/sex, job). Infer from context; if unavailable, ask the user.
 - `--incremental-participants`: required for quant surveys. For qual studies, omit to recruit up to the study's target sample size; can be called multiple times to recruit incrementally.
+- **Quant surveys:** the panel filters only on one country and language, an age range and gender from `--plain-text`. Anything else (industry, job, product use…) reaches the survey unfiltered — screen for it inside the survey with `screen_out_answers` ([Screening](cookiy-quant-schema.md#screening)), or those respondents complete it and count as recruited.
 
 **Criteria quality check:** Before calling Step 1, assess whether the `--plain-text` criteria are too strict, niche, or have too many restrictions. Real participants are recruited from a real market — overly narrow criteria shrink the available pool significantly. Use your judgment; if criteria seem excessive, proactively suggest relaxing them before proceeding.
 
